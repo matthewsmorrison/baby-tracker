@@ -10,7 +10,7 @@ import {
   weightStatus,
 } from "@/lib/clinical";
 import { entryLabel, feedAmounts } from "@/lib/entryDisplay";
-import { formatTime } from "@/lib/dates";
+import { dayWithDate, formatTime } from "@/lib/dates";
 import type { Entry } from "@/lib/types";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
@@ -245,7 +245,7 @@ function Timeline({
         return (
           <section key={day}>
             <div className="mb-2 flex items-baseline justify-between px-2">
-              <h2 className="text-sm font-bold">Day {day}</h2>
+              <h2 className="text-sm font-bold">{dayWithDate(birthAt, day)}</h2>
               <DayTotals entries={dayEntries} />
             </div>
             <Card className="px-5">

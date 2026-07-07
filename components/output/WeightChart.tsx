@@ -11,6 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import { expectedWeightBand } from "@/lib/clinical";
+import { dayWithDate } from "@/lib/dates";
 
 export interface WeightPoint {
   day: number; // fractional day of life
@@ -21,10 +22,12 @@ export function WeightChart({
   points,
   birthWeightG,
   maxDay,
+  birthAt,
 }: {
   points: WeightPoint[];
   birthWeightG: number;
   maxDay: number;
+  birthAt?: string;
 }) {
   const lastDay = Math.max(maxDay, 14);
 
@@ -98,7 +101,11 @@ export function WeightChart({
                 return [`${value[0]}–${value[1]} g`, "Expected range"];
               return [String(value), String(name)];
             }}
-            labelFormatter={(d) => `Day ${Math.round(Number(d) * 10) / 10}`}
+            labelFormatter={(d) =>
+              birthAt
+                ? dayWithDate(birthAt, Math.round(Number(d)))
+                : `Day ${Math.round(Number(d) * 10) / 10}`
+            }
             contentStyle={{
               borderRadius: 16,
               border: "1px solid var(--line)",

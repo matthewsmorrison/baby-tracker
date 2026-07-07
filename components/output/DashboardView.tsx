@@ -164,7 +164,9 @@ export function DashboardView({
                 cursor={{ fill: "var(--surface-alt)" }}
                 contentStyle={tooltipStyle}
                 labelFormatter={(_, p) =>
-                  p?.[0] ? `Day ${(p[0].payload as DayRow).dol}` : ""
+                  p?.[0]
+                    ? `Day ${(p[0].payload as DayRow).dol} · ${(p[0].payload as DayRow).label}`
+                    : ""
                 }
                 formatter={(v) => [`${v}`, "feeds"]}
               />
@@ -186,6 +188,7 @@ export function DashboardView({
             points={weightPoints}
             birthWeightG={birthWeightG}
             maxDay={todayDol}
+            birthAt={birthAt}
           />
         </div>
       </Card>
@@ -206,7 +209,9 @@ export function DashboardView({
                 cursor={{ fill: "var(--surface-alt)" }}
                 contentStyle={tooltipStyle}
                 labelFormatter={(_, p) =>
-                  p?.[0] ? `Day ${(p[0].payload as DayRow).dol}` : ""
+                  p?.[0]
+                    ? `Day ${(p[0].payload as DayRow).dol} · ${(p[0].payload as DayRow).label}`
+                    : ""
                 }
                 formatter={(v, name) => [
                   `${v} ml`,
@@ -254,7 +259,9 @@ export function DashboardView({
                 cursor={{ fill: "var(--surface-alt)" }}
                 contentStyle={tooltipStyle}
                 labelFormatter={(_, p) =>
-                  p?.[0] ? `Day ${(p[0].payload as DayRow).dol}` : ""
+                  p?.[0]
+                    ? `Day ${(p[0].payload as DayRow).dol} · ${(p[0].payload as DayRow).label}`
+                    : ""
                 }
                 formatter={(v) => [`${v} min`, "at the breast"]}
               />
@@ -281,7 +288,9 @@ export function DashboardView({
                 cursor={{ fill: "var(--surface-alt)" }}
                 contentStyle={tooltipStyle}
                 labelFormatter={(_, p) =>
-                  p?.[0] ? `Day ${(p[0].payload as DayRow).dol}` : ""
+                  p?.[0]
+                    ? `Day ${(p[0].payload as DayRow).dol} · ${(p[0].payload as DayRow).label}`
+                    : ""
                 }
                 formatter={(v, name) => [`${v}`, name === "wet" ? "Wet" : "Dirty"]}
               />

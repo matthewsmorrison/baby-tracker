@@ -44,3 +44,17 @@ export function startOfDay(d: Date): Date {
   s.setHours(0, 0, 0, 0);
   return s;
 }
+
+/** The calendar date a given day of life started on (birth day = day 1). */
+export function dayOfLifeDate(birthAt: string | Date, day: number): Date {
+  return new Date(new Date(birthAt).getTime() + (day - 1) * 24 * 60 * 60 * 1000);
+}
+
+/** "Day 5 · Sat 5 Jul" — a day of life is always shown with its real date. */
+export function dayWithDate(birthAt: string | Date, day: number): string {
+  return `Day ${day} · ${dayOfLifeDate(birthAt, day).toLocaleDateString(undefined, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  })}`;
+}

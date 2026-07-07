@@ -1,6 +1,7 @@
 import { getBabyContext } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { dayOfLife, formatKg } from "@/lib/clinical";
+import { dayWithDate } from "@/lib/dates";
 import type { BabyInvite, BabyMember, Profile } from "@/lib/types";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
@@ -60,7 +61,7 @@ export default async function ProfilePage() {
               · {formatKg(ctx.baby.birth_weight_g)}
             </p>
           </div>
-          <Chip tone="accent">Day {day}</Chip>
+          <Chip tone="accent">{dayWithDate(ctx.baby.birth_at, day)}</Chip>
         </div>
         {ctx.isOwner && <EditBirthDetails baby={ctx.baby} />}
       </Card>
