@@ -78,6 +78,10 @@ export interface AiAnalysis {
     | "mixed"
     | "unclear";
   matchesExpected: "yes" | "partly" | "no" | "unclear";
+  /** How much stool is visible in the photo. */
+  stoolAmount?: "none" | "smear" | "small" | "medium" | "large";
+  /** Weighed output minus the estimated stool mass, in ml (1 g ≈ 1 ml). */
+  estimatedUrineMl?: number | null;
   assessment: string;
   redFlags: string[];
   action: AnalysisAction;

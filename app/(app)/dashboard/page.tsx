@@ -12,6 +12,7 @@ export default async function DashboardPage() {
         entries={entries}
         birthAt={ctx.baby.birth_at}
         birthWeightG={ctx.baby.birth_weight_g}
+        nappyBaseWeightG={ctx.baby.nappy_base_weight_g}
       />
       <p className="px-2 pb-2 text-center text-xs text-faint">{DISCLAIMER}</p>
     </div>

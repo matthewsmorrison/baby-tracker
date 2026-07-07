@@ -60,6 +60,12 @@ export function AiVerdict({ ai }: { ai: AiAnalysis }) {
         {ai.feedTypeLikely && ai.feedTypeLikely !== "unclear" && (
           <Chip>{ai.feedTypeLikely}</Chip>
         )}
+        {ai.stoolAmount && ai.stoolAmount !== "none" && (
+          <Chip>poo: {ai.stoolAmount}</Chip>
+        )}
+        {ai.estimatedUrineMl != null && (
+          <Chip>≈ {ai.estimatedUrineMl} ml wee</Chip>
+        )}
         {ai.matchesExpected && (
           <Chip
             tone={

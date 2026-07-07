@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
   NAPPY_WET_THRESHOLD_G,
+  STOOL_G_BY_AMOUNT,
   dayOfLife,
   expectedColour,
   feedsBefore,
@@ -27,6 +28,7 @@ const ANALYSIS_SCHEMA = {
     "consistency",
     "feedTypeLikely",
     "matchesExpected",
+    "stoolAmount",
     "assessment",
     "redFlags",
     "action",
@@ -57,6 +59,12 @@ const ANALYSIS_SCHEMA = {
       enum: ["more breastfed-type", "more formula-type", "mixed", "unclear"],
     },
     matchesExpected: { type: "string", enum: ["yes", "partly", "no", "unclear"] },
+    stoolAmount: {
+      type: "string",
+      enum: ["none", "smear", "small", "medium", "large"],
+      description:
+        "How much stool is visible: none, a smear, small (~1-2 tbsp), medium (~3-5 tbsp), large (covers most of the nappy)",
+    },
     assessment: {
       type: "string",
       description: "1-2 sentences for this day AND feeding pattern",
@@ -138,6 +146,8 @@ Stool type depends on feeding, so judge against the matching pattern:
 - Expected for this baby today: ${expected}
 
 Analyse the photo of the nappy.
+
+For stoolAmount, estimate how much stool is visible: none, smear, small (~1-2 tablespoons), medium (~3-5 tablespoons), or large (covers most of the nappy). If the nappy was weighed (context above), sanity-check your estimate against the total contents.
 
 For colourKey, classify the stool into exactly ONE of:
 - meconium: black to very dark green, tarry/sticky
@@ -291,6 +301,15 @@ export async function POST(
   ai = enforceSafety(ai);
   ai.analysedAt = new Date().toISOString();
   ai.model = MODEL;
+
+  // Urine estimate: weighed contents minus the stool the photo shows.
+  {
+    const outG = nappyOutputG(entry.nappy_weight_g, baby.nappy_base_weight_g);
+    if (outG !== null) {
+      const stoolG = STOOL_G_BY_AMOUNT[ai.stoolAmount ?? "none"] ?? 0;
+      ai.estimatedUrineMl = Math.max(0, outG - stoolG);
+    }
+  }
 
   // 4. Persist. The AI labels the stool colour, but a parent's manual
   // correction always wins: only write colourKey when the entry has no colour

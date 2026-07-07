@@ -243,6 +243,37 @@ export function nappyOutputG(
   return Math.max(0, nappyWeightG - baseWeightG);
 }
 
+/** Rough stool mass for the AI's photo estimate (rough by design). */
+export const STOOL_G_BY_AMOUNT: Record<string, number> = {
+  none: 0,
+  smear: 3,
+  small: 10,
+  medium: 25,
+  large: 45,
+};
+/** Typical newborn stool mass, used when a dirty nappy has no photo estimate. */
+export const DEFAULT_STOOL_G = 20;
+
+/**
+ * Estimated urine in a weighed nappy, in ml (1 g ≈ 1 ml): total output minus
+ * the stool mass — the AI's photo estimate when there is one, a typical
+ * newborn stool otherwise.
+ */
+export function estimatedUrineMl(
+  entry: Entry,
+  baseWeightG: number | null | undefined
+): number | null {
+  const out = nappyOutputG(entry.nappy_weight_g, baseWeightG);
+  if (out === null) return null;
+  if (entry.ai?.estimatedUrineMl != null) return entry.ai.estimatedUrineMl;
+  const stool = entry.dirty
+    ? (entry.ai?.stoolAmount != null
+        ? (STOOL_G_BY_AMOUNT[entry.ai.stoolAmount] ?? DEFAULT_STOOL_G)
+        : DEFAULT_STOOL_G)
+    : 0;
+  return Math.max(0, out - stool);
+}
+
 export const DISCLAIMER =
   "Hearth is a tracking aid, not medical advice or diagnosis. If you are worried about your baby, contact your midwife, health visitor or doctor.";
 

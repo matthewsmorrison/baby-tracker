@@ -11,7 +11,13 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { EXPECTED_FEEDS, dayOfLife, expectedWet, expectedDirty } from "@/lib/clinical";
+import {
+  EXPECTED_FEEDS,
+  dayOfLife,
+  estimatedUrineMl,
+  expectedDirty,
+  expectedWet,
+} from "@/lib/clinical";
 import { feedAmounts, feedGaps } from "@/lib/entryDisplay";
 import type { Entry } from "@/lib/types";
 import { Card, CardTitle } from "@/components/ui/Card";
@@ -42,6 +48,7 @@ interface DayRow {
   gapSumMs: number;
   gapCount: number;
   gapAvgH: number | null;
+  urineMl: number | null;
 }
 
 function dayKey(d: Date): string {
@@ -83,10 +90,12 @@ export function DashboardView({
   entries,
   birthAt,
   birthWeightG,
+  nappyBaseWeightG,
 }: {
   entries: Entry[];
   birthAt: string;
   birthWeightG: number;
+  nappyBaseWeightG?: number | null;
 }) {
   const days: DayRow[] = useMemo(() => {
     const byDay = new Map<string, DayRow>();
@@ -113,6 +122,7 @@ export function DashboardView({
         gapSumMs: 0,
         gapCount: 0,
         gapAvgH: null,
+        urineMl: null,
       });
     }
     for (const e of entries) {
@@ -127,6 +137,8 @@ export function DashboardView({
       } else if (e.type === "nappy") {
         if (e.wet) row.wet += 1;
         if (e.dirty) row.dirty += 1;
+        const urine = estimatedUrineMl(e, nappyBaseWeightG);
+        if (urine !== null) row.urineMl = (row.urineMl ?? 0) + urine;
       }
     }
     // Time between feed starts, attributed to the day the later feed began.
@@ -142,7 +154,7 @@ export function DashboardView({
         : null;
     }
     return [...byDay.values()];
-  }, [entries, birthAt]);
+  }, [entries, birthAt, nappyBaseWeightG]);
 
   const weights = entries
     .filter((e) => e.type === "weight" && e.weight_g)
@@ -375,6 +387,37 @@ export function DashboardView({
           ]}
         />
       </Card>
+
+      {/* Estimated urine — only meaningful when nappies are being weighed */}
+      {days.some((d) => d.urineMl !== null) && (
+        <Card className="p-5">
+          <CardTitle>Estimated wee per day</CardTitle>
+          <p className="mt-0.5 text-xs text-faint">
+            From weighed nappies: contents minus the poo seen in the photo
+            (1 g ≈ 1 ml). Only counts nappies that were weighed.
+          </p>
+          <div className="mt-3 h-44">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={days} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
+                <CartesianGrid vertical={false} stroke="var(--line)" />
+                <XAxis dataKey="label" {...axisProps} axisLine={{ stroke: "var(--line)" }} interval="preserveStartEnd" />
+                <YAxis {...axisProps} axisLine={false} unit="ml" />
+                <Tooltip
+                  cursor={{ fill: "var(--surface-alt)" }}
+                  contentStyle={tooltipStyle}
+                  labelFormatter={(_, p) =>
+                    p?.[0]
+                      ? `Day ${(p[0].payload as DayRow).dol} · ${(p[0].payload as DayRow).label}`
+                      : ""
+                  }
+                  formatter={(v) => [`≈ ${v} ml`, "estimated wee"]}
+                />
+                <Bar dataKey="urineMl" fill={C.blue} radius={[4, 4, 0, 0]} maxBarSize={22} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
