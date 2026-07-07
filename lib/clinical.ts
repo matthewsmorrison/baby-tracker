@@ -228,6 +228,21 @@ export const RED_FLAGS: string[] = [
   "Dry mouth, sunken fontanelle, or no tears when crying",
 ];
 
+/**
+ * A used nappy this much heavier than a dry one counts as wet. Not a clinical
+ * threshold — just a floor above scale noise (1 g ≈ 1 ml of urine).
+ */
+export const NAPPY_WET_THRESHOLD_G = 15;
+
+/** Grams of output in a used nappy, when the dry base weight is known. */
+export function nappyOutputG(
+  nappyWeightG: number | null | undefined,
+  baseWeightG: number | null | undefined
+): number | null {
+  if (!nappyWeightG || !baseWeightG) return null;
+  return Math.max(0, nappyWeightG - baseWeightG);
+}
+
 export const DISCLAIMER =
   "Hearth is a tracking aid, not medical advice or diagnosis. If you are worried about your baby, contact your midwife, health visitor or doctor.";
 

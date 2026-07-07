@@ -7,10 +7,12 @@ import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image";
 import { fromLocalInputValue, toLocalInputValue } from "@/lib/dates";
 import {
+  NAPPY_WET_THRESHOLD_G,
   STOOL_COLOURS,
   dayOfLife,
   expectedColourKey,
   feedsBefore,
+  nappyOutputG,
   summariseFeeds,
 } from "@/lib/clinical";
 import type { AiAnalysis, Entry, StoolColourKey } from "@/lib/types";
@@ -30,12 +32,15 @@ export function NappyForm({
   entries,
   initial,
   onDone,
+  nappyBaseWeightG,
 }: {
   babyId: string;
   birthAt: string;
   entries: Entry[];
   initial?: Entry;
   onDone: () => void;
+  /** Dry nappy weight from Profile — enables wetness inference. */
+  nappyBaseWeightG?: number | null;
 }) {
   const router = useRouter();
   const [occurredAt, setOccurredAt] = useState(() =>
@@ -45,6 +50,10 @@ export function NappyForm({
   );
   const [wet, setWet] = useState(initial?.wet ?? false);
   const [dirty, setDirty] = useState(initial?.dirty ?? false);
+  const [nappyWeight, setNappyWeight] = useState(
+    initial?.nappy_weight_g?.toString() ?? ""
+  );
+  const wetFromWeight = useRef(false);
   const [colour, setColour] = useState<StoolColourKey | null>(
     initial?.stool_colour ?? null
   );
@@ -145,6 +154,29 @@ export function NappyForm({
     }
   }
 
+  /** Weighing the nappy tells us if it's wet: 1 g ≈ 1 ml of wee. */
+  function handleNappyWeight(v: string) {
+    setNappyWeight(v);
+    const g = parseInt(v, 10);
+    const output = nappyOutputG(Number.isFinite(g) ? g : null, nappyBaseWeightG);
+    if (output === null) return;
+    if (output >= NAPPY_WET_THRESHOLD_G) {
+      if (!wet) {
+        setWet(true);
+        wetFromWeight.current = true;
+      }
+    } else if (wetFromWeight.current) {
+      // Only undo what the weight itself set — never a parent's tap.
+      setWet(false);
+      wetFromWeight.current = false;
+    }
+  }
+
+  const nappyOutput = nappyOutputG(
+    parseInt(nappyWeight, 10) || null,
+    nappyBaseWeightG
+  );
+
   function toggleDirty() {
     const next = !dirty;
     setDirty(next);
@@ -176,6 +208,10 @@ export function NappyForm({
         wet,
         dirty,
         stool_colour: dirty ? colour : null,
+        nappy_weight_g: (() => {
+          const g = parseInt(nappyWeight, 10);
+          return Number.isFinite(g) && g > 0 ? g : null;
+        })(),
         note: note.trim() || null,
       };
 
@@ -265,6 +301,8 @@ export function NappyForm({
   function resetForm() {
     setWet(false);
     setDirty(false);
+    setNappyWeight("");
+    wetFromWeight.current = false;
     setColour(null);
     setColourSource(null);
     setNote("");
@@ -296,6 +334,44 @@ export function NappyForm({
       <p className="text-xs text-faint -mt-2">
         One nappy that’s both = tick both.
       </p>
+
+      <div>
+        <Label htmlFor="nappy_weight">Nappy weight (optional, g)</Label>
+        <Input
+          id="nappy_weight"
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={500}
+          placeholder={
+            nappyBaseWeightG ? `dry nappy is ${nappyBaseWeightG} g` : "e.g. 78"
+          }
+          value={nappyWeight}
+          onChange={(e) => handleNappyWeight(e.target.value)}
+        />
+        {nappyOutput !== null ? (
+          <p
+            className={`mt-1.5 rounded-2xl px-3.5 py-2 text-xs font-medium ${
+              nappyOutput >= NAPPY_WET_THRESHOLD_G
+                ? "bg-positive-bg text-positive"
+                : "bg-surface-alt text-muted"
+            }`}
+          >
+            ≈ {nappyOutput} g of output vs the {nappyBaseWeightG} g dry nappy
+            {nappyOutput >= NAPPY_WET_THRESHOLD_G
+              ? " — marked wet (untick if that’s wrong)."
+              : " — too little to count as wet."}
+          </p>
+        ) : (
+          !nappyBaseWeightG &&
+          nappyWeight && (
+            <p className="mt-1 text-xs text-faint">
+              Set the dry nappy weight in Profile and wetness will be inferred
+              automatically.
+            </p>
+          )
+        )}
+      </div>
 
       {dirty && (
         <div>

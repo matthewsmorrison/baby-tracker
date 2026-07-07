@@ -3,9 +3,11 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
+  NAPPY_WET_THRESHOLD_G,
   dayOfLife,
   expectedColour,
   feedsBefore,
+  nappyOutputG,
   summariseFeeds,
 } from "@/lib/clinical";
 import type { AiAnalysis, AnalysisAction, Baby, Entry } from "@/lib/types";
@@ -114,13 +116,19 @@ function buildPrompt(baby: Baby, entry: Entry, entries: Entry[]): string {
       ? "No feeds logged in the 24h before this nappy."
       : `In the 24h before this nappy: ${feeds.breastCount} breastfeeds (${feeds.breastMin} min total), ${feeds.expressedMl} ml expressed breastmilk, ${feeds.formulaMl} ml formula. Feeding mix: ${feeds.mix}.`;
 
+  const output = nappyOutputG(entry.nappy_weight_g, baby.nappy_base_weight_g);
+  const weightContext =
+    output !== null
+      ? `\n- The used nappy was weighed: ${entry.nappy_weight_g} g vs a ${baby.nappy_base_weight_g} g dry nappy — about ${output} g of contents (1 g ≈ 1 ml). ${output >= NAPPY_WET_THRESHOLD_G ? "So the nappy definitely contains output, whatever the photo shows." : "Very little output by weight."}`
+      : "";
+
   return `You are helping parents of a newborn track nappy contents. This is a TRACKING AID, not medical advice or diagnosis.
 
 Context for THIS baby:
 - Day of life at the time of this nappy: day ${day} (computed from the entry's own date, which may be in the past)
 - Birth weight: ${baby.birth_weight_g} g
 - The baby was supplemented with formula in hospital for dehydration and the family is transitioning toward full breastfeeding.
-- ${feedSummary}
+- ${feedSummary}${weightContext}
 
 Stool type depends on feeding, so judge against the matching pattern:
 - Breastfed / expressed breastmilk (EBM counts as breastfed): mustard-yellow, seedy, quite runny.
@@ -309,6 +317,13 @@ export async function POST(
   if (aiColour && !parentOverrode) {
     updates.stool_colour = aiColour;
     if (!entry.dirty) updates.dirty = true; // stool visible in the photo
+  }
+
+  // Weight-based wetness: the scales beat the photo for "wet".
+  const outputG = nappyOutputG(entry.nappy_weight_g, baby.nappy_base_weight_g);
+  const wetUpdates = updates as typeof updates & { wet?: boolean };
+  if (outputG !== null && outputG >= NAPPY_WET_THRESHOLD_G && !entry.wet) {
+    wetUpdates.wet = true;
   }
 
   // User client — RLS re-checks write permission.

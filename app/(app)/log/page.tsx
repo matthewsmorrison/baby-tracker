@@ -33,6 +33,7 @@ export default async function LogPage({
       birthAt={ctx.baby.birth_at}
       entries={entries}
       editId={edit}
+      nappyBaseWeightG={ctx.baby.nappy_base_weight_g}
     />
   );
 }

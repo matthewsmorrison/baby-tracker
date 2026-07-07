@@ -13,12 +13,14 @@ export function LogClient({
   birthAt,
   entries,
   editId,
+  nappyBaseWeightG,
 }: {
   babyId: string;
   birthAt: string;
   entries: Entry[];
   /** Entry to open for editing straight away (e.g. arriving from History). */
   editId?: string;
+  nappyBaseWeightG?: number | null;
 }) {
   const [editing, setEditing] = useState<Entry | null>(
     () => entries.find((e) => e.id === editId) ?? null
@@ -75,7 +77,12 @@ export function LogClient({
       )}
 
       {tab === "nappy" && (
-        <NappyForm key={editing?.id ?? "new-nappy"} {...formProps} initial={editing ?? undefined} />
+        <NappyForm
+          key={editing?.id ?? "new-nappy"}
+          {...formProps}
+          initial={editing ?? undefined}
+          nappyBaseWeightG={nappyBaseWeightG}
+        />
       )}
       {tab === "feed" && (
         <FeedForm key={editing?.id ?? "new-feed"} {...formProps} initial={editing ?? undefined} />

@@ -77,6 +77,23 @@ export function EditBirthDetails({ baby }: { baby: Baby }) {
           required
         />
       </div>
+      <div>
+        <Label htmlFor="pnappy">Dry nappy weight (g)</Label>
+        <Input
+          id="pnappy"
+          name="nappy_base_weight_g"
+          type="number"
+          inputMode="numeric"
+          defaultValue={baby.nappy_base_weight_g ?? ""}
+          min={5}
+          max={200}
+          placeholder="weigh a clean nappy, e.g. 28"
+        />
+        <p className="mt-1 text-xs text-faint">
+          With this set, weighing a used nappy in Log tells the app how much
+          wee is in it (1 g ≈ 1 ml) and marks it wet automatically.
+        </p>
+      </div>
       {error && <p className="text-sm text-alert">{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" size="sm" disabled={pending}>

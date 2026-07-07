@@ -18,6 +18,7 @@ function CalendarGrid({
   photoUrls,
   canEdit,
   onPhotoClick,
+  nappyBaseWeightG,
 }: {
   entries: Entry[];
   birthAt: string;
@@ -25,6 +26,7 @@ function CalendarGrid({
   photoUrls: Record<string, string>;
   canEdit: boolean;
   onPhotoClick: (url: string) => void;
+  nappyBaseWeightG?: number | null;
 }) {
   const [month, setMonth] = useState(() => {
     const now = new Date();
@@ -225,6 +227,7 @@ function CalendarGrid({
                     birthWeightG={birthWeightG}
                     canEdit={canEdit}
                     onPhotoClick={onPhotoClick}
+                    nappyBaseWeightG={nappyBaseWeightG}
                   />
                 ))}
               </ul>
@@ -242,6 +245,7 @@ export function CalendarClient(props: {
   birthWeightG: number;
   photoUrls: Record<string, string>;
   canEdit: boolean;
+  nappyBaseWeightG?: number | null;
 }) {
   const [lightbox, setLightbox] = useState<string | null>(null);
   return (

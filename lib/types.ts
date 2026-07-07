@@ -34,6 +34,7 @@ export interface Baby {
   name: string;
   birth_at: string;
   birth_weight_g: number;
+  nappy_base_weight_g: number | null; // weight of a clean, dry nappy
   created_by: string;
   created_at: string;
 }
@@ -97,6 +98,7 @@ export interface Entry {
   wet: boolean | null;
   dirty: boolean | null;
   stool_colour: StoolColourKey | null;
+  nappy_weight_g: number | null; // weight of the used nappy
 
   feed_type: FeedType | null;
   left_min: number | null;

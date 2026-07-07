@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   STOOL_COLOURS,
+  nappyOutputG,
   summariseFeeds,
   weightStatus,
 } from "@/lib/clinical";
@@ -46,16 +47,19 @@ export function EntryRow({
   birthWeightG,
   canEdit,
   onPhotoClick,
+  nappyBaseWeightG,
 }: {
   entry: Entry;
   photoUrl?: string;
   birthWeightG: number;
   canEdit: boolean;
   onPhotoClick: (url: string) => void;
+  nappyBaseWeightG?: number | null;
 }) {
   const [open, setOpen] = useState(false);
   const expandable =
-    (entry.type === "nappy" && (entry.stool_colour || entry.ai || photoUrl)) ||
+    (entry.type === "nappy" &&
+      (entry.stool_colour || entry.ai || photoUrl || entry.nappy_weight_g)) ||
     (entry.type === "feed" && (entry.feed_notes || entry.ended_at)) ||
     entry.type === "weight";
   const ws =
@@ -103,6 +107,7 @@ export function EntryRow({
           <p className="text-xs text-muted">
             {formatTime(entry.occurred_at)}
             {entry.ended_at && ` – ${formatTime(entry.ended_at)}`}
+            {entry.nappy_weight_g && ` · ${entry.nappy_weight_g} g`}
           </p>
           {entry.ai?.action && !open && (
             <div className="mt-1.5">
@@ -158,6 +163,18 @@ export function EntryRow({
                 );
               })}
             </div>
+          )}
+          {entry.type === "nappy" && entry.nappy_weight_g && (
+            <p className="text-sm">
+              <span className="font-medium">Nappy weight:</span>{" "}
+              {entry.nappy_weight_g} g
+              {(() => {
+                const out = nappyOutputG(entry.nappy_weight_g, nappyBaseWeightG);
+                return out !== null
+                  ? ` — ≈ ${out} g of output vs the dry nappy`
+                  : "";
+              })()}
+            </p>
           )}
           {entry.type === "nappy" && entry.stool_colour && (
             <div className="flex items-center gap-2 text-sm">

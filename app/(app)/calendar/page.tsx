@@ -26,6 +26,7 @@ export default async function CalendarPage() {
       birthWeightG={ctx.baby.birth_weight_g}
       photoUrls={photoUrls}
       canEdit={ctx.canEdit}
+      nappyBaseWeightG={ctx.baby.nappy_base_weight_g}
     />
   );
 }

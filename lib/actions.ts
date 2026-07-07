@@ -175,6 +175,10 @@ export async function updateBirthDetails(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const birthAt = String(formData.get("birth_at") ?? "");
   const weight = parseInt(String(formData.get("birth_weight_g") ?? ""), 10);
+  const nappyBase = parseInt(
+    String(formData.get("nappy_base_weight_g") ?? ""),
+    10
+  );
 
   if (!name || !birthAt || !Number.isFinite(weight) || weight <= 0) {
     throw new Error("Please fill in name, birth date/time and birth weight.");
@@ -187,6 +191,8 @@ export async function updateBirthDetails(formData: FormData) {
       name,
       birth_at: new Date(birthAt).toISOString(),
       birth_weight_g: weight,
+      nappy_base_weight_g:
+        Number.isFinite(nappyBase) && nappyBase > 0 ? nappyBase : null,
     })
     .eq("id", babyId);
   if (error) throw new Error(error.message);

@@ -13,6 +13,7 @@ function Timeline({
   photoUrls,
   canEdit,
   onPhotoClick,
+  nappyBaseWeightG,
 }: {
   entries: Entry[];
   birthAt: string;
@@ -20,6 +21,7 @@ function Timeline({
   photoUrls: Record<string, string>;
   canEdit: boolean;
   onPhotoClick: (url: string) => void;
+  nappyBaseWeightG?: number | null;
 }) {
   const groups = new Map<number, Entry[]>();
   for (const e of entries) {
@@ -49,6 +51,7 @@ function Timeline({
                     birthWeightG={birthWeightG}
                     canEdit={canEdit}
                     onPhotoClick={onPhotoClick}
+                    nappyBaseWeightG={nappyBaseWeightG}
                   />
                 ))}
               </ul>
@@ -66,12 +69,14 @@ export function HistoryClient({
   birthWeightG,
   photoUrls,
   canEdit,
+  nappyBaseWeightG,
 }: {
   entries: Entry[];
   birthAt: string;
   birthWeightG: number;
   photoUrls: Record<string, string>;
   canEdit: boolean;
+  nappyBaseWeightG?: number | null;
 }) {
   const [lightbox, setLightbox] = useState<string | null>(null);
 
@@ -96,6 +101,7 @@ export function HistoryClient({
         photoUrls={photoUrls}
         canEdit={canEdit}
         onPhotoClick={setLightbox}
+        nappyBaseWeightG={nappyBaseWeightG}
       />
       <p className="px-2 pb-2 text-center text-xs text-faint">{DISCLAIMER}</p>
       <PhotoLightbox url={lightbox} onClose={() => setLightbox(null)} />
