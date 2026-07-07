@@ -331,17 +331,29 @@ export async function POST(
   const updates: { ai: AiAnalysis; stool_colour?: string; dirty?: boolean } = {
     ai,
   };
-  const parentOverrode =
+  // The AI fills in wet/dirty only on the FIRST analysis of an entry. Once
+  // an analysis has run, the parents have seen the result — a false value
+  // after that is a deliberate correction and is never overwritten.
+  const firstAnalysis = !entry.ai;
+  const parentOverrodeColour =
     entry.stool_colour && entry.stool_colour !== prevAiColour;
-  if (aiColour && !parentOverrode) {
+  const parentSaysNotDirty = !entry.dirty && !firstAnalysis;
+
+  if (aiColour && !parentOverrodeColour && !parentSaysNotDirty) {
     updates.stool_colour = aiColour;
     if (!entry.dirty) updates.dirty = true; // stool visible in the photo
   }
 
-  // Weight-based wetness: the scales beat the photo for "wet".
+  // Weight-based wetness: the scales beat the photo for "wet" — but only
+  // the first time; an unticked "wet" after analysis is the parent's call.
   const outputG = nappyOutputG(entry.nappy_weight_g, baby.nappy_base_weight_g);
   const wetUpdates = updates as typeof updates & { wet?: boolean };
-  if (outputG !== null && outputG >= NAPPY_WET_THRESHOLD_G && !entry.wet) {
+  if (
+    firstAnalysis &&
+    outputG !== null &&
+    outputG >= NAPPY_WET_THRESHOLD_G &&
+    !entry.wet
+  ) {
     wetUpdates.wet = true;
   }
 
@@ -358,5 +370,6 @@ export async function POST(
     ai,
     stool_colour: updates.stool_colour ?? entry.stool_colour ?? null,
     dirty: updates.dirty ?? entry.dirty,
+    wet: wetUpdates.wet ?? entry.wet,
   });
 }

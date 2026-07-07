@@ -265,11 +265,13 @@ export function NappyForm({
             ai: AiAnalysis;
             stool_colour: StoolColourKey | null;
             dirty: boolean;
+            wet: boolean;
           };
           setAi(json.ai);
           // Reflect the AI's labelling so the chips show it and the parent
           // can correct it with a tap (parent choices are kept server-side).
           if (json.dirty && !dirty) setDirty(true);
+          if (json.wet && !wet) setWet(true);
           if (json.stool_colour && colourSource !== "user") {
             setColour(json.stool_colour);
             setColourSource("ai");
