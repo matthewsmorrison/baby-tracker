@@ -63,7 +63,9 @@ export function NappyForm({
   const [savedId, setSavedId] = useState<string | null>(null);
   const [note, setNote] = useState(initial?.note ?? "");
   const [photo, setPhoto] = useState<File | null>(null);
-  const [timeFromPhoto, setTimeFromPhoto] = useState(false);
+  const [timeFromPhoto, setTimeFromPhoto] = useState<"exif" | "file" | null>(
+    null
+  );
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ai, setAi] = useState<AiAnalysis | null>(initial?.ai ?? null);
@@ -81,12 +83,18 @@ export function NappyForm({
   }, [occurredAt, birthAt, entries]);
 
   /**
-   * When a photo is chosen, read its EXIF timestamp (before compression
-   * strips it) and pre-fill the "When" picker — the parent can override.
+   * When a photo is chosen, work out when it was taken (before compression
+   * strips metadata) and pre-fill the "When" picker — the parent can override.
+   *
+   * EXIF datetimes are timezone-naive wall-clock strings, so we parse the raw
+   * string ourselves as local time rather than trusting any library
+   * conversion. When there's no EXIF at all (iOS/macOS often strip it while
+   * transcoding HEIC library picks), fall back to the file's lastModified,
+   * which survives transcoding and is the capture time for library photos.
    */
   async function handlePhoto(file: File | null) {
     setPhoto(file);
-    setTimeFromPhoto(false);
+    setTimeFromPhoto(null);
     if (!file) return;
     // With a photo, Claude labels the colour — drop the auto-suggestion so
     // the analysis can fill it in (a parent's own tap is kept).
@@ -94,22 +102,46 @@ export function NappyForm({
       setColour(null);
       setColourSource(null);
     }
+
+    const plausible = (d: Date | null): d is Date =>
+      !!d &&
+      !isNaN(d.getTime()) &&
+      d.getTime() <= Date.now() + 60_000 &&
+      d.getFullYear() > 2000;
+
+    let taken: Date | null = null;
+    let source: "exif" | "file" | null = null;
     try {
-      const exif = await exifr.parse(file, {
-        pick: ["DateTimeOriginal", "CreateDate"],
+      const tags = await exifr.parse(file, {
+        pick: ["DateTimeOriginal", "CreateDate", "ModifyDate"],
+        reviveValues: false,
       });
-      const taken: unknown = exif?.DateTimeOriginal ?? exif?.CreateDate;
-      if (
-        taken instanceof Date &&
-        !isNaN(taken.getTime()) &&
-        taken.getTime() <= Date.now() + 60_000 &&
-        taken.getFullYear() > 2000
-      ) {
-        setOccurredAt(toLocalInputValue(taken));
-        setTimeFromPhoto(true);
+      const raw: unknown =
+        tags?.DateTimeOriginal ?? tags?.CreateDate ?? tags?.ModifyDate;
+      if (typeof raw === "string") {
+        // "2026:07:06 15:20:00" (or ISO-ish) → local wall-clock time
+        const m = raw.match(
+          /^(\d{4})[:-](\d{2})[:-](\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/
+        );
+        if (m) {
+          taken = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] ?? 0));
+          source = "exif";
+        }
+      } else if (raw instanceof Date) {
+        taken = raw;
+        source = "exif";
       }
     } catch {
-      // No usable EXIF — keep whatever the picker already shows.
+      // Unreadable metadata — fall through to the file timestamp.
+    }
+
+    if (!plausible(taken)) {
+      taken = new Date(file.lastModified);
+      source = "file";
+    }
+    if (plausible(taken)) {
+      setOccurredAt(toLocalInputValue(taken));
+      setTimeFromPhoto(source);
     }
   }
 
@@ -237,7 +269,7 @@ export function NappyForm({
     setColourSource(null);
     setNote("");
     setPhoto(null);
-    setTimeFromPhoto(false);
+    setTimeFromPhoto(null);
     setAi(null);
     setSavedId(null);
     setOccurredAt(toLocalInputValue(new Date()));
@@ -349,7 +381,7 @@ export function NappyForm({
               aria-label="Remove photo"
               onClick={() => {
                 setPhoto(null);
-                setTimeFromPhoto(false);
+                setTimeFromPhoto(null);
                 if (cameraRef.current) cameraRef.current.value = "";
                 if (libraryRef.current) libraryRef.current.value = "";
               }}
@@ -394,12 +426,14 @@ export function NappyForm({
           value={occurredAt}
           onChange={(v) => {
             setOccurredAt(v);
-            setTimeFromPhoto(false);
+            setTimeFromPhoto(null);
           }}
         />
         {timeFromPhoto && (
           <p className="mt-1.5 rounded-2xl bg-accent-soft px-3.5 py-2 text-xs font-medium">
-            Time set from the photo — adjust above if that’s not right.
+            {timeFromPhoto === "exif"
+              ? "Time set from the photo — adjust above if that’s not right."
+              : "Time estimated from the photo’s file date — worth double-checking."}
           </p>
         )}
       </div>
@@ -419,7 +453,7 @@ export function NappyForm({
           onCapture={(file) => {
             // Live capture = taken right now; leave the "When" picker alone.
             setPhoto(file);
-            setTimeFromPhoto(false);
+            setTimeFromPhoto(null);
             setCameraOpen(false);
           }}
           onCancel={() => setCameraOpen(false)}
