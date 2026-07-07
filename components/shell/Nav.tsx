@@ -9,6 +9,7 @@ import {
   UserRound,
   ChartColumn,
   CalendarDays,
+  Sparkles,
 } from "lucide-react";
 
 const items = [
@@ -17,6 +18,8 @@ const items = [
   { href: "/log", label: "Log", icon: PenLine, input: true },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/history", label: "History", icon: Clock },
+  // Mobile reaches Ask via the header sparkle — 6 bottom slots is the max.
+  { href: "/chat", label: "Ask", icon: Sparkles, sideOnly: true },
   { href: "/profile", label: "Profile", icon: UserRound },
 ];
 
@@ -28,7 +31,9 @@ export function Nav({
   orientation: "side" | "bottom";
 }) {
   const pathname = usePathname();
-  const visible = items.filter((i) => canEdit || !i.input);
+  const visible = items.filter(
+    (i) => (canEdit || !i.input) && (orientation === "side" || !i.sideOnly)
+  );
 
   if (orientation === "side") {
     return (

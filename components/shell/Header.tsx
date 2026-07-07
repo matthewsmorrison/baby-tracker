@@ -1,6 +1,7 @@
 "use client";
 
-import { Flame, ChevronDown, Eye } from "lucide-react";
+import Link from "next/link";
+import { Flame, ChevronDown, Eye, Sparkles } from "lucide-react";
 import { setActiveBaby } from "@/lib/actions";
 import type { MemberRole } from "@/lib/types";
 
@@ -65,7 +66,18 @@ export function Header({
           </p>
         </div>
       </div>
-      {switcher}
+      <div className="flex items-center gap-2">
+        {compact && (
+          <Link
+            href="/chat"
+            aria-label="Ask about the data"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-surface text-accent"
+          >
+            <Sparkles className="h-4 w-4" />
+          </Link>
+        )}
+        {switcher}
+      </div>
     </div>
   );
 }
