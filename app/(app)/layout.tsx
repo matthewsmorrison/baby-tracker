@@ -2,6 +2,7 @@ import { getBabyContext } from "@/lib/data";
 import { dayOfLife } from "@/lib/clinical";
 import { Nav } from "@/components/shell/Nav";
 import { Header } from "@/components/shell/Header";
+import { TimerIndicator } from "@/components/log/TimerIndicator";
 
 export default async function AppLayout({
   children,
@@ -53,6 +54,8 @@ export default async function AppLayout({
       <div className="md:hidden fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 backdrop-blur pb-[env(safe-area-inset-bottom)]">
         <Nav canEdit={ctx.canEdit} orientation="bottom" />
       </div>
+
+      {ctx.canEdit && <TimerIndicator babyId={ctx.baby.id} />}
     </div>
   );
 }

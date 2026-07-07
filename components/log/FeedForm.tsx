@@ -204,6 +204,7 @@ export function FeedForm({
     feedStartIso: string | null; // when the first side was started
   }
   const timerKey = `hearth-feed-timer-${babyId}`;
+  const draftKey = `hearth-feed-draft-${babyId}`;
   const [timer, setTimer] = useState<TimerState>({
     side: null,
     startTs: null,
@@ -219,6 +220,24 @@ export function FeedForm({
     restored.current = true;
     // Deferred so state updates happen from a callback, not the effect body.
     const id = window.setTimeout(() => {
+      try {
+        // Restore any unsaved form draft first (amounts, notes, times)…
+        const draftRaw = localStorage.getItem(draftKey);
+        if (draftRaw) {
+          const d = JSON.parse(draftRaw);
+          if (d.ts && Date.now() - d.ts < 12 * 60 * 60 * 1000) {
+            if (d.amounts) setAmounts((a) => ({ ...a, ...d.amounts }));
+            if (d.rowNotes) setRowNotes((r) => ({ ...r, ...d.rowNotes }));
+            if (d.note) setNote(d.note);
+            if (d.endedAt) setEndedAt(d.endedAt);
+            if (d.occurredAt) setOccurredAt(d.occurredAt);
+          } else {
+            localStorage.removeItem(draftKey);
+          }
+        }
+      } catch {
+        // corrupt draft — ignore
+      }
       try {
       const raw = localStorage.getItem(timerKey);
       if (!raw) return;
@@ -242,7 +261,31 @@ export function FeedForm({
       }
     }, 0);
     return () => clearTimeout(id);
-  }, [initial, timerKey]);
+  }, [initial, timerKey, draftKey]);
+
+  // Keep the whole unsaved draft on the device so navigating away or a
+  // reload never loses what was typed (the stopwatch is stored separately).
+  useEffect(() => {
+    if (initial) return;
+    const id = window.setTimeout(() => {
+      const hasContent =
+        Object.values(amounts).some(Boolean) ||
+        Object.values(rowNotes).some(Boolean) ||
+        note ||
+        endedAt;
+      try {
+        if (hasContent)
+          localStorage.setItem(
+            draftKey,
+            JSON.stringify({ ts: Date.now(), amounts, rowNotes, note, endedAt, occurredAt })
+          );
+        else localStorage.removeItem(draftKey);
+      } catch {
+        // storage unavailable — nothing to do
+      }
+    }, 400);
+    return () => clearTimeout(id);
+  }, [amounts, rowNotes, note, endedAt, occurredAt, initial, draftKey]);
 
   useEffect(() => {
     if (!timer.side) return;
@@ -404,6 +447,7 @@ export function FeedForm({
       setTimer({ side: null, startTs: null, acc: { left: 0, right: 0 }, feedStartIso: null });
       try {
         localStorage.removeItem(timerKey);
+        localStorage.removeItem(draftKey);
       } catch {}
       onDone();
     } catch (e) {
