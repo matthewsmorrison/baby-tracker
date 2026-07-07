@@ -13,7 +13,7 @@ import type { AiAnalysis, AnalysisAction, Baby, Entry } from "@/lib/types";
 // Server-only: reads the private photo with the service role and calls the
 // Anthropic API. The key never reaches the client.
 
-const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5";
+const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5";
 
 const ANALYSIS_SCHEMA = {
   type: "object",
@@ -21,6 +21,7 @@ const ANALYSIS_SCHEMA = {
   required: [
     "visibleContents",
     "colour",
+    "colourKey",
     "consistency",
     "feedTypeLikely",
     "matchesExpected",
@@ -32,6 +33,22 @@ const ANALYSIS_SCHEMA = {
   properties: {
     visibleContents: { type: "string", enum: ["poo", "wee", "both", "unclear"] },
     colour: { type: "string" },
+    colourKey: {
+      type: "string",
+      enum: [
+        "meconium",
+        "transitional",
+        "yellow",
+        "tan",
+        "brown",
+        "green",
+        "pale",
+        "blood",
+        "unclear",
+      ],
+      description:
+        "The single best-matching stool colour category, or 'unclear' if no stool is clearly visible",
+    },
     consistency: { type: "string" },
     feedTypeLikely: {
       type: "string",
@@ -113,6 +130,17 @@ Stool type depends on feeding, so judge against the matching pattern:
 - Expected for this baby today: ${expected}
 
 Analyse the photo of the nappy.
+
+For colourKey, classify the stool into exactly ONE of:
+- meconium: black to very dark green, tarry/sticky
+- transitional: green-brown, changing stool of days 3-4
+- yellow: mustard yellow, typical breastfed
+- tan: tan/light brown, typical formula or mixed feeding
+- brown: mid-to-dark brown, typical formula
+- green: distinctly green
+- pale: pale, white, chalky, clay or grey (RED FLAG)
+- blood: visible red blood or black tarry stool after day 4 (RED FLAG)
+- unclear: no stool clearly visible in the photo
 
 HARD RULES:
 - NEVER give an all-clear that could delay care. If anything is ambiguous, err toward advising the parents to ask a professional.
@@ -256,14 +284,45 @@ export async function POST(
   ai.analysedAt = new Date().toISOString();
   ai.model = MODEL;
 
-  // 4. Persist on the entry (user client — RLS re-checks write permission).
+  // 4. Persist. The AI labels the stool colour, but a parent's manual
+  // correction always wins: only write colourKey when the entry has no colour
+  // yet, or when the current colour is the AI's own previous label.
+  const VALID_COLOURS = [
+    "meconium",
+    "transitional",
+    "yellow",
+    "tan",
+    "brown",
+    "green",
+    "pale",
+    "blood",
+  ];
+  const prevAiColour = (entry.ai as AiAnalysis | null)?.colourKey;
+  const aiColour =
+    ai.colourKey && VALID_COLOURS.includes(ai.colourKey) ? ai.colourKey : null;
+
+  const updates: { ai: AiAnalysis; stool_colour?: string; dirty?: boolean } = {
+    ai,
+  };
+  const parentOverrode =
+    entry.stool_colour && entry.stool_colour !== prevAiColour;
+  if (aiColour && !parentOverrode) {
+    updates.stool_colour = aiColour;
+    if (!entry.dirty) updates.dirty = true; // stool visible in the photo
+  }
+
+  // User client — RLS re-checks write permission.
   const { error: updateError } = await supabase
     .from("entries")
-    .update({ ai })
+    .update(updates)
     .eq("id", id);
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ai });
+  return NextResponse.json({
+    ai,
+    stool_colour: updates.stool_colour ?? entry.stool_colour ?? null,
+    dirty: updates.dirty ?? entry.dirty,
+  });
 }

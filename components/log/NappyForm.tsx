@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import exifr from "exifr";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image";
 import { fromLocalInputValue, toLocalInputValue } from "@/lib/dates";
@@ -17,8 +18,9 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Label } from "@/components/ui/Field";
 import { OccurredAtField } from "./OccurredAtField";
+import { CameraCapture } from "./CameraCapture";
 import { AiVerdict } from "@/components/output/AiVerdict";
-import { Camera, Droplets, X } from "lucide-react";
+import { Camera, Droplets, Image as ImageIcon, X } from "lucide-react";
 
 const COLOUR_KEYS = Object.keys(STOOL_COLOURS) as StoolColourKey[];
 
@@ -46,12 +48,28 @@ export function NappyForm({
   const [colour, setColour] = useState<StoolColourKey | null>(
     initial?.stool_colour ?? null
   );
+  // Who picked the colour: the day/mix suggestion, the parent, or Claude.
+  // Parent choices are never overwritten by analysis.
+  const [colourSource, setColourSource] = useState<
+    "auto" | "user" | "ai" | null
+  >(
+    initial?.stool_colour
+      ? initial.ai?.colourKey === initial.stool_colour
+        ? "ai"
+        : "user"
+      : null
+  );
+  // After the first save of a new entry, further saves update it in place.
+  const [savedId, setSavedId] = useState<string | null>(null);
   const [note, setNote] = useState(initial?.note ?? "");
   const [photo, setPhoto] = useState<File | null>(null);
+  const [timeFromPhoto, setTimeFromPhoto] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ai, setAi] = useState<AiAnalysis | null>(initial?.ai ?? null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const libraryRef = useRef<HTMLInputElement>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   // The colour to suggest for this occurred_at: day of life + feeding mix
   // over the 24h BEFORE the entry (backdating-correct).
@@ -62,16 +80,56 @@ export function NappyForm({
     return expectedColourKey(day, mix);
   }, [occurredAt, birthAt, entries]);
 
+  /**
+   * When a photo is chosen, read its EXIF timestamp (before compression
+   * strips it) and pre-fill the "When" picker — the parent can override.
+   */
+  async function handlePhoto(file: File | null) {
+    setPhoto(file);
+    setTimeFromPhoto(false);
+    if (!file) return;
+    // With a photo, Claude labels the colour — drop the auto-suggestion so
+    // the analysis can fill it in (a parent's own tap is kept).
+    if (colourSource === "auto") {
+      setColour(null);
+      setColourSource(null);
+    }
+    try {
+      const exif = await exifr.parse(file, {
+        pick: ["DateTimeOriginal", "CreateDate"],
+      });
+      const taken: unknown = exif?.DateTimeOriginal ?? exif?.CreateDate;
+      if (
+        taken instanceof Date &&
+        !isNaN(taken.getTime()) &&
+        taken.getTime() <= Date.now() + 60_000 &&
+        taken.getFullYear() > 2000
+      ) {
+        setOccurredAt(toLocalInputValue(taken));
+        setTimeFromPhoto(true);
+      }
+    } catch {
+      // No usable EXIF — keep whatever the picker already shows.
+    }
+  }
+
   function toggleDirty() {
     const next = !dirty;
     setDirty(next);
-    if (next && !colour) setColour(suggestedColour);
-    if (!next) setColour(null);
+    if (next && !colour && !photo) {
+      // No photo to analyse — pre-select the expected colour as a starting point.
+      setColour(suggestedColour);
+      setColourSource("auto");
+    }
+    if (!next) {
+      setColour(null);
+      setColourSource(null);
+    }
   }
 
   async function save() {
-    if (!wet && !dirty) {
-      setError("Tick wet, dirty, or both.");
+    if (!wet && !dirty && !photo) {
+      setError("Tick wet, dirty, or both — or add a photo and Claude will label it.");
       return;
     }
     setError(null);
@@ -89,7 +147,7 @@ export function NappyForm({
         note: note.trim() || null,
       };
 
-      let entryId = initial?.id;
+      let entryId = initial?.id ?? savedId ?? undefined;
       if (entryId) {
         const { error } = await supabase
           .from("entries")
@@ -107,6 +165,7 @@ export function NappyForm({
           .single();
         if (error) throw new Error(error.message);
         entryId = data.id;
+        setSavedId(data.id);
       }
 
       let hasNewPhoto = false;
@@ -134,8 +193,19 @@ export function NappyForm({
           method: "POST",
         });
         if (res.ok) {
-          const json = (await res.json()) as { ai: AiAnalysis };
+          const json = (await res.json()) as {
+            ai: AiAnalysis;
+            stool_colour: StoolColourKey | null;
+            dirty: boolean;
+          };
           setAi(json.ai);
+          // Reflect the AI's labelling so the chips show it and the parent
+          // can correct it with a tap (parent choices are kept server-side).
+          if (json.dirty && !dirty) setDirty(true);
+          if (json.stool_colour && colourSource !== "user") {
+            setColour(json.stool_colour);
+            setColourSource("ai");
+          }
         } else if (hasNewPhoto) {
           const body = await res.json().catch(() => null);
           setError(
@@ -164,9 +234,12 @@ export function NappyForm({
     setWet(false);
     setDirty(false);
     setColour(null);
+    setColourSource(null);
     setNote("");
     setPhoto(null);
+    setTimeFromPhoto(false);
     setAi(null);
+    setSavedId(null);
     setOccurredAt(toLocalInputValue(new Date()));
   }
 
@@ -203,7 +276,10 @@ export function NappyForm({
                 <button
                   key={key}
                   type="button"
-                  onClick={() => setColour(key)}
+                  onClick={() => {
+                    setColour(key);
+                    setColourSource("user");
+                  }}
                   className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
                     active
                       ? "border-ink bg-ink text-white"
@@ -219,9 +295,21 @@ export function NappyForm({
               );
             })}
           </div>
-          {colour === suggestedColour && (
+          {colourSource === "auto" && (
             <p className="mt-1.5 text-xs text-faint">
               Suggested for this day &amp; feeding mix.
+            </p>
+          )}
+          {colourSource === "ai" && (
+            <p className="mt-1.5 text-xs text-faint">
+              Identified by Claude from the photo — tap another chip if that
+              doesn’t look right.
+            </p>
+          )}
+          {!colour && photo && (
+            <p className="mt-1.5 text-xs text-faint">
+              Claude will identify the colour from the photo when you save —
+              you can correct it afterwards.
             </p>
           )}
           {warnColour && (
@@ -236,23 +324,34 @@ export function NappyForm({
 
       <div>
         <Label>Photo (optional)</Label>
+        {/* Camera: opens the device camera directly (capture attribute). */}
         <input
-          ref={fileRef}
+          ref={cameraRef}
           type="file"
           accept="image/*"
           capture="environment"
           className="hidden"
-          onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
+          onChange={(e) => handlePhoto(e.target.files?.[0] ?? null)}
+        />
+        {/* Library: no capture attribute, so this opens the photo picker. */}
+        <input
+          ref={libraryRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => handlePhoto(e.target.files?.[0] ?? null)}
         />
         {photo ? (
           <div className="flex items-center justify-between rounded-2xl border border-line bg-surface-alt px-4 py-3 text-sm">
-            <span className="truncate">{photo.name}</span>
+            <span className="truncate">{photo.name || "Camera photo"}</span>
             <button
               type="button"
               aria-label="Remove photo"
               onClick={() => {
                 setPhoto(null);
-                if (fileRef.current) fileRef.current.value = "";
+                setTimeFromPhoto(false);
+                if (cameraRef.current) cameraRef.current.value = "";
+                if (libraryRef.current) libraryRef.current.value = "";
               }}
               className="text-muted hover:text-ink"
             >
@@ -260,15 +359,28 @@ export function NappyForm({
             </button>
           </div>
         ) : (
-          <Button
-            type="button"
-            variant="secondary"
-            className="w-full"
-            onClick={() => fileRef.current?.click()}
-          >
-            <Camera className="h-4 w-4" />
-            {initial?.photo_path ? "Replace photo" : "Add a photo for an AI check"}
-          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                if (typeof navigator.mediaDevices?.getUserMedia === "function")
+                  setCameraOpen(true);
+                else cameraRef.current?.click();
+              }}
+            >
+              <Camera className="h-4 w-4" />
+              Take photo
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => libraryRef.current?.click()}
+            >
+              <ImageIcon className="h-4 w-4" />
+              {initial?.photo_path ? "Replace photo" : "Upload"}
+            </Button>
+          </div>
         )}
         <p className="mt-1 text-xs text-faint">
           Claude checks colour &amp; consistency against this day of life and
@@ -277,7 +389,20 @@ export function NappyForm({
       </div>
 
       <NoteField note={note} setNote={setNote} />
-      <OccurredAtField value={occurredAt} onChange={setOccurredAt} />
+      <div>
+        <OccurredAtField
+          value={occurredAt}
+          onChange={(v) => {
+            setOccurredAt(v);
+            setTimeFromPhoto(false);
+          }}
+        />
+        {timeFromPhoto && (
+          <p className="mt-1.5 rounded-2xl bg-accent-soft px-3.5 py-2 text-xs font-medium">
+            Time set from the photo — adjust above if that’s not right.
+          </p>
+        )}
+      </div>
 
       {ai && <AiVerdict ai={ai} />}
 
@@ -288,6 +413,23 @@ export function NappyForm({
       <Button className="w-full" size="lg" onClick={save} disabled={!!busy}>
         {busy ?? (initial ? "Save changes" : "Save nappy")}
       </Button>
+
+      {cameraOpen && (
+        <CameraCapture
+          onCapture={(file) => {
+            // Live capture = taken right now; leave the "When" picker alone.
+            setPhoto(file);
+            setTimeFromPhoto(false);
+            setCameraOpen(false);
+          }}
+          onCancel={() => setCameraOpen(false)}
+          onUnavailable={() => {
+            // No camera permission/device — fall back to the native capture input.
+            setCameraOpen(false);
+            cameraRef.current?.click();
+          }}
+        />
+      )}
     </Card>
   );
 }

@@ -1,3 +1,4 @@
+import "server-only";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 // Secret-key client — bypasses RLS. Server-side only; used by the analyze

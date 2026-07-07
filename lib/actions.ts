@@ -38,7 +38,11 @@ export async function createBaby(formData: FormData) {
   if (error) throw new Error(error.message);
 
   const cookieStore = await cookies();
-  cookieStore.set(ACTIVE_BABY_COOKIE, babyId, { path: "/" });
+  cookieStore.set(ACTIVE_BABY_COOKIE, babyId, {
+    path: "/",
+    httpOnly: true,
+    sameSite: "lax",
+  });
   redirect("/today");
 }
 
@@ -83,13 +87,21 @@ export async function acceptInvite(token: string) {
     .eq("id", invite.id);
 
   const cookieStore = await cookies();
-  cookieStore.set(ACTIVE_BABY_COOKIE, invite.baby_id, { path: "/" });
+  cookieStore.set(ACTIVE_BABY_COOKIE, invite.baby_id, {
+    path: "/",
+    httpOnly: true,
+    sameSite: "lax",
+  });
   redirect("/today");
 }
 
 export async function setActiveBaby(babyId: string) {
   const cookieStore = await cookies();
-  cookieStore.set(ACTIVE_BABY_COOKIE, babyId, { path: "/" });
+  cookieStore.set(ACTIVE_BABY_COOKIE, babyId, {
+    path: "/",
+    httpOnly: true,
+    sameSite: "lax",
+  });
   revalidatePath("/", "layout");
 }
 

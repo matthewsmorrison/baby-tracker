@@ -60,6 +60,8 @@ export type AnalysisAction =
 export interface AiAnalysis {
   visibleContents: "poo" | "wee" | "both" | "unclear";
   colour: string;
+  /** AI's classification into the app's stool colour keys. */
+  colourKey?: StoolColourKey | "unclear";
   consistency: string;
   feedTypeLikely:
     | "more breastfed-type"
