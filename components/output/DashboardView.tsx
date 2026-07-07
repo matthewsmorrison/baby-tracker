@@ -12,7 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import { EXPECTED_FEEDS, dayOfLife, expectedWet, expectedDirty } from "@/lib/clinical";
-import { feedAmounts } from "@/lib/entryDisplay";
+import { feedAmounts, feedGaps } from "@/lib/entryDisplay";
 import type { Entry } from "@/lib/types";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { WeightChart } from "./WeightChart";
@@ -39,6 +39,9 @@ interface DayRow {
   formula: number;
   wet: number;
   dirty: number;
+  gapSumMs: number;
+  gapCount: number;
+  gapAvgH: number | null;
 }
 
 function dayKey(d: Date): string {
@@ -107,6 +110,9 @@ export function DashboardView({
         formula: 0,
         wet: 0,
         dirty: 0,
+        gapSumMs: 0,
+        gapCount: 0,
+        gapAvgH: null,
       });
     }
     for (const e of entries) {
@@ -122,6 +128,18 @@ export function DashboardView({
         if (e.wet) row.wet += 1;
         if (e.dirty) row.dirty += 1;
       }
+    }
+    // Time between feed starts, attributed to the day the later feed began.
+    for (const g of feedGaps(entries)) {
+      const row = byDay.get(dayKey(g.at));
+      if (!row) continue;
+      row.gapSumMs += g.gapMs;
+      row.gapCount += 1;
+    }
+    for (const row of byDay.values()) {
+      row.gapAvgH = row.gapCount
+        ? Math.round((row.gapSumMs / row.gapCount / 3600000) * 10) / 10
+        : null;
     }
     return [...byDay.values()];
   }, [entries, birthAt]);
@@ -171,6 +189,42 @@ export function DashboardView({
                 formatter={(v) => [`${v}`, "feeds"]}
               />
               <Bar dataKey="feeds" fill={C.blue} radius={[4, 4, 0, 0]} maxBarSize={22} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+
+      {/* Time between feeds */}
+      <Card className="p-5">
+        <CardTitle>Time between feeds</CardTitle>
+        <p className="mt-0.5 text-xs text-faint">
+          Average hours from one feed&apos;s start to the next; band = every 2–3h
+          (the 8–12 feeds/day norm)
+        </p>
+        <div className="mt-3 h-44">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={days} margin={{ top: 4, right: 4, bottom: 0, left: -22 }}>
+              <CartesianGrid vertical={false} stroke="var(--line)" />
+              <XAxis dataKey="label" {...axisProps} axisLine={{ stroke: "var(--line)" }} interval="preserveStartEnd" />
+              <YAxis {...axisProps} axisLine={false} unit="h" />
+              <ReferenceArea
+                y1={2}
+                y2={3}
+                fill="var(--positive-bg)"
+                fillOpacity={0.5}
+                stroke="none"
+              />
+              <Tooltip
+                cursor={{ fill: "var(--surface-alt)" }}
+                contentStyle={tooltipStyle}
+                labelFormatter={(_, p) =>
+                  p?.[0]
+                    ? `Day ${(p[0].payload as DayRow).dol} · ${(p[0].payload as DayRow).label}`
+                    : ""
+                }
+                formatter={(v) => [`${v} h`, "avg between feeds"]}
+              />
+              <Bar dataKey="gapAvgH" fill={C.blue} radius={[4, 4, 0, 0]} maxBarSize={22} />
             </BarChart>
           </ResponsiveContainer>
         </div>

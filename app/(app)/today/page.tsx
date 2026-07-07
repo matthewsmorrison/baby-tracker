@@ -15,10 +15,11 @@ import {
   summariseFeeds,
   weightStatus,
 } from "@/lib/clinical";
+import { feedGaps, formatGap, median } from "@/lib/entryDisplay";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
 import { KpiCard } from "@/components/output/KpiCard";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Clock } from "lucide-react";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -50,6 +51,18 @@ export default async function TodayPage() {
   const colourKey = expectedColourKey(day, feeds.mix);
   const colourText = expectedColour(day, feeds.mix);
 
+  // "Next feed due": last feed start + the median of the recent gaps.
+  const gaps = feedGaps(entries);
+  const recentGaps = gaps.slice(-6).map((g) => g.gapMs);
+  const lastFeedStart = entries
+    .filter((e) => e.type === "feed")
+    .map((e) => new Date(e.occurred_at).getTime())
+    .sort((a, b) => b - a)[0];
+  const typicalGap = recentGaps.length >= 2 ? median(recentGaps) : null;
+  const nextDue =
+    typicalGap && lastFeedStart ? new Date(lastFeedStart + typicalGap) : null;
+  const overdueMs = nextDue ? now.getTime() - nextDue.getTime() : 0;
+
   return (
     <div className="space-y-4 animate-rise">
       {/* Hero */}
@@ -72,6 +85,46 @@ export default async function TodayPage() {
           })}
         </p>
       </div>
+
+      {/* Next feed due */}
+      {nextDue && typicalGap && (
+        <Card className="flex items-center gap-4 p-5">
+          <span
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${
+              overdueMs > 0 ? "bg-accent-soft" : "bg-positive-bg"
+            }`}
+          >
+            <Clock
+              className={`h-5 w-5 ${
+                overdueMs > 0 ? "text-[#A45A1B]" : "text-positive"
+              }`}
+            />
+          </span>
+          <div className="min-w-0 flex-1">
+            <CardTitle>Next feed due</CardTitle>
+            <p className="stat-num text-2xl leading-tight">
+              ~
+              {nextDue.toLocaleTimeString(undefined, {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+              <span
+                className={`ml-2 text-sm font-medium ${
+                  overdueMs > 0 ? "text-[#A45A1B]" : "text-muted"
+                }`}
+              >
+                {overdueMs > 0
+                  ? `about now — ${formatGap(overdueMs)} past`
+                  : `in ${formatGap(-overdueMs)}`}
+              </span>
+            </p>
+            <p className="text-xs text-muted">
+              Feeds have been ~{formatGap(typicalGap)} apart lately. A guide,
+              not a schedule — feed on cues.
+            </p>
+          </div>
+        </Card>
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3">

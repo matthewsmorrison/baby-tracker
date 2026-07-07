@@ -2,11 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sun, PenLine, Clock, UserRound } from "lucide-react";
+import {
+  Sun,
+  PenLine,
+  Clock,
+  UserRound,
+  ChartColumn,
+  CalendarDays,
+} from "lucide-react";
 
 const items = [
   { href: "/today", label: "Today", icon: Sun },
+  { href: "/dashboard", label: "Charts", icon: ChartColumn },
   { href: "/log", label: "Log", icon: PenLine, input: true },
+  { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/history", label: "History", icon: Clock },
   { href: "/profile", label: "Profile", icon: UserRound },
 ];

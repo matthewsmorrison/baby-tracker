@@ -13,6 +13,33 @@ export function feedAmounts(e: Entry) {
   };
 }
 
+/** Consecutive gaps between feed STARTS (clinical convention), oldest→newest,
+ *  each gap attributed to the moment the later feed began. */
+export function feedGaps(entries: Entry[]): Array<{ at: Date; gapMs: number }> {
+  const starts = entries
+    .filter((e) => e.type === "feed")
+    .map((e) => new Date(e.occurred_at).getTime())
+    .sort((a, b) => a - b);
+  const gaps: Array<{ at: Date; gapMs: number }> = [];
+  for (let i = 1; i < starts.length; i++) {
+    gaps.push({ at: new Date(starts[i]), gapMs: starts[i] - starts[i - 1] });
+  }
+  return gaps;
+}
+
+export function formatGap(ms: number): string {
+  const min = Math.round(ms / 60000);
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return h ? `${h}h ${String(m).padStart(2, "0")}m` : `${m} min`;
+}
+
+export function median(nums: number[]): number {
+  const s = [...nums].sort((a, b) => a - b);
+  const mid = Math.floor(s.length / 2);
+  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+}
+
 export function entryLabel(e: Entry): string {
   if (e.type === "nappy") {
     const parts = [];
