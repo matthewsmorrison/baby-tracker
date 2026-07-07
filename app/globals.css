@@ -1,26 +1,93 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #ede9e1;
+  --bg-glow: #f6e3c6;
+  --surface: #ffffff;
+  --surface-alt: #faf8f3;
+  --ink: #1b1b1a;
+  --muted: #8c8677;
+  --faint: #b4ae9f;
+  --line: #e7e1d6;
+
+  --accent: #e9a23b;
+  --accent-soft: #f7e9cf;
+
+  --positive: #3c6b4e;
+  --positive-bg: #dee9de;
+  --positive-bar: #7fb08a;
+
+  --alert: #c0483b;
+  --alert-bg: #f6e0dc;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-bg-glow: var(--bg-glow);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-positive: var(--positive);
+  --color-positive-bg: var(--positive-bg);
+  --color-positive-bar: var(--positive-bar);
+  --color-alert: var(--alert);
+  --color-alert-bg: var(--alert-bg);
+
+  --font-sans: var(--font-schibsted), system-ui, sans-serif;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 30px rgba(0, 0, 0, 0.05);
+
+  --animate-rise: rise 0.4s ease-out both;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-schibsted), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Big stat numbers: bold, tight, tabular */
+.stat-num {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Visible keyboard focus */
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+input[type="datetime-local"] {
+  -webkit-appearance: none;
+  appearance: none;
 }

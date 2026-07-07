@@ -1,0 +1,269 @@
+import { NextResponse } from "next/server";
+import Anthropic from "@anthropic-ai/sdk";
+import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
+import {
+  dayOfLife,
+  expectedColour,
+  feedsBefore,
+  summariseFeeds,
+} from "@/lib/clinical";
+import type { AiAnalysis, AnalysisAction, Baby, Entry } from "@/lib/types";
+
+// Server-only: reads the private photo with the service role and calls the
+// Anthropic API. The key never reaches the client.
+
+const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5";
+
+const ANALYSIS_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "visibleContents",
+    "colour",
+    "consistency",
+    "feedTypeLikely",
+    "matchesExpected",
+    "assessment",
+    "redFlags",
+    "action",
+    "note",
+  ],
+  properties: {
+    visibleContents: { type: "string", enum: ["poo", "wee", "both", "unclear"] },
+    colour: { type: "string" },
+    consistency: { type: "string" },
+    feedTypeLikely: {
+      type: "string",
+      enum: ["more breastfed-type", "more formula-type", "mixed", "unclear"],
+    },
+    matchesExpected: { type: "string", enum: ["yes", "partly", "no", "unclear"] },
+    assessment: {
+      type: "string",
+      description: "1-2 sentences for this day AND feeding pattern",
+    },
+    redFlags: {
+      type: "array",
+      items: { type: "string" },
+      description:
+        "Only genuinely concerning findings: pale/white/chalky, blood, black tarry after day 4, meconium at day 5+",
+    },
+    action: {
+      type: "string",
+      enum: [
+        "log_and_continue",
+        "mention_at_next_check",
+        "contact_midwife_today",
+        "seek_urgent_advice",
+      ],
+    },
+    note: { type: "string", description: "one calm sentence for a tired parent" },
+  },
+} as const;
+
+const ACTION_RANK: Record<AnalysisAction, number> = {
+  log_and_continue: 0,
+  mention_at_next_check: 1,
+  contact_midwife_today: 2,
+  seek_urgent_advice: 3,
+};
+
+/**
+ * Server-side safety floor, independent of the model's judgement: pale/blood/
+ * late-meconium red flags can never come back with a reassuring action.
+ */
+function enforceSafety(ai: AiAnalysis): AiAnalysis {
+  const text = [ai.colour, ai.assessment, ...(ai.redFlags ?? [])]
+    .join(" ")
+    .toLowerCase();
+  let floor: AnalysisAction | null = null;
+  if (/(pale|white|chalky|acholic)/.test(text)) floor = "contact_midwife_today";
+  if (/(blood|bloody)/.test(text)) floor = "seek_urgent_advice";
+  if ((ai.redFlags?.length ?? 0) > 0 && !floor) floor = "contact_midwife_today";
+
+  if (floor && ACTION_RANK[ai.action] < ACTION_RANK[floor]) {
+    return { ...ai, action: floor };
+  }
+  return ai;
+}
+
+function buildPrompt(baby: Baby, entry: Entry, entries: Entry[]): string {
+  const day = dayOfLife(baby.birth_at, entry.occurred_at);
+  const feeds = summariseFeeds(feedsBefore(entries, entry.occurred_at));
+  const expected = expectedColour(day, feeds.mix);
+
+  const feedSummary =
+    feeds.sessions === 0
+      ? "No feeds logged in the 24h before this nappy."
+      : `In the 24h before this nappy: ${feeds.breastCount} breastfeeds (${feeds.breastMin} min total), ${feeds.expressedMl} ml expressed breastmilk, ${feeds.formulaMl} ml formula. Feeding mix: ${feeds.mix}.`;
+
+  return `You are helping parents of a newborn track nappy contents. This is a TRACKING AID, not medical advice or diagnosis.
+
+Context for THIS baby:
+- Day of life at the time of this nappy: day ${day} (computed from the entry's own date, which may be in the past)
+- Birth weight: ${baby.birth_weight_g} g
+- The baby was supplemented with formula in hospital for dehydration and the family is transitioning toward full breastfeeding.
+- ${feedSummary}
+
+Stool type depends on feeding, so judge against the matching pattern:
+- Breastfed / expressed breastmilk (EBM counts as breastfed): mustard-yellow, seedy, quite runny.
+- Formula: tan to brown, pasty (peanut-butter texture), stronger smelling.
+- Mixed feeding: anywhere in between; stools trending tan → yellow-seedy over days is a GOOD sign the transition to breastfeeding is progressing — note it when you see it.
+- Days 1-2: meconium (black-green, tarry) is normal regardless of feeding. Days 3-4: transitional green-brown.
+- Expected for this baby today: ${expected}
+
+Analyse the photo of the nappy.
+
+HARD RULES:
+- NEVER give an all-clear that could delay care. If anything is ambiguous, err toward advising the parents to ask a professional.
+- Pale/white/chalky stool, visible blood, black tarry stool after day 4, or meconium still appearing at day 5+ -> action MUST be "contact_midwife_today" or "seek_urgent_advice".
+- Do NOT flag normal formula-type tan/brown pasty stool as abnormal when the baby is having formula.
+- If the image is unclear or doesn't show stool, say what's needed (better light, wider shot) and use "log_and_continue" with matchesExpected "unclear".
+- Keep language calm and plain — the reader is a tired parent at 3am.`;
+}
+
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+
+  // 1. Auth + permission: the user session client is subject to RLS, so this
+  // read only succeeds for members; then confirm write permission.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  }
+
+  const { data: entry } = await supabase
+    .from("entries")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (!entry) {
+    return NextResponse.json({ error: "Entry not found" }, { status: 404 });
+  }
+
+  const { data: canEdit } = await supabase.rpc("can_edit_baby", {
+    bid: entry.baby_id,
+  });
+  if (!canEdit) {
+    return NextResponse.json({ error: "Read-only access" }, { status: 403 });
+  }
+  if (!entry.photo_path) {
+    return NextResponse.json({ error: "No photo on this entry" }, { status: 400 });
+  }
+
+  const { data: baby } = await supabase
+    .from("babies")
+    .select("*")
+    .eq("id", entry.baby_id)
+    .single();
+  if (!baby) {
+    return NextResponse.json({ error: "Baby not found" }, { status: 404 });
+  }
+
+  // Feeds for the mix window (24h before the entry's occurred_at).
+  const { data: feedEntries } = await supabase
+    .from("entries")
+    .select("*")
+    .eq("baby_id", entry.baby_id)
+    .eq("type", "feed");
+
+  // 2. Read the private photo with the service role.
+  const service = createServiceClient();
+  const { data: file, error: fileError } = await service.storage
+    .from("nappy-photos")
+    .download(entry.photo_path);
+  if (fileError || !file) {
+    return NextResponse.json({ error: "Could not read the photo" }, { status: 500 });
+  }
+  const imageBase64 = Buffer.from(await file.arrayBuffer()).toString("base64");
+  const mediaType = (file.type || "image/jpeg") as
+    | "image/jpeg"
+    | "image/png"
+    | "image/webp";
+
+  // 3. Call the Anthropic API with structured output.
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+  let response: Anthropic.Message;
+  try {
+    response = await anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 1024,
+      output_config: {
+        format: {
+          type: "json_schema",
+          schema: ANALYSIS_SCHEMA,
+        },
+      },
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: mediaType,
+                data: imageBase64,
+              },
+            },
+            {
+              type: "text",
+              text: buildPrompt(
+                baby as Baby,
+                entry as Entry,
+                (feedEntries ?? []) as Entry[]
+              ),
+            },
+          ],
+        },
+      ],
+    });
+  } catch (e) {
+    console.error("Anthropic analysis failed:", e instanceof Error ? e.message : e);
+    return NextResponse.json(
+      { error: "Analysis is unavailable right now — the entry was saved." },
+      { status: 502 }
+    );
+  }
+
+  if (response.stop_reason === "refusal" || response.content.length === 0) {
+    return NextResponse.json(
+      { error: "The photo couldn't be analysed — the entry was saved." },
+      { status: 502 }
+    );
+  }
+
+  const textBlock = response.content.find((b) => b.type === "text");
+  if (!textBlock || textBlock.type !== "text") {
+    return NextResponse.json({ error: "Unexpected model response" }, { status: 502 });
+  }
+
+  let ai: AiAnalysis;
+  try {
+    ai = JSON.parse(textBlock.text) as AiAnalysis;
+  } catch {
+    return NextResponse.json({ error: "Could not parse analysis" }, { status: 502 });
+  }
+
+  ai = enforceSafety(ai);
+  ai.analysedAt = new Date().toISOString();
+  ai.model = MODEL;
+
+  // 4. Persist on the entry (user client — RLS re-checks write permission).
+  const { error: updateError } = await supabase
+    .from("entries")
+    .update({ ai })
+    .eq("id", id);
+  if (updateError) {
+    return NextResponse.json({ error: updateError.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ai });
+}

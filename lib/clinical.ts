@@ -1,0 +1,248 @@
+// Clinical logic — the single source of truth for day-of-life norms, feeding
+// mix and weight bands, used by the output screens AND the AI analysis route.
+//
+// General newborn norms only — this module must not gain diagnostic
+// thresholds beyond what is here. The app is a tracking aid, not medical
+// advice.
+//
+// Everything is computed from an entry's occurred_at (never "now") so
+// backdated entries are always assessed against the correct day of life.
+
+import type { Entry, FeedMix, StoolColourKey } from "./types";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Day of life: the day of birth is day 1. Always pass the entry's occurred_at. */
+export function dayOfLife(birthAt: string | Date, occurredAt: string | Date): number {
+  const birth = new Date(birthAt).getTime();
+  const at = new Date(occurredAt).getTime();
+  return Math.max(1, Math.floor((at - birth) / DAY_MS) + 1);
+}
+
+/** Expected wet nappies in 24h for a day of life (roughly one per day of age until day 5+). */
+export function expectedWet(day: number): { min: number; label: string } {
+  if (day <= 1) return { min: 1, label: "1+" };
+  if (day === 2) return { min: 2, label: "2+" };
+  if (day === 3) return { min: 3, label: "3+" };
+  if (day === 4) return { min: 4, label: "4+" };
+  return { min: 6, label: "6+ heavy" };
+}
+
+/** Expected dirty nappies in 24h for a day of life. */
+export function expectedDirty(day: number): { min: number; label: string } {
+  if (day <= 1) return { min: 1, label: "1+ meconium" };
+  if (day === 2) return { min: 1, label: "1–2" };
+  if (day <= 4) return { min: 2, label: "2+ changing" };
+  return { min: 2, label: "2+ yellow" };
+}
+
+/** Expected feeds in 24h — general norm, all days. */
+export const EXPECTED_FEEDS = { min: 8, max: 12, label: "8–12" };
+
+export const STOOL_COLOURS: Record<
+  StoolColourKey,
+  { label: string; swatch: string; warn?: boolean }
+> = {
+  meconium: { label: "Meconium (black-green)", swatch: "#2E2E28" },
+  transitional: { label: "Transitional (green-brown)", swatch: "#6E5A34" },
+  yellow: { label: "Yellow (breastfed)", swatch: "#E3B44A" },
+  tan: { label: "Tan (formula/mixed)", swatch: "#BFA173" },
+  brown: { label: "Brown (formula)", swatch: "#7A5A3A" },
+  green: { label: "Green", swatch: "#5C7A3A" },
+  pale: { label: "Pale / chalky ⚠", swatch: "#ECE7D6", warn: true },
+  blood: { label: "Blood ⚠", swatch: "#9E3B32", warn: true },
+};
+
+/**
+ * The stool colour to expect for a day of life and feeding mix.
+ * Days 1–4 are meconium → transitional regardless of feeding; from day 5 the
+ * mix decides: breastfed/EBM = yellow seedy, formula = tan/brown pasty,
+ * mixed = in between (tan trending yellow as breastfeeding increases).
+ */
+export function expectedColourKey(day: number, mix: FeedMix): StoolColourKey {
+  if (day <= 2) return "meconium";
+  if (day <= 4) return "transitional";
+  if (mix === "formula") return "brown";
+  if (mix === "mixed") return "tan";
+  return "yellow"; // breast or unknown — default to the breastfed norm
+}
+
+export function expectedColour(day: number, mix: FeedMix): string {
+  if (day <= 2) return "Meconium — black-green, tarry and sticky";
+  if (day <= 4) return "Transitional — green-brown, looser as milk comes in";
+  if (mix === "formula")
+    return "Tan to brown, pasty (like peanut butter), stronger smelling — normal on formula";
+  if (mix === "mixed")
+    return "Anywhere from tan-pasty to yellow-seedy. Trending tan → yellow and seedier is a good sign breastfeeding is taking over";
+  return "Mustard yellow, seedy and quite runny — normal for breastmilk (including expressed)";
+}
+
+export interface FeedSummary {
+  breastCount: number;
+  breastMin: number;
+  formulaMl: number;
+  expressedMl: number;
+  sessions: number;
+  mix: FeedMix;
+}
+
+/**
+ * Summarise feed entries into counts and a feeding mix.
+ * Expressed breastmilk counts as BREAST — only formula shifts stool type.
+ * For per-entry context (AI analysis), pass the feeds from the 24h before
+ * that entry's occurred_at, not the last 24h of wall-clock time.
+ */
+export function summariseFeeds(entries: Entry[]): FeedSummary {
+  const feeds = entries.filter((e) => e.type === "feed");
+  let breastCount = 0;
+  let breastMin = 0;
+  let formulaMl = 0;
+  let expressedMl = 0;
+
+  for (const f of feeds) {
+    if (f.feed_type === "breast") {
+      breastCount += 1;
+      breastMin += (f.left_min ?? 0) + (f.right_min ?? 0);
+    } else if (f.feed_type === "formula") {
+      formulaMl += f.volume_ml ?? 0;
+    } else if (f.feed_type === "expressed") {
+      expressedMl += f.volume_ml ?? 0;
+    }
+  }
+
+  const hasBreast = breastCount > 0 || expressedMl > 0;
+  const hasFormula = formulaMl > 0;
+  const mix: FeedMix =
+    hasBreast && hasFormula
+      ? "mixed"
+      : hasFormula
+        ? "formula"
+        : hasBreast
+          ? "breast"
+          : "unknown";
+
+  return { breastCount, breastMin, formulaMl, expressedMl, sessions: feeds.length, mix };
+}
+
+/** Feeds within the 24h window ending at an entry's occurred_at — for backdating-correct mix. */
+export function feedsBefore(entries: Entry[], occurredAt: string | Date): Entry[] {
+  const end = new Date(occurredAt).getTime();
+  const start = end - DAY_MS;
+  return entries.filter((e) => {
+    if (e.type !== "feed") return false;
+    const t = new Date(e.occurred_at).getTime();
+    return t > start && t <= end;
+  });
+}
+
+/**
+ * Expected weight for a day of life, anchored to birth weight.
+ * Anchor shape (example birth 3800 g): day 3 ≈ 3625, nadir ≈ day 4 (~5% loss),
+ * back to birth weight by ~day 10, then +150–200 g/week. Band is ±40 g.
+ */
+const WEIGHT_ANCHORS: Array<[day: number, fractionOfBirth: number]> = [
+  [1, 1.0],
+  [2, 0.972],
+  [3, 0.954], // 3800 → ≈3625
+  [4, 0.948], // nadir
+  [5, 0.955],
+  [7, 0.975],
+  [10, 1.0], // back to birth weight
+];
+
+const WEEKLY_GAIN_G = 175; // midpoint of 150–200 g/week after day 10
+
+export function expectedWeightBand(
+  day: number,
+  birthWeightG: number
+): { low: number; mid: number; high: number } {
+  let mid: number;
+  if (day >= 10) {
+    mid = birthWeightG + ((day - 10) / 7) * WEEKLY_GAIN_G;
+  } else {
+    let lo = WEIGHT_ANCHORS[0];
+    let hi = WEIGHT_ANCHORS[WEIGHT_ANCHORS.length - 1];
+    for (let i = 0; i < WEIGHT_ANCHORS.length - 1; i++) {
+      if (day >= WEIGHT_ANCHORS[i][0] && day <= WEIGHT_ANCHORS[i + 1][0]) {
+        lo = WEIGHT_ANCHORS[i];
+        hi = WEIGHT_ANCHORS[i + 1];
+        break;
+      }
+    }
+    const span = hi[0] - lo[0] || 1;
+    const t = (day - lo[0]) / span;
+    mid = birthWeightG * (lo[1] + t * (hi[1] - lo[1]));
+  }
+  mid = Math.round(mid);
+  return { low: mid - 40, mid, high: mid + 40 };
+}
+
+/** Weight change vs birth, with the 7% / 10% loss thresholds. */
+export function weightStatus(
+  weightG: number,
+  birthWeightG: number
+): {
+  pct: number;
+  tone: "positive" | "neutral" | "watch" | "alert";
+  message: string;
+} {
+  const pct = ((weightG - birthWeightG) / birthWeightG) * 100;
+  if (pct >= 0)
+    return {
+      pct,
+      tone: "positive",
+      message: "At or above birth weight — the line is heading the right way.",
+    };
+  const loss = -pct;
+  if (loss > 10)
+    return {
+      pct,
+      tone: "alert",
+      message: "More than 10% below birth weight — seek advice from your midwife or doctor now.",
+    };
+  if (loss > 7)
+    return {
+      pct,
+      tone: "watch",
+      message: "More than 7% below birth weight — mention this to your midwife today.",
+    };
+  return {
+    pct,
+    tone: "neutral",
+    message: "Within the normal early loss range (up to ~7%). Watch for the turn back upward.",
+  };
+}
+
+/** Red flags to watch — general safety-netting, not diagnosis. */
+export const RED_FLAGS: string[] = [
+  "Pale, white or chalky stool at any age — contact your midwife or GP today",
+  "Blood in the nappy (in stool or urine) — seek advice today",
+  "Meconium (black, tarry) stool still appearing at day 5 or later",
+  "Fewer wet nappies than expected for the day, or dark/strong urine after day 4",
+  "Weight loss of more than 10% from birth weight",
+  "Baby unusually sleepy, floppy, or hard to wake for feeds",
+  "Fewer than 6 feeds in 24 hours, or refusing feeds",
+  "Jaundice that is worsening, or a jaundiced baby who is sleepy and feeding poorly",
+  "Dry mouth, sunken fontanelle, or no tears when crying",
+];
+
+export const DISCLAIMER =
+  "Hearth is a tracking aid, not medical advice or diagnosis. If you are worried about your baby, contact your midwife, health visitor or doctor.";
+
+/** Formatting helper: grams → \"3.62 kg\" */
+export function formatKg(g: number): string {
+  return `${(g / 1000).toFixed(2)} kg`;
+}
+
+export function mixLabel(mix: FeedMix): string {
+  switch (mix) {
+    case "breast":
+      return "Breastmilk only";
+    case "mixed":
+      return "Mixed feeding";
+    case "formula":
+      return "Formula only";
+    default:
+      return "No feeds logged";
+  }
+}
