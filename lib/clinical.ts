@@ -100,14 +100,16 @@ export function summariseFeeds(entries: Entry[]): FeedSummary {
   let expressedMl = 0;
 
   for (const f of feeds) {
-    if (f.feed_type === "breast") {
+    // Combined-feed columns, with legacy volume_ml fallback for old rows.
+    const mins = (f.left_min ?? 0) + (f.right_min ?? 0);
+    if (mins > 0) {
       breastCount += 1;
-      breastMin += (f.left_min ?? 0) + (f.right_min ?? 0);
-    } else if (f.feed_type === "formula") {
-      formulaMl += f.volume_ml ?? 0;
-    } else if (f.feed_type === "expressed") {
-      expressedMl += f.volume_ml ?? 0;
+      breastMin += mins;
     }
+    expressedMl +=
+      f.expressed_ml ?? (f.feed_type === "expressed" ? (f.volume_ml ?? 0) : 0);
+    formulaMl +=
+      f.formula_ml ?? (f.feed_type === "formula" ? (f.volume_ml ?? 0) : 0);
   }
 
   const hasBreast = breastCount > 0 || expressedMl > 0;

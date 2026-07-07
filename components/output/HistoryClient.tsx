@@ -9,7 +9,7 @@ import {
   summariseFeeds,
   weightStatus,
 } from "@/lib/clinical";
-import { entryLabel } from "@/lib/entryDisplay";
+import { entryLabel, feedAmounts } from "@/lib/entryDisplay";
 import { formatTime } from "@/lib/dates";
 import type { Entry } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
@@ -56,6 +56,7 @@ function EntryRow({
   const [open, setOpen] = useState(false);
   const expandable =
     (entry.type === "nappy" && (entry.stool_colour || entry.ai || photoUrl)) ||
+    (entry.type === "feed" && (entry.feed_notes || entry.ended_at)) ||
     entry.type === "weight";
   const ws =
     entry.type === "weight" && entry.weight_g
@@ -94,7 +95,10 @@ function EntryRow({
               />
             )}
           </div>
-          <p className="text-xs text-muted">{formatTime(entry.occurred_at)}</p>
+          <p className="text-xs text-muted">
+            {formatTime(entry.occurred_at)}
+            {entry.ended_at && ` – ${formatTime(entry.ended_at)}`}
+          </p>
           {entry.ai?.action && !open && (
             <div className="mt-1.5">
               <AiActionChip action={entry.ai.action} />
@@ -115,6 +119,31 @@ function EntryRow({
 
       {open && (
         <div className="pb-4 space-y-3" style={{ paddingLeft: 52 }}>
+          {entry.type === "feed" && (
+            <div className="space-y-1.5">
+              {(
+                [
+                  ["left", "Left breast", "min"],
+                  ["right", "Right breast", "min"],
+                  ["expressed", "Expressed", "ml"],
+                  ["formula", "Formula", "ml"],
+                ] as const
+              ).map(([key, label, unit]) => {
+                const amount = feedAmounts(entry)[key];
+                const rowNote = entry.feed_notes?.[key];
+                if (!amount && !rowNote) return null;
+                return (
+                  <div key={key} className="text-sm">
+                    <span className="font-medium">{label}:</span>{" "}
+                    {amount ? `${amount} ${unit}` : "—"}
+                    {rowNote && (
+                      <span className="text-muted italic"> — “{rowNote}”</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
           {entry.type === "nappy" && entry.stool_colour && (
             <div className="flex items-center gap-2 text-sm">
               <span

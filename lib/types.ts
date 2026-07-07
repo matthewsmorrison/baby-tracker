@@ -1,7 +1,15 @@
 export type MemberRole = "owner" | "caregiver" | "viewer";
 export type EntryType = "nappy" | "feed" | "weight";
 export type InviteStatus = "pending" | "accepted" | "revoked";
-export type FeedType = "breast" | "formula" | "expressed";
+export type FeedType = "breast" | "formula" | "expressed" | "mixed";
+
+/** Per-component notes on a combined feed. */
+export interface FeedNotes {
+  left?: string;
+  right?: string;
+  expressed?: string;
+  formula?: string;
+}
 export type FeedMix = "breast" | "mixed" | "formula" | "unknown";
 export type StoolColourKey =
   | "meconium"
@@ -93,7 +101,11 @@ export interface Entry {
   feed_type: FeedType | null;
   left_min: number | null;
   right_min: number | null;
-  volume_ml: number | null;
+  volume_ml: number | null; // legacy single-bottle amount (pre combined feeds)
+  expressed_ml: number | null;
+  formula_ml: number | null;
+  ended_at: string | null; // feed end; occurred_at is the start
+  feed_notes: FeedNotes | null;
 
   weight_g: number | null;
 
