@@ -12,13 +12,20 @@ export function LogClient({
   babyId,
   birthAt,
   entries,
+  editId,
 }: {
   babyId: string;
   birthAt: string;
   entries: Entry[];
+  /** Entry to open for editing straight away (e.g. arriving from History). */
+  editId?: string;
 }) {
-  const [tab, setTab] = useState<EntryType>("nappy");
-  const [editing, setEditing] = useState<Entry | null>(null);
+  const [editing, setEditing] = useState<Entry | null>(
+    () => entries.find((e) => e.id === editId) ?? null
+  );
+  const [tab, setTab] = useState<EntryType>(
+    () => entries.find((e) => e.id === editId)?.type ?? "nappy"
+  );
 
   function startEdit(entry: Entry) {
     setEditing(entry);

@@ -12,8 +12,10 @@ import {
 import { entryLabel, feedAmounts } from "@/lib/entryDisplay";
 import { formatTime } from "@/lib/dates";
 import type { Entry } from "@/lib/types";
+import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Segmented } from "@/components/ui/Segmented";
+import { DashboardView } from "./DashboardView";
 import { AiActionChip, AiVerdict } from "@/components/output/AiVerdict";
 import {
   Baby,
@@ -21,10 +23,11 @@ import {
   ChevronRight,
   Droplets,
   Milk,
+  Pencil,
   Scale,
 } from "lucide-react";
 
-type View = "timeline" | "calendar";
+type View = "dashboard" | "timeline" | "calendar";
 
 function EntryIcon({ entry }: { entry: Entry }) {
   const cls = "h-4 w-4";
@@ -48,10 +51,12 @@ function EntryRow({
   entry,
   photoUrl,
   birthWeightG,
+  canEdit,
 }: {
   entry: Entry;
   photoUrl?: string;
   birthWeightG: number;
+  canEdit: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const expandable =
@@ -65,10 +70,11 @@ function EntryRow({
 
   return (
     <li>
+      <div className="flex items-start gap-1 py-3.5">
       <button
         type="button"
         onClick={() => expandable && setOpen(!open)}
-        className={`flex w-full items-start gap-3 py-3.5 text-left ${
+        className={`flex min-w-0 flex-1 items-start gap-3 text-left ${
           expandable ? "cursor-pointer" : "cursor-default"
         }`}
         aria-expanded={expandable ? open : undefined}
@@ -116,6 +122,16 @@ function EntryRow({
           />
         )}
       </button>
+      {canEdit && (
+        <Link
+          href={`/log?edit=${entry.id}`}
+          aria-label="Edit this entry in Log"
+          className="rounded-full p-2 text-faint hover:bg-surface-alt hover:text-ink"
+        >
+          <Pencil className="h-4 w-4" />
+        </Link>
+      )}
+      </div>
 
       {open && (
         <div className="pb-4 space-y-3" style={{ paddingLeft: 52 }}>
@@ -206,11 +222,13 @@ function Timeline({
   birthAt,
   birthWeightG,
   photoUrls,
+  canEdit,
 }: {
   entries: Entry[];
   birthAt: string;
   birthWeightG: number;
   photoUrls: Record<string, string>;
+  canEdit: boolean;
 }) {
   const groups = new Map<number, Entry[]>();
   for (const e of entries) {
@@ -238,6 +256,7 @@ function Timeline({
                     entry={e}
                     photoUrl={e.photo_path ? photoUrls[e.photo_path] : undefined}
                     birthWeightG={birthWeightG}
+                    canEdit={canEdit}
                   />
                 ))}
               </ul>
@@ -256,11 +275,13 @@ function CalendarView({
   birthAt,
   birthWeightG,
   photoUrls,
+  canEdit,
 }: {
   entries: Entry[];
   birthAt: string;
   birthWeightG: number;
   photoUrls: Record<string, string>;
+  canEdit: boolean;
 }) {
   const [month, setMonth] = useState(() => {
     const now = new Date();
@@ -459,6 +480,7 @@ function CalendarView({
                     entry={e}
                     photoUrl={e.photo_path ? photoUrls[e.photo_path] : undefined}
                     birthWeightG={birthWeightG}
+                    canEdit={canEdit}
                   />
                 ))}
               </ul>
@@ -477,13 +499,15 @@ export function HistoryClient({
   birthAt,
   birthWeightG,
   photoUrls,
+  canEdit,
 }: {
   entries: Entry[];
   birthAt: string;
   birthWeightG: number;
   photoUrls: Record<string, string>;
+  canEdit: boolean;
 }) {
-  const [view, setView] = useState<View>("timeline");
+  const [view, setView] = useState<View>("dashboard");
 
   if (entries.length === 0) {
     return (
@@ -501,6 +525,7 @@ export function HistoryClient({
     <div className="space-y-4 animate-rise">
       <Segmented<View>
         options={[
+          { value: "dashboard", label: "Dashboard" },
           { value: "timeline", label: "Timeline" },
           { value: "calendar", label: "Calendar" },
         ]}
@@ -508,12 +533,19 @@ export function HistoryClient({
         onChange={setView}
       />
 
-      {view === "timeline" ? (
+      {view === "dashboard" ? (
+        <DashboardView
+          entries={entries}
+          birthAt={birthAt}
+          birthWeightG={birthWeightG}
+        />
+      ) : view === "timeline" ? (
         <Timeline
           entries={entries}
           birthAt={birthAt}
           birthWeightG={birthWeightG}
           photoUrls={photoUrls}
+          canEdit={canEdit}
         />
       ) : (
         <CalendarView
@@ -521,6 +553,7 @@ export function HistoryClient({
           birthAt={birthAt}
           birthWeightG={birthWeightG}
           photoUrls={photoUrls}
+          canEdit={canEdit}
         />
       )}
 

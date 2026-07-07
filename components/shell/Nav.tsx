@@ -2,18 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Sun,
-  PenLine,
-  TrendingUp,
-  Clock,
-  UserRound,
-} from "lucide-react";
+import { Sun, PenLine, Clock, UserRound } from "lucide-react";
 
 const items = [
   { href: "/today", label: "Today", icon: Sun },
   { href: "/log", label: "Log", icon: PenLine, input: true },
-  { href: "/weight", label: "Weight", icon: TrendingUp },
   { href: "/history", label: "History", icon: Clock },
   { href: "/profile", label: "Profile", icon: UserRound },
 ];

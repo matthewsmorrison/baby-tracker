@@ -25,6 +25,7 @@ export default async function HistoryPage() {
       birthAt={ctx.baby.birth_at}
       birthWeightG={ctx.baby.birth_weight_g}
       photoUrls={photoUrls}
+      canEdit={ctx.canEdit}
     />
   );
 }

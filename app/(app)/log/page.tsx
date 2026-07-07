@@ -3,8 +3,13 @@ import { LogClient } from "@/components/log/LogClient";
 import { Card } from "@/components/ui/Card";
 import { Eye } from "lucide-react";
 
-export default async function LogPage() {
+export default async function LogPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ edit?: string }>;
+}) {
   const ctx = await getBabyContext();
+  const { edit } = await searchParams;
 
   if (!ctx.canEdit) {
     return (
@@ -27,6 +32,7 @@ export default async function LogPage() {
       babyId={ctx.baby.id}
       birthAt={ctx.baby.birth_at}
       entries={entries}
+      editId={edit}
     />
   );
 }
