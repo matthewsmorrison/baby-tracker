@@ -18,7 +18,7 @@ import {
 import type { AiAnalysis, Entry, StoolColourKey } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Label } from "@/components/ui/Field";
+import { Input, Label } from "@/components/ui/Field";
 import { OccurredAtField } from "./OccurredAtField";
 import { CameraCapture } from "./CameraCapture";
 import { AiVerdict } from "@/components/output/AiVerdict";
