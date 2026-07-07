@@ -12,12 +12,22 @@ export const metadata: Metadata = {
   title: "Hearth — newborn tracker",
   description:
     "Track nappies, feeds and weight in the first days and weeks. A tracking aid, not medical advice.",
+  appleWebApp: {
+    capable: true,
+    title: "hearth",
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {
   themeColor: "#EDE9E1",
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover", // draw into the iPhone safe areas; insets handled in CSS
 };
 
 export default function RootLayout({

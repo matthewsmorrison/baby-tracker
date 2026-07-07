@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -9,12 +9,35 @@ import { Input, Label } from "@/components/ui/Field";
 import { Flame, Mail } from "lucide-react";
 
 function LoginForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/today";
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // Verify the 6-digit code from the email in THIS browser context. Vital for
+  // the installed PWA: iOS opens magic links in Safari, whose session doesn't
+  // reach the home-screen app — typing the code signs in right here.
+  async function verifyCode(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    const supabase = createClient();
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token: code.trim(),
+      type: "email",
+    });
+    setBusy(false);
+    if (error) setError(error.message);
+    else {
+      router.push(next.startsWith("/") ? next : "/today");
+      router.refresh();
+    }
+  }
 
   const redirectTo = () =>
     `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
@@ -58,17 +81,44 @@ function LoginForm() {
 
         <Card className="p-6">
           {sent ? (
-            <div className="text-center py-4">
-              <Mail className="mx-auto mb-3 h-8 w-8 text-positive" />
-              <p className="font-semibold">Check your email</p>
-              <p className="mt-1 text-sm text-muted">
-                We sent a sign-in link to {email}
-              </p>
+            <div className="py-2">
+              <div className="text-center">
+                <Mail className="mx-auto mb-3 h-8 w-8 text-positive" />
+                <p className="font-semibold">Check your email</p>
+                <p className="mt-1 text-sm text-muted">
+                  Enter the 6-digit code we sent to {email}
+                  {" — "}or tap the link in the email.
+                </p>
+              </div>
+              <form onSubmit={verifyCode} className="mt-4 space-y-3">
+                <Input
+                  aria-label="6-digit code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9]{6}"
+                  maxLength={6}
+                  required
+                  placeholder="123456"
+                  className="text-center text-2xl tracking-[0.4em] stat-num"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                />
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={busy || code.length !== 6}
+                >
+                  {busy ? "Verifying…" : "Sign in"}
+                </Button>
+              </form>
               <Button
                 variant="ghost"
                 size="sm"
-                className="mt-4"
-                onClick={() => setSent(false)}
+                className="mt-3 w-full"
+                onClick={() => {
+                  setSent(false);
+                  setCode("");
+                }}
               >
                 Use a different email
               </Button>

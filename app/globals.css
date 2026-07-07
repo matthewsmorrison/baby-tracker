@@ -56,11 +56,37 @@
   }
 }
 
+html {
+  /* Stop iOS rubber-banding revealing white behind the app shell */
+  overscroll-behavior-y: none;
+  background: var(--bg);
+}
+
 body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-schibsted), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  /* Standalone PWA: no browser chrome, so keep taps from flashing highlights */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Kill the 350ms double-tap-zoom delay on interactive elements while
+   keeping pinch-zoom available on content */
+button,
+a,
+input,
+select,
+textarea,
+[role="tab"] {
+  touch-action: manipulation;
+}
+
+/* Don't let long-presses on buttons/icons trigger iOS callouts */
+button {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 /* Big stat numbers: bold, tight, tabular */
