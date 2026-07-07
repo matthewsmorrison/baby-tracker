@@ -4,6 +4,7 @@ import {
   Area,
   ComposedChart,
   Line,
+  ReferenceArea,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -49,9 +50,13 @@ export function WeightChart({
   data.sort((a, b) => a.day - b.day);
 
   const weights = points.map((p) => p.weight);
+  const tenPctLine = Math.round(birthWeightG * 0.9);
   const yMin =
     Math.floor(
-      (Math.min(birthWeightG * 0.92, ...(weights.length ? weights : [birthWeightG]))) /
+      (Math.min(
+        birthWeightG * 0.88, // keep the -10% danger line inside the plot
+        ...(weights.length ? weights : [birthWeightG])
+      )) /
         100
     ) *
       100 -
@@ -111,6 +116,25 @@ export function WeightChart({
               border: "1px solid var(--line)",
               boxShadow: "0 10px 30px rgba(0,0,0,.08)",
               fontSize: 12,
+            }}
+          />
+          {/* Below −10% of birth weight: seek advice. Zone + line, not colour alone. */}
+          <ReferenceArea
+            y1={yMin}
+            y2={tenPctLine}
+            fill="var(--alert-bg)"
+            fillOpacity={0.6}
+            stroke="none"
+          />
+          <ReferenceLine
+            y={tenPctLine}
+            stroke="var(--alert)"
+            strokeDasharray="4 4"
+            label={{
+              value: "−10% — seek advice",
+              position: "insideBottomLeft",
+              fill: "var(--alert)",
+              fontSize: 10,
             }}
           />
           <Area

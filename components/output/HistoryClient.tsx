@@ -25,6 +25,7 @@ import {
   Milk,
   Pencil,
   Scale,
+  X,
 } from "lucide-react";
 
 type View = "dashboard" | "timeline" | "calendar";
@@ -52,11 +53,13 @@ function EntryRow({
   photoUrl,
   birthWeightG,
   canEdit,
+  onPhotoClick,
 }: {
   entry: Entry;
   photoUrl?: string;
   birthWeightG: number;
   canEdit: boolean;
+  onPhotoClick: (url: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const expandable =
@@ -82,8 +85,12 @@ function EntryRow({
         {photoUrl ? (
           <img
             src={photoUrl}
-            alt="Nappy photo"
-            className="h-10 w-10 shrink-0 rounded-xl object-cover border border-line"
+            alt="Nappy photo — tap to enlarge"
+            className="h-10 w-10 shrink-0 cursor-zoom-in rounded-xl object-cover border border-line"
+            onClick={(e) => {
+              e.stopPropagation();
+              onPhotoClick(photoUrl);
+            }}
           />
         ) : (
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-alt text-muted">
@@ -172,8 +179,9 @@ function EntryRow({
           {photoUrl && (
             <img
               src={photoUrl}
-              alt="Nappy photo enlarged"
-              className="max-h-56 rounded-2xl border border-line object-contain"
+              alt="Nappy photo — tap to enlarge"
+              className="max-h-56 cursor-zoom-in rounded-2xl border border-line object-contain"
+              onClick={() => onPhotoClick(photoUrl)}
             />
           )}
           {entry.ai && <AiVerdict ai={entry.ai} />}
@@ -223,12 +231,14 @@ function Timeline({
   birthWeightG,
   photoUrls,
   canEdit,
+  onPhotoClick,
 }: {
   entries: Entry[];
   birthAt: string;
   birthWeightG: number;
   photoUrls: Record<string, string>;
   canEdit: boolean;
+  onPhotoClick: (url: string) => void;
 }) {
   const groups = new Map<number, Entry[]>();
   for (const e of entries) {
@@ -257,6 +267,7 @@ function Timeline({
                     photoUrl={e.photo_path ? photoUrls[e.photo_path] : undefined}
                     birthWeightG={birthWeightG}
                     canEdit={canEdit}
+                    onPhotoClick={onPhotoClick}
                   />
                 ))}
               </ul>
@@ -276,12 +287,14 @@ function CalendarView({
   birthWeightG,
   photoUrls,
   canEdit,
+  onPhotoClick,
 }: {
   entries: Entry[];
   birthAt: string;
   birthWeightG: number;
   photoUrls: Record<string, string>;
   canEdit: boolean;
+  onPhotoClick: (url: string) => void;
 }) {
   const [month, setMonth] = useState(() => {
     const now = new Date();
@@ -481,6 +494,7 @@ function CalendarView({
                     photoUrl={e.photo_path ? photoUrls[e.photo_path] : undefined}
                     birthWeightG={birthWeightG}
                     canEdit={canEdit}
+                    onPhotoClick={onPhotoClick}
                   />
                 ))}
               </ul>
@@ -508,6 +522,7 @@ export function HistoryClient({
   canEdit: boolean;
 }) {
   const [view, setView] = useState<View>("dashboard");
+  const [lightbox, setLightbox] = useState<string | null>(null);
 
   if (entries.length === 0) {
     return (
@@ -546,6 +561,7 @@ export function HistoryClient({
           birthWeightG={birthWeightG}
           photoUrls={photoUrls}
           canEdit={canEdit}
+          onPhotoClick={setLightbox}
         />
       ) : (
         <CalendarView
@@ -554,10 +570,34 @@ export function HistoryClient({
           birthWeightG={birthWeightG}
           photoUrls={photoUrls}
           canEdit={canEdit}
+          onPhotoClick={setLightbox}
         />
       )}
 
       <p className="px-2 pb-2 text-center text-xs text-faint">{DISCLAIMER}</p>
+
+      {lightbox && (
+        <div
+          role="dialog"
+          aria-label="Nappy photo, enlarged"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          onClick={() => setLightbox(null)}
+        >
+          <img
+            src={lightbox}
+            alt="Nappy photo enlarged"
+            className="max-h-[90vh] max-w-full rounded-2xl object-contain"
+          />
+          <button
+            type="button"
+            aria-label="Close"
+            className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] rounded-full bg-white/10 p-2.5 text-white"
+            onClick={() => setLightbox(null)}
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

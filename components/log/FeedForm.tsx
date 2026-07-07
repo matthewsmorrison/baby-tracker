@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { fromLocalInputValue, toLocalInputValue } from "@/lib/dates";
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Field";
 import { OccurredAtField } from "./OccurredAtField";
 import { NoteField } from "./NappyForm";
-import { MessageSquarePlus } from "lucide-react";
+import { MessageSquarePlus, Pause, Play } from "lucide-react";
 
 type RowKey = keyof FeedNotes;
 
@@ -27,6 +27,7 @@ function FeedRow({
   onNote,
   quick,
   max,
+  timer,
 }: {
   label: string;
   unit: "min" | "ml";
@@ -36,6 +37,8 @@ function FeedRow({
   onNote: (v: string) => void;
   quick?: number[];
   max: number;
+  /** Live stopwatch for nursing rows: record the feed as it happens. */
+  timer?: { running: boolean; display: string | null; onToggle: () => void };
 }) {
   const [noteOpen, setNoteOpen] = useState(!!note);
   const id = `feed-${label.replace(/\s+/g, "-").toLowerCase()}`;
@@ -43,8 +46,35 @@ function FeedRow({
   return (
     <div className="rounded-2xl bg-surface-alt p-3">
       <div className="flex items-center gap-2">
+        {timer && (
+          <button
+            type="button"
+            aria-label={timer.running ? `Pause ${label} timer` : `Start ${label} timer`}
+            onClick={timer.onToggle}
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition ${
+              timer.running
+                ? "bg-ink text-white"
+                : "border border-line bg-surface text-ink hover:border-ink"
+            }`}
+          >
+            {timer.running ? (
+              <Pause className="h-4 w-4" />
+            ) : (
+              <Play className="h-4 w-4 translate-x-px" />
+            )}
+          </button>
+        )}
         <Label htmlFor={id} className="mb-0 flex-1 text-ink">
           {label}
+          {timer?.display && (
+            <span
+              className={`ml-2 rounded-full px-2 py-0.5 text-xs font-semibold stat-num ${
+                timer.running ? "bg-accent-soft" : "bg-surface text-muted"
+              }`}
+            >
+              {timer.display}
+            </span>
+          )}
         </Label>
         <div className="relative w-28">
           <Input
@@ -55,6 +85,7 @@ function FeedRow({
             max={max}
             placeholder="0"
             value={value}
+            readOnly={timer?.running}
             onChange={(e) => onChange(e.target.value)}
             className="bg-surface pr-11 py-2.5 text-right"
           />
@@ -161,8 +192,129 @@ export function FeedForm({
   const setRowNote = (k: RowKey) => (v: string) =>
     setRowNotes((n) => ({ ...n, [k]: v }));
 
+  // --- Live nursing stopwatch ----------------------------------------------
+  // Timestamp-based so it keeps counting while the phone is locked, and
+  // persisted per baby so a reload mid-feed picks the timer straight back up.
+  // New entries only (timing while editing an old feed makes no sense).
+  type Side = "left" | "right";
+  interface TimerState {
+    side: Side | null; // currently running side
+    startTs: number | null;
+    acc: { left: number; right: number }; // banked ms per side
+    feedStartIso: string | null; // when the first side was started
+  }
+  const timerKey = `hearth-feed-timer-${babyId}`;
+  const [timer, setTimer] = useState<TimerState>({
+    side: null,
+    startTs: null,
+    acc: { left: 0, right: 0 },
+    feedStartIso: null,
+  });
+  const [now, setNow] = useState(0);
+  const restored = useRef(false);
+
+  // Restore a feed that was being timed when the page went away.
+  useEffect(() => {
+    if (initial || restored.current) return;
+    restored.current = true;
+    // Deferred so state updates happen from a callback, not the effect body.
+    const id = window.setTimeout(() => {
+      try {
+      const raw = localStorage.getItem(timerKey);
+      if (!raw) return;
+      const t = JSON.parse(raw) as TimerState;
+      const anchor = t.startTs ?? Date.parse(t.feedStartIso ?? "");
+      if (anchor && Date.now() - anchor < 12 * 60 * 60 * 1000) {
+        setTimer(t);
+        setNow(Date.now());
+        if (t.feedStartIso)
+          setOccurredAt(toLocalInputValue(new Date(t.feedStartIso)));
+        setAmounts((a) => ({
+          ...a,
+          left: t.acc.left > 0 ? String(Math.max(1, Math.round(t.acc.left / 60000))) : a.left,
+          right: t.acc.right > 0 ? String(Math.max(1, Math.round(t.acc.right / 60000))) : a.right,
+        }));
+      } else {
+        localStorage.removeItem(timerKey);
+      }
+      } catch {
+        // corrupt state — start fresh
+      }
+    }, 0);
+    return () => clearTimeout(id);
+  }, [initial, timerKey]);
+
+  useEffect(() => {
+    if (!timer.side) return;
+    const first = window.setTimeout(() => setNow(Date.now()), 0);
+    const i = setInterval(() => setNow(Date.now()), 1000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(i);
+    };
+  }, [timer.side]);
+
+  const elapsedMs = (side: Side) =>
+    timer.acc[side] +
+    (timer.side === side && timer.startTs && now > timer.startTs
+      ? now - timer.startTs
+      : 0);
+  const msToMin = (ms: number) => Math.max(1, Math.round(ms / 60000));
+  const mmss = (ms: number) => {
+    const sec = Math.floor(ms / 1000);
+    return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+  };
+
+  function persistTimer(t: TimerState) {
+    setTimer(t);
+    try {
+      if (t.side || t.acc.left || t.acc.right)
+        localStorage.setItem(timerKey, JSON.stringify(t));
+      else localStorage.removeItem(timerKey);
+    } catch {
+      // storage unavailable — timer still works for this page's lifetime
+    }
+  }
+
+  const bank = (t: TimerState): TimerState =>
+    t.side && t.startTs
+      ? {
+          ...t,
+          side: null,
+          startTs: null,
+          acc: { ...t.acc, [t.side]: t.acc[t.side] + (Date.now() - t.startTs) },
+        }
+      : t;
+
+  function toggleTimer(side: Side) {
+    const wasRunning = timer.side === side;
+    let t = bank({ ...timer, acc: { ...timer.acc } });
+    if (!wasRunning) {
+      // Starting this side (switching sides banks the other automatically).
+      t = { ...t, side, startTs: Date.now() };
+      if (!t.feedStartIso) {
+        t.feedStartIso = new Date().toISOString();
+        setOccurredAt(toLocalInputValue(new Date()));
+      }
+    }
+    setAmounts((a) => ({
+      ...a,
+      left: t.acc.left > 0 ? String(msToMin(t.acc.left)) : a.left,
+      right: t.acc.right > 0 ? String(msToMin(t.acc.right)) : a.right,
+    }));
+    persistTimer(t);
+  }
+
+  /** Field value: live minutes while that side's timer runs, else manual. */
+  const rowValue = (side: Side) =>
+    timer.side === side ? String(msToMin(elapsedMs(side))) : amounts[side];
+
   async function save() {
+    // A side still being timed banks now; its live minutes win over the field.
+    const finalTimer = bank({ ...timer, acc: { ...timer.acc } });
     const n = (k: RowKey) => {
+      if ((k === "left" || k === "right") && finalTimer.acc[k] > 0)
+        return msToMin(finalTimer.acc[k]);
       const v = parseInt(amounts[k], 10);
       return Number.isFinite(v) && v > 0 ? v : null;
     };
@@ -184,6 +336,9 @@ export function FeedForm({
         setError("The end time is before the start time.");
         return;
       }
+    } else if (finalTimer.acc.left > 0 || finalTimer.acc.right > 0) {
+      // Timed feed with no manual end — it ends when the timing stopped.
+      endIso = new Date().toISOString();
     }
 
     const notes: FeedNotes = {};
@@ -246,6 +401,10 @@ export function FeedForm({
       setNote("");
       setEndedAt("");
       setOccurredAt(toLocalInputValue(new Date()));
+      setTimer({ side: null, startTs: null, acc: { left: 0, right: 0 }, feedStartIso: null });
+      try {
+        localStorage.removeItem(timerKey);
+      } catch {}
       onDone();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
@@ -267,19 +426,37 @@ export function FeedForm({
         label="Left breast"
         unit="min"
         max={120}
-        value={amounts.left}
+        value={rowValue("left")}
         onChange={setAmount("left")}
         note={rowNotes.left}
         onNote={setRowNote("left")}
+        timer={
+          initial
+            ? undefined
+            : {
+                running: timer.side === "left",
+                display: elapsedMs("left") > 0 ? mmss(elapsedMs("left")) : null,
+                onToggle: () => toggleTimer("left"),
+              }
+        }
       />
       <FeedRow
         label="Right breast"
         unit="min"
         max={120}
-        value={amounts.right}
+        value={rowValue("right")}
         onChange={setAmount("right")}
         note={rowNotes.right}
         onNote={setRowNote("right")}
+        timer={
+          initial
+            ? undefined
+            : {
+                running: timer.side === "right",
+                display: elapsedMs("right") > 0 ? mmss(elapsedMs("right")) : null,
+                onToggle: () => toggleTimer("right"),
+              }
+        }
       />
       <FeedRow
         label="Expressed milk"
