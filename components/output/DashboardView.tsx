@@ -2,25 +2,16 @@
 
 import { useMemo } from "react";
 import {
-  Area,
   Bar,
   BarChart,
   CartesianGrid,
-  ComposedChart,
   ReferenceArea,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import {
-  EXPECTED_FEEDS,
-  URINE_PER_WEE_ML,
-  dayOfLife,
-  estimatedUrineMl,
-  expectedDirty,
-  expectedWet,
-} from "@/lib/clinical";
+import { EXPECTED_FEEDS, dayOfLife, expectedNappies } from "@/lib/clinical";
 import { feedAmounts, feedGaps } from "@/lib/entryDisplay";
 import type { Entry } from "@/lib/types";
 import { Card, CardTitle } from "@/components/ui/Card";
@@ -34,6 +25,7 @@ const C = {
   yellow: "#eda100",
   blue: "#2a78d6",
   orange: "#eb6834",
+  brown: "#7a5a3a", // mixed nappy (poo)
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -51,9 +43,6 @@ interface DayRow {
   gapSumMs: number;
   gapCount: number;
   gapAvgH: number | null;
-  urineMl: number | null;
-  weighedNappies: number;
-  urineBand: [number, number] | undefined;
 }
 
 function dayKey(d: Date): string {
@@ -95,12 +84,10 @@ export function DashboardView({
   entries,
   birthAt,
   birthWeightG,
-  nappyBaseWeightG,
 }: {
   entries: Entry[];
   birthAt: string;
   birthWeightG: number;
-  nappyBaseWeightG?: number | null;
 }) {
   const days: DayRow[] = useMemo(() => {
     const byDay = new Map<string, DayRow>();
@@ -127,9 +114,6 @@ export function DashboardView({
         gapSumMs: 0,
         gapCount: 0,
         gapAvgH: null,
-        urineMl: null,
-        weighedNappies: 0,
-        urineBand: undefined,
       });
     }
     for (const e of entries) {
@@ -142,13 +126,9 @@ export function DashboardView({
         row.ebm += a.expressed;
         row.formula += a.formula;
       } else if (e.type === "nappy") {
-        if (e.wet) row.wet += 1;
+        // Each nappy is one slot: mixed (has poo, wee assumed) or wet only.
         if (e.dirty) row.dirty += 1;
-        const urine = estimatedUrineMl(e, nappyBaseWeightG);
-        if (urine !== null) {
-          row.urineMl = (row.urineMl ?? 0) + urine;
-          row.weighedNappies += 1;
-        }
+        else if (e.wet) row.wet += 1;
       }
     }
     // Time between feed starts, attributed to the day the later feed began.
@@ -162,17 +142,9 @@ export function DashboardView({
       row.gapAvgH = row.gapCount
         ? Math.round((row.gapSumMs / row.gapCount / 3600000) * 10) / 10
         : null;
-      // Expected range scales with how many nappies were actually weighed:
-      // a normal wee is 30–45 ml, so N weighed nappies should hold N × that.
-      if (row.weighedNappies > 0) {
-        row.urineBand = [
-          row.weighedNappies * URINE_PER_WEE_ML.min,
-          row.weighedNappies * URINE_PER_WEE_ML.max,
-        ];
-      }
     }
     return [...byDay.values()];
-  }, [entries, birthAt, nappyBaseWeightG]);
+  }, [entries, birthAt]);
 
   const weights = entries
     .filter((e) => e.type === "weight" && e.weight_g)
@@ -359,8 +331,8 @@ export function DashboardView({
       <Card className="p-5">
         <CardTitle>Nappies per day</CardTitle>
         <p className="mt-0.5 text-xs text-faint">
-          Day {todayDol} norm: {expectedWet(todayDol).label} wet ·{" "}
-          {expectedDirty(todayDol).label} dirty
+          Day {todayDol} aim: {expectedNappies(todayDol).total} nappies, at
+          least {expectedNappies(todayDol).minDirty} mixed (with poo)
         </p>
         <div className="mt-3 h-44">
           <ResponsiveContainer width="100%" height="100%">
@@ -376,7 +348,7 @@ export function DashboardView({
                     ? `Day ${(p[0].payload as DayRow).dol} · ${(p[0].payload as DayRow).label}`
                     : ""
                 }
-                formatter={(v, name) => [`${v}`, name === "wet" ? "Wet" : "Dirty"]}
+                formatter={(v, name) => [`${v}`, name === "wet" ? "Wet only" : "Mixed"]}
               />
               <Bar
                 dataKey="wet"
@@ -389,7 +361,7 @@ export function DashboardView({
               <Bar
                 dataKey="dirty"
                 stackId="n"
-                fill={C.orange}
+                fill={C.brown}
                 stroke="var(--surface)"
                 strokeWidth={2}
                 radius={[4, 4, 0, 0]}
@@ -400,56 +372,11 @@ export function DashboardView({
         </div>
         <Legend
           items={[
-            ["Wet", C.blue],
-            ["Dirty", C.orange],
+            ["Wet only", C.blue],
+            ["Mixed (with poo)", C.brown],
           ]}
         />
       </Card>
-
-      {/* Estimated urine — only meaningful when nappies are being weighed */}
-      {days.some((d) => d.urineMl !== null) && (
-        <Card className="p-5">
-          <CardTitle>Estimated wee per day</CardTitle>
-          <p className="mt-0.5 text-xs text-faint">
-            From weighed nappies (contents minus the poo seen in the photo,
-            1 g ≈ 1 ml). Band = a normal {URINE_PER_WEE_ML.min}–
-            {URINE_PER_WEE_ML.max} ml per wee × the nappies weighed that day —
-            inside it means normal-sized wees.
-          </p>
-          <div className="mt-3 h-44">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={days} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
-                <CartesianGrid vertical={false} stroke="var(--line)" />
-                <XAxis dataKey="label" {...axisProps} axisLine={{ stroke: "var(--line)" }} interval="preserveStartEnd" />
-                <YAxis {...axisProps} axisLine={false} unit="ml" />
-                <Area
-                  dataKey="urineBand"
-                  stroke="none"
-                  fill="var(--positive-bg)"
-                  fillOpacity={0.7}
-                  connectNulls
-                  isAnimationActive={false}
-                />
-                <Tooltip
-                  cursor={{ fill: "var(--surface-alt)" }}
-                  contentStyle={tooltipStyle}
-                  labelFormatter={(_, p) =>
-                    p?.[0]
-                      ? `Day ${(p[0].payload as DayRow).dol} · ${(p[0].payload as DayRow).label}`
-                      : ""
-                  }
-                  formatter={(v, name) => {
-                    if (name === "urineBand" && Array.isArray(v))
-                      return [`${v[0]}–${v[1]} ml`, "expected for nappies weighed"];
-                    return [`≈ ${v} ml`, "estimated wee"];
-                  }}
-                />
-                <Bar dataKey="urineMl" fill={C.blue} radius={[4, 4, 0, 0]} maxBarSize={22} />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      )}
     </div>
   );
 }

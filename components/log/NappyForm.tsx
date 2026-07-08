@@ -182,17 +182,20 @@ export function NappyForm({
     nappyBaseWeightG
   );
 
-  function toggleDirty() {
-    const next = !dirty;
-    setDirty(next);
-    if (next && !colour && !photo) {
+  // A nappy is either "wet only" or "mixed" (poo, with wee assumed).
+  function chooseWet() {
+    setWet(true);
+    setDirty(false);
+    setColour(null);
+    setColourSource(null);
+  }
+  function chooseMixed() {
+    setDirty(true);
+    setWet(true); // poo nappy is assumed to have wee too
+    if (!colour && !photo) {
       // No photo to analyse — pre-select the expected colour as a starting point.
       setColour(suggestedColour);
       setColourSource("auto");
-    }
-    if (!next) {
-      setColour(null);
-      setColourSource(null);
     }
   }
 
@@ -333,20 +336,22 @@ export function NappyForm({
     <Card className="p-5 space-y-5">
       <div className="grid grid-cols-2 gap-3">
         <Toggle
-          label="Wet"
-          active={wet}
-          onClick={() => setWet(!wet)}
+          label="Wet only"
+          active={wet && !dirty}
+          onClick={chooseWet}
           icon={<Droplets className="h-4 w-4" />}
         />
         <Toggle
-          label="Dirty"
+          label="Mixed"
           active={dirty}
-          onClick={toggleDirty}
+          onClick={chooseMixed}
           icon={<span aria-hidden>💩</span>}
         />
       </div>
       <p className="text-xs text-faint -mt-2">
-        One nappy that’s both = tick both.
+        <span className="font-medium text-muted">Wet only</span> = just wee.{" "}
+        <span className="font-medium text-muted">Mixed</span> = a nappy with poo
+        (we assume it has wee too).
       </p>
 
       <div>

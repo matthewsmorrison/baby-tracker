@@ -7,9 +7,7 @@ import {
   dayOfLife,
   expectedColour,
   expectedColourKey,
-  expectedDirty,
   expectedWeightBand,
-  expectedWet,
   formatKg,
   mixLabel,
   summariseFeeds,
@@ -19,6 +17,7 @@ import { feedGaps, median } from "@/lib/entryDisplay";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
 import { KpiCard } from "@/components/output/KpiCard";
+import { NappyQuota } from "@/components/output/NappyQuota";
 import { NextFeedCard } from "@/components/output/NextFeedCard";
 import { SkyArc } from "@/components/output/SkyArc";
 import { AlertTriangle } from "lucide-react";
@@ -36,13 +35,11 @@ export default async function TodayPage() {
   const last24 = entries.filter(
     (e) => now.getTime() - new Date(e.occurred_at).getTime() <= DAY_MS
   );
+  // Nappy quota (NCT): each nappy is one slot; dirty = has a poo, else wet.
   const nappies = last24.filter((e) => e.type === "nappy");
-  const wetCount = nappies.filter((e) => e.wet).length;
   const dirtyCount = nappies.filter((e) => e.dirty).length;
+  const wetCount = nappies.length - dirtyCount;
   const feeds = summariseFeeds(last24);
-
-  const wet = expectedWet(day);
-  const dirty = expectedDirty(day);
 
   const latestWeight = entries.find((e) => e.type === "weight");
   const band = expectedWeightBand(day, ctx.baby.birth_weight_g);
@@ -95,20 +92,11 @@ export default async function TodayPage() {
         />
       )}
 
+      {/* Nappy quota */}
+      <NappyQuota day={day} dirtyCount={dirtyCount} wetCount={wetCount} />
+
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3">
-        <KpiCard
-          label="Wet · last 24h"
-          value={String(wetCount)}
-          target={wet.label}
-          tone={wetCount >= wet.min ? "positive" : "watch"}
-        />
-        <KpiCard
-          label="Dirty · last 24h"
-          value={String(dirtyCount)}
-          target={dirty.label}
-          tone={dirtyCount >= dirty.min ? "positive" : "watch"}
-        />
         <KpiCard
           label="Feeds · last 24h"
           value={String(feeds.sessions)}

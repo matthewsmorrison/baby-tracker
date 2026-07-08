@@ -19,25 +19,57 @@ export function dayOfLife(birthAt: string | Date, occurredAt: string | Date): nu
   return Math.max(1, Math.floor((at - birth) / DAY_MS) + 1);
 }
 
-/** Expected wet nappies in 24h for a day of life (roughly one per day of age until day 5+). */
-export function expectedWet(day: number): { min: number; label: string } {
-  if (day <= 1) return { min: 1, label: "1+" };
-  if (day === 2) return { min: 2, label: "2+" };
-  if (day === 3) return { min: 3, label: "3+" };
-  if (day === 4) return { min: 4, label: "4+" };
-  return { min: 6, label: "6+ heavy" };
-}
-
-/** Expected dirty nappies in 24h for a day of life. */
-export function expectedDirty(day: number): { min: number; label: string } {
-  if (day <= 1) return { min: 1, label: "1+ meconium" };
-  if (day === 2) return { min: 1, label: "1–2" };
-  if (day <= 4) return { min: 2, label: "2+ changing" };
-  return { min: 2, label: "2+ yellow" };
-}
 
 /** Expected feeds in 24h — general norm, all days. */
 export const EXPECTED_FEEDS = { min: 8, max: 12, label: "8–12" };
+
+/**
+ * Expected nappies per day, per NCT's day-by-day guidance ("Newborn baby poo
+ * in nappies"). It's a quota: `total` nappies in 24h, of which at least
+ * `minDirty` should be dirty (poos ≥ a £2 coin from day 3). More dirty than
+ * the minimum — up to all of them — is fine; the concern is falling short of
+ * the total or the dirty minimum.
+ */
+export interface NappyExpectation {
+  total: number;
+  minDirty: number;
+  wetLabel: string;
+  dirtyLabel: string;
+  note: string;
+}
+export function expectedNappies(day: number): NappyExpectation {
+  if (day <= 2)
+    return {
+      total: 3,
+      minDirty: 1,
+      wetLabel: "2+",
+      dirtyLabel: "1+ meconium",
+      note: "Meconium (dark, sticky) is normal now.",
+    };
+  if (day <= 4)
+    return {
+      total: 5,
+      minDirty: 2,
+      wetLabel: "3+",
+      dirtyLabel: "2+ (≥ £2 coin)",
+      note: "Poo changing to green ‘changing stools’ as milk comes in.",
+    };
+  if (day <= 6)
+    return {
+      total: 7,
+      minDirty: 2,
+      wetLabel: "5+ heavy",
+      dirtyLabel: "2+ soft yellow (≥ £2 coin)",
+      note: "No more meconium — soft yellow poos, at least £2-coin sized.",
+    };
+  return {
+    total: 8,
+    minDirty: 2,
+    wetLabel: "6+ heavy",
+    dirtyLabel: "2+ (> £2 coin)",
+    note: "At least two good yellow poos a day — bigger than a £2 coin, not just skid marks.",
+  };
+}
 
 export const STOOL_COLOURS: Record<
   StoolColourKey,

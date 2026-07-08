@@ -42,10 +42,10 @@ export function median(nums: number[]): number {
 
 export function entryLabel(e: Entry): string {
   if (e.type === "nappy") {
-    const parts = [];
-    if (e.wet) parts.push("Wet");
-    if (e.dirty) parts.push("Dirty");
-    return parts.join(" + ") || "Nappy";
+    // A nappy with poo is "Mixed" (wee assumed); otherwise "Wet".
+    if (e.dirty) return "Mixed nappy";
+    if (e.wet) return "Wet nappy";
+    return "Nappy";
   }
   if (e.type === "feed") {
     const a = feedAmounts(e);

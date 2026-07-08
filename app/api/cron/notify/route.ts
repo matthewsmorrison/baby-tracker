@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { sendToUsers } from "@/lib/push";
-import { dayOfLife, expectedWet } from "@/lib/clinical";
+import { dayOfLife, expectedNappies } from "@/lib/clinical";
 import type { Baby, Entry } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -103,25 +103,28 @@ export async function POST(request: Request) {
       }
     }
 
-    // --- Not enough wet nappies (once per UTC day) --------------------------
+    // --- Not enough nappies (once per UTC day) ------------------------------
     const day = dayOfLife(baby.birth_at, new Date(now));
-    const wetTarget = expectedWet(day).min;
-    const wet24 = entries.filter(
-      (e) => e.type === "nappy" && e.wet && now - new Date(e.occurred_at).getTime() <= DAY_MS
-    ).length;
+    const exp = expectedNappies(day);
+    const nappies24 = entries.filter(
+      (e) => e.type === "nappy" && now - new Date(e.occurred_at).getTime() <= DAY_MS
+    );
+    const total24 = nappies24.length;
+    const dirty24 = nappies24.filter((e) => e.dirty).length;
     // Only nudge later in the day so an early-morning count isn't alarming.
     const hourUTC = new Date(now).getUTCHours();
-    if (hourUTC >= 18 && wet24 < wetTarget) {
+    const short = total24 < exp.total || dirty24 < exp.minDirty;
+    if (hourUTC >= 18 && short) {
       const key = new Date(now).toISOString().slice(0, 10); // per day
-      if (!(await alreadySent(baby.id, "low_wet", key))) {
+      if (!(await alreadySent(baby.id, "low_nappies", key))) {
         const n = await sendToUsers(recipients, {
-          title: `${baby.name} — keep an eye on wet nappies`,
-          body: `${wet24} wet in the last 24h (day ${day} usually sees ${expectedWet(day).label}). Worth watching; contact your midwife if you're concerned.`,
+          title: `${baby.name} — keep an eye on nappies`,
+          body: `${total24} nappies so far today (${dirty24} mixed). Day ${day} usually sees about ${exp.total}, at least ${exp.minDirty} with poo. Worth watching; contact your midwife if you're concerned.`,
           url: "/today",
-          tag: `low-wet-${baby.id}`,
+          tag: `low-nappies-${baby.id}`,
         });
         if (n > 0) {
-          await markSent(baby.id, "low_wet", key);
+          await markSent(baby.id, "low_nappies", key);
           results.lowNappies += 1;
         }
       }
