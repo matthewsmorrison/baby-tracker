@@ -67,8 +67,9 @@ export default async function TodayPage() {
 
   return (
     <div className="space-y-4 animate-rise">
-      {/* Hero */}
-      <div className="relative overflow-hidden rounded-3xl px-6 py-12 text-center">
+      {/* Hero — bleeds to the top & side edges so the warm glow reaches the
+          top of the screen instead of sitting below a strip of bare sand. */}
+      <div className="relative -mx-4 -mt-6 overflow-hidden rounded-b-3xl px-6 pb-12 pt-14 text-center">
         <SkyArc />
         <div className="relative z-10">
           <p className="text-sm font-medium text-muted">{ctx.baby.name}</p>

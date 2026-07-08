@@ -79,7 +79,7 @@ export function SkyArc() {
   ];
 
   return (
-    <div aria-hidden className="absolute inset-0 overflow-hidden rounded-3xl">
+    <div aria-hidden className="absolute inset-0">
       {/* Glow follows the body's horizontal position */}
       <div
         className="absolute inset-0 transition-[background] duration-1000"
