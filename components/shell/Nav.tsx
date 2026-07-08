@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sun, Clock, UserRound, ChartColumn, Sparkles } from "lucide-react";
+import { Sun, Clock, UserRound, ChartColumn, Sparkles, NotebookPen } from "lucide-react";
 
 const items = [
   { href: "/today", label: "Today", icon: Sun },
   { href: "/dashboard", label: "Charts", icon: ChartColumn },
   { href: "/history", label: "History", icon: Clock },
+  { href: "/notes", label: "Notes", icon: NotebookPen },
   // Mobile reaches Ask via the header sparkle. Advanced membership only.
   { href: "/chat", label: "Ask", icon: Sparkles, sideOnly: true, ai: true },
   { href: "/profile", label: "Profile", icon: UserRound },

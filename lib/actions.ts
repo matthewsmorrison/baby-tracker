@@ -225,3 +225,74 @@ export async function updateBabySetting(formData: FormData) {
 
   revalidatePath("/", "layout");
 }
+
+// --- Consultation notes ---------------------------------------------------
+
+export async function createNote(
+  babyId: string,
+  body: string,
+  taggedUserIds: string[]
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  const text = body.trim();
+  if (!text) throw new Error("Write a question or note first.");
+  const { error } = await supabase.from("baby_notes").insert({
+    baby_id: babyId,
+    body: text,
+    tagged_user_ids: taggedUserIds ?? [],
+    created_by: user.id,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/notes");
+}
+
+export async function editNote(
+  noteId: string,
+  body: string,
+  taggedUserIds: string[]
+) {
+  const supabase = await createClient();
+  const text = body.trim();
+  if (!text) throw new Error("The note can’t be empty.");
+  const { error } = await supabase
+    .from("baby_notes")
+    .update({ body: text, tagged_user_ids: taggedUserIds ?? [] })
+    .eq("id", noteId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/notes");
+}
+
+/** Record (or, with empty text, clear) the answer to a note. */
+export async function setNoteAnswer(noteId: string, answer: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  const text = answer.trim();
+  const { error } = await supabase
+    .from("baby_notes")
+    .update(
+      text
+        ? {
+            answer: text,
+            answered_at: new Date().toISOString(),
+            answered_by: user.id,
+          }
+        : { answer: null, answered_at: null, answered_by: null }
+    )
+    .eq("id", noteId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/notes");
+}
+
+export async function deleteNote(noteId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("baby_notes").delete().eq("id", noteId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/notes");
+}

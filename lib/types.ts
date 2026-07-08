@@ -92,6 +92,19 @@ export interface AiAnalysis {
   note?: string;
 }
 
+export interface BabyNote {
+  id: string;
+  baby_id: string;
+  body: string;
+  answer: string | null;
+  answered_at: string | null;
+  answered_by: string | null;
+  tagged_user_ids: string[];
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Entry {
   id: string;
   baby_id: string;
