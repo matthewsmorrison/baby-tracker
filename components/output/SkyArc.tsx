@@ -65,10 +65,10 @@ export function SkyArc() {
   const phase = phaseFor(hour);
 
   const targetX = 8 + progress * 84; // 8%..92%
-  // Confined to a shallow band at the very top so it never overlaps the name.
-  const targetTop = 62 - Math.sin(progress * Math.PI) * 34; // 62px..28px..62px
+  // Confined to a band near the top so it clears the name below it.
+  const targetTop = 86 - Math.sin(progress * Math.PI) * 30; // 86px..56px..86px
   const x = mounted ? targetX : 6;
-  const top = mounted ? targetTop : 78; // sweeps up from just below the band
+  const top = mounted ? targetTop : 100; // sweeps up from just below the band
 
   // Stars sit in the same top band (px from the top).
   const stars = [
@@ -86,7 +86,7 @@ export function SkyArc() {
       <div
         className="absolute inset-0 transition-[background] duration-1000"
         style={{
-          background: `radial-gradient(ellipse 75% 70% at ${x}% -6%, ${GLOW[phase]}, transparent 70%)`,
+          background: `radial-gradient(ellipse 75% 75% at ${x}% 4%, ${GLOW[phase]}, transparent 70%)`,
         }}
       />
 
