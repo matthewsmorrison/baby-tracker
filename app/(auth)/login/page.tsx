@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
@@ -17,6 +17,38 @@ function LoginForm() {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const oauthCode = searchParams.get("code");
+
+  // Self-heal: if an OAuth `code` lands here (e.g. Supabase fell back to the
+  // Site URL), complete the exchange in the browser that started the flow —
+  // it still holds the PKCE verifier — and continue to the app.
+  useEffect(() => {
+    if (!oauthCode) return;
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const { error } = await supabase.auth.exchangeCodeForSession(oauthCode);
+      if (cancelled) return;
+      if (error) {
+        setError(error.message);
+      } else {
+        router.replace(next.startsWith("/") ? next : "/today");
+        router.refresh();
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [oauthCode, next, router]);
+
+  // While completing an OAuth redirect, show a spinner instead of the form.
+  if (oauthCode && !error) {
+    return (
+      <main className="flex min-h-dvh items-center justify-center p-6">
+        <p className="text-sm text-muted">Signing you in…</p>
+      </main>
+    );
+  }
 
   // Verify the 6-digit code from the email in THIS browser context. Vital for
   // the installed PWA: iOS opens magic links in Safari, whose session doesn't
