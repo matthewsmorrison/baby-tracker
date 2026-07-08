@@ -30,6 +30,7 @@ export default async function TodayPage() {
 
   const now = new Date();
   const day = dayOfLife(ctx.baby.birth_at, now);
+  const track = new Set(ctx.baby.tracked_types);
 
   // Norms are per-24h, so the KPI window is the last 24 hours.
   const last24 = entries.filter(
@@ -95,7 +96,7 @@ export default async function TodayPage() {
       </div>
 
       {/* Next feed due — only when an interval is configured in Profile */}
-      {ctx.baby.feed_interval_min && lastFeed && (
+      {track.has("feed") && ctx.baby.feed_interval_min && lastFeed && (
         <NextFeedCard
           lastFeedStartISO={lastFeed.occurred_at}
           intervalMin={ctx.baby.feed_interval_min}
@@ -104,36 +105,45 @@ export default async function TodayPage() {
       )}
 
       {/* Nappy quota */}
-      <NappyQuota day={day} dirtyCount={dirtyCount} wetCount={wetCount} />
+      {track.has("nappy") && (
+        <NappyQuota day={day} dirtyCount={dirtyCount} wetCount={wetCount} />
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3">
-        <KpiCard
-          label="Feeds · last 24h"
-          value={String(feeds.sessions)}
-          target={EXPECTED_FEEDS.label}
-          tone={feeds.sessions >= EXPECTED_FEEDS.min ? "positive" : "watch"}
-        />
-        <KpiCard
-          label="Sleep · last 24h"
-          value={sleepMs > 0 ? `${sleepHrs}h` : "—"}
-          sub="newborns often 14–17h"
-        />
-        <KpiCard
-          label="Latest weight"
-          value={latestWeight ? formatKg(latestWeight.weight_g!) : "—"}
-          sub={`expected ${formatKg(band.low)}–${formatKg(band.high)}`}
-          tone={
-            latestWeight
-              ? latestWeight.weight_g! >= band.low
-                ? "positive"
-                : "watch"
-              : "neutral"
-          }
-        />
+        {track.has("feed") && (
+          <KpiCard
+            label="Feeds · last 24h"
+            value={String(feeds.sessions)}
+            target={EXPECTED_FEEDS.label}
+            tone={feeds.sessions >= EXPECTED_FEEDS.min ? "positive" : "watch"}
+          />
+        )}
+        {track.has("sleep") && (
+          <KpiCard
+            label="Sleep · last 24h"
+            value={sleepMs > 0 ? `${sleepHrs}h` : "—"}
+            sub="newborns often 14–17h"
+          />
+        )}
+        {track.has("weight") && (
+          <KpiCard
+            label="Latest weight"
+            value={latestWeight ? formatKg(latestWeight.weight_g!) : "—"}
+            sub={`expected ${formatKg(band.low)}–${formatKg(band.high)}`}
+            tone={
+              latestWeight
+                ? latestWeight.weight_g! >= band.low
+                  ? "positive"
+                  : "watch"
+                : "neutral"
+            }
+          />
+        )}
       </div>
 
       {/* Feeding today */}
+      {track.has("feed") && (
       <Card className="p-5">
         <div className="flex items-center justify-between">
           <CardTitle>Feeding · last 24h</CardTitle>
@@ -166,8 +176,10 @@ export default async function TodayPage() {
           </p>
         )}
       </Card>
+      )}
 
       {/* Colour to expect */}
+      {track.has("nappy") && (
       <Card className="p-5">
         <CardTitle>Colour to expect · day {day}</CardTitle>
         <div className="mt-3 flex items-start gap-3">
@@ -182,9 +194,10 @@ export default async function TodayPage() {
           whatever the day.
         </p>
       </Card>
+      )}
 
       {/* Weight vs birth */}
-      {latestWeight && ws && (
+      {track.has("weight") && latestWeight && ws && (
         <Card className="p-5">
           <CardTitle>Weight vs birth</CardTitle>
           <div className="mt-2 flex items-baseline gap-2">

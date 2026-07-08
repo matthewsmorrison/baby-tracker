@@ -13,7 +13,7 @@ import {
 } from "recharts";
 import { EXPECTED_FEEDS, dayOfLife, expectedNappies } from "@/lib/clinical";
 import { feedAmounts, feedGaps } from "@/lib/entryDisplay";
-import type { Entry } from "@/lib/types";
+import type { Entry, EntryType } from "@/lib/types";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { WeightChart } from "./WeightChart";
 
@@ -87,11 +87,14 @@ export function DashboardView({
   entries,
   birthAt,
   birthWeightG,
+  trackedTypes,
 }: {
   entries: Entry[];
   birthAt: string;
   birthWeightG: number;
+  trackedTypes: EntryType[];
 }) {
+  const track = new Set(trackedTypes);
   const days: DayRow[] = useMemo(() => {
     const byDay = new Map<string, DayRow>();
     const today = new Date();
@@ -170,7 +173,7 @@ export function DashboardView({
 
   return (
     <div className="space-y-4">
-      {/* Feeds per day */}
+      {track.has("feed") && (
       <Card className="p-5">
         <CardTitle>Feeds per day</CardTitle>
         <p className="mt-0.5 text-xs text-faint">
@@ -204,8 +207,9 @@ export function DashboardView({
           </ResponsiveContainer>
         </div>
       </Card>
+      )}
 
-      {/* Time between feeds */}
+      {track.has("feed") && (
       <Card className="p-5">
         <CardTitle>Time between feeds</CardTitle>
         <p className="mt-0.5 text-xs text-faint">
@@ -240,8 +244,9 @@ export function DashboardView({
           </ResponsiveContainer>
         </div>
       </Card>
+      )}
 
-      {/* Weight */}
+      {track.has("weight") && (
       <Card className="p-5">
         <CardTitle>Weight vs expected range</CardTitle>
         <p className="mt-0.5 text-xs text-faint">
@@ -257,8 +262,9 @@ export function DashboardView({
           />
         </div>
       </Card>
+      )}
 
-      {/* Bottle volumes — the transition story */}
+      {track.has("feed") && (
       <Card className="p-5">
         <CardTitle>Bottle milk per day</CardTitle>
         <p className="mt-0.5 text-xs text-faint">
@@ -310,8 +316,9 @@ export function DashboardView({
           ]}
         />
       </Card>
+      )}
 
-      {/* Nursing minutes */}
+      {track.has("feed") && (
       <Card className="p-5">
         <CardTitle>Nursing per day</CardTitle>
         <div className="mt-3 h-40">
@@ -335,9 +342,10 @@ export function DashboardView({
           </ResponsiveContainer>
         </div>
       </Card>
+      )}
 
       {/* Sleep per day */}
-      {days.some((d) => d.sleepMs > 0) && (
+      {track.has("sleep") && days.some((d) => d.sleepMs > 0) && (
         <Card className="p-5">
           <CardTitle>Sleep per day</CardTitle>
           <p className="mt-0.5 text-xs text-faint">
@@ -368,7 +376,7 @@ export function DashboardView({
         </Card>
       )}
 
-      {/* Nappies */}
+      {track.has("nappy") && (
       <Card className="p-5">
         <CardTitle>Nappies per day</CardTitle>
         <p className="mt-0.5 text-xs text-faint">
@@ -418,6 +426,7 @@ export function DashboardView({
           ]}
         />
       </Card>
+      )}
     </div>
   );
 }

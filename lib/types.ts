@@ -36,6 +36,7 @@ export interface Baby {
   birth_weight_g: number;
   nappy_base_weight_g: number | null; // weight of a clean, dry nappy
   feed_interval_min: number | null; // expected time between feeds; gates "Next feed due"
+  tracked_types: EntryType[]; // categories this family tracks
   membership_tier: "free" | "advanced"; // AI features are Advanced-only
   created_by: string;
   created_at: string;

@@ -7,6 +7,7 @@ import { Card, CardTitle } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
 import { PushToggle } from "@/components/notifications/PushToggle";
 import { ExportCard } from "@/components/export/ExportButtons";
+import { TrackingToggles } from "@/components/profile/TrackingToggles";
 import {
   BabySettings,
   DangerZone,
@@ -56,6 +57,13 @@ export default async function ProfilePage() {
         </div>
         <BabySettings baby={ctx.baby} canEdit={ctx.isOwner} />
       </Card>
+
+      {ctx.isOwner && (
+        <TrackingToggles
+          babyId={ctx.baby.id}
+          tracked={ctx.baby.tracked_types}
+        />
+      )}
 
       {/* Members */}
       <Card className="p-5">

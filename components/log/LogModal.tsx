@@ -22,21 +22,34 @@ export function LogModal({
   entries,
   nappyBaseWeightG,
   aiEnabled,
+  trackedTypes,
 }: {
   babyId: string;
   birthAt: string;
   entries: Entry[];
   nappyBaseWeightG?: number | null;
   aiEnabled: boolean;
+  trackedTypes: EntryType[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const editParam = searchParams.get("edit");
 
+  const TAB_LABELS: Record<EntryType, string> = {
+    nappy: "Nappy",
+    feed: "Feed",
+    sleep: "Sleep",
+    weight: "Weight",
+  };
+  const order: EntryType[] = ["nappy", "feed", "sleep", "weight"];
+  const options = order
+    .filter((t) => trackedTypes.includes(t))
+    .map((t) => ({ value: t, label: TAB_LABELS[t] }));
+
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Entry | null>(null);
-  const [tab, setTab] = useState<EntryType>("nappy");
+  const [tab, setTab] = useState<EntryType>(options[0]?.value ?? "nappy");
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -72,6 +85,7 @@ export function LogModal({
 
   function openNew() {
     setEditing(null);
+    setTab(options[0]?.value ?? "nappy");
     setOpen(true);
   }
 
@@ -142,19 +156,16 @@ export function LogModal({
               </div>
 
               <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-                <Segmented<EntryType>
-                  options={[
-                    { value: "nappy", label: "Nappy" },
-                    { value: "feed", label: "Feed" },
-                    { value: "sleep", label: "Sleep" },
-                    { value: "weight", label: "Weight" },
-                  ]}
-                  value={tab}
-                  onChange={(t) => {
-                    setTab(t);
-                    if (editing && editing.type !== t) setEditing(null);
-                  }}
-                />
+                {options.length > 1 && (
+                  <Segmented<EntryType>
+                    options={options}
+                    value={tab}
+                    onChange={(t) => {
+                      setTab(t);
+                      if (editing && editing.type !== t) setEditing(null);
+                    }}
+                  />
+                )}
 
                 {editing && (
                   <div className="flex items-center justify-between rounded-2xl bg-accent-soft px-4 py-2.5 text-sm">

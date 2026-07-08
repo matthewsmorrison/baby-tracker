@@ -79,8 +79,10 @@ export async function POST(request: Request) {
       .order("occurred_at", { ascending: false });
     const entries = (recent ?? []) as Entry[];
 
+    const track = new Set(baby.tracked_types ?? ["nappy", "feed", "sleep", "weight"]);
+
     // --- Feed due -----------------------------------------------------------
-    if (baby.feed_interval_min) {
+    if (track.has("feed") && baby.feed_interval_min) {
       const lastFeed = entries.find((e) => e.type === "feed");
       if (lastFeed) {
         const due = new Date(lastFeed.occurred_at).getTime() +
@@ -114,7 +116,7 @@ export async function POST(request: Request) {
     // Only nudge later in the day so an early-morning count isn't alarming.
     const hourUTC = new Date(now).getUTCHours();
     const short = total24 < exp.total || dirty24 < exp.minDirty;
-    if (hourUTC >= 18 && short) {
+    if (track.has("nappy") && hourUTC >= 18 && short) {
       const key = new Date(now).toISOString().slice(0, 10); // per day
       if (!(await alreadySent(baby.id, "low_nappies", key))) {
         const n = await sendToUsers(recipients, {

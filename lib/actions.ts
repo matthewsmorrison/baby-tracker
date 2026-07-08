@@ -372,3 +372,23 @@ export async function deleteAccount() {
   cookieStore.delete(ACTIVE_BABY_COOKIE);
   redirect("/login");
 }
+
+
+const TRACK_TYPES = ["nappy", "feed", "sleep", "weight"] as const;
+
+/** Set which categories a baby tracks (owner only via RLS). At least one. */
+export async function updateTrackedTypes(babyId: string, types: string[]) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  const valid = TRACK_TYPES.filter((t) => types.includes(t));
+  if (valid.length === 0) throw new Error("Keep at least one category on.");
+  const { error } = await supabase
+    .from("babies")
+    .update({ tracked_types: valid })
+    .eq("id", babyId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/", "layout");
+}
