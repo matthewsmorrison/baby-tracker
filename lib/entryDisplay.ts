@@ -40,6 +40,16 @@ export function median(nums: number[]): number {
   return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
 }
 
+/** "2h 15m" from a millisecond duration. */
+export function formatDuration(ms: number): string {
+  const min = Math.max(0, Math.round(ms / 60000));
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (h && m) return `${h}h ${m}m`;
+  if (h) return `${h}h`;
+  return `${m}m`;
+}
+
 export function entryLabel(e: Entry): string {
   if (e.type === "nappy") {
     // A nappy with poo is "Mixed" (wee assumed); otherwise "Wet".
@@ -62,6 +72,14 @@ export function entryLabel(e: Entry): string {
     if (a.expressed) parts.push(`EBM ${a.expressed} ml`);
     if (a.formula) parts.push(`Formula ${a.formula} ml`);
     return parts.length ? `Feed · ${parts.join(" · ")}` : "Feed";
+  }
+  if (e.type === "sleep") {
+    if (e.ended_at) {
+      const ms =
+        new Date(e.ended_at).getTime() - new Date(e.occurred_at).getTime();
+      return `Slept ${formatDuration(ms)}`;
+    }
+    return "Sleep";
   }
   return `Weight · ${formatKg(e.weight_g ?? 0)}`;
 }

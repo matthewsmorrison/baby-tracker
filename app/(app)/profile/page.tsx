@@ -6,8 +6,10 @@ import type { BabyInvite, BabyMember, Profile } from "@/lib/types";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
 import { PushToggle } from "@/components/notifications/PushToggle";
+import { ExportCard } from "@/components/export/ExportButtons";
 import {
   BabySettings,
+  DangerZone,
   InviteSection,
   MemberRow,
   LeaveOrSignOut,
@@ -111,6 +113,14 @@ export default async function ProfilePage() {
         membershipId={myMembership?.id ?? null}
         isOwner={ctx.isOwner}
         babyName={ctx.baby.name}
+      />
+
+      <ExportCard />
+
+      <DangerZone
+        babyId={ctx.baby.id}
+        babyName={ctx.baby.name}
+        isOwner={ctx.isOwner}
       />
 
       <p className="px-2 pb-2 text-center text-xs text-faint">

@@ -8,6 +8,7 @@ import { Portal } from "@/components/ui/Portal";
 import { NappyForm } from "./NappyForm";
 import { FeedForm } from "./FeedForm";
 import { WeightForm } from "./WeightForm";
+import { SleepForm } from "./SleepForm";
 import { Check, Plus, X } from "lucide-react";
 
 /**
@@ -145,6 +146,7 @@ export function LogModal({
                   options={[
                     { value: "nappy", label: "Nappy" },
                     { value: "feed", label: "Feed" },
+                    { value: "sleep", label: "Sleep" },
                     { value: "weight", label: "Weight" },
                   ]}
                   value={tab}
@@ -179,6 +181,13 @@ export function LogModal({
                 {tab === "feed" && (
                   <FeedForm
                     key={editing?.id ?? "new-feed"}
+                    {...formProps}
+                    initial={editing ?? undefined}
+                  />
+                )}
+                {tab === "sleep" && (
+                  <SleepForm
+                    key={editing?.id ?? "new-sleep"}
                     {...formProps}
                     initial={editing ?? undefined}
                   />

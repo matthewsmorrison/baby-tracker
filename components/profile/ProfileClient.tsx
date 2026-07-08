@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import {
   createInvite,
+  deleteAccount,
+  deleteBaby,
   leaveBaby,
   removeMember,
   revokeInvite,
@@ -12,6 +14,7 @@ import {
 import { toLocalInputValue } from "@/lib/dates";
 import type { Baby, BabyInvite, BabyMember, Profile } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
+import { Card, CardTitle } from "@/components/ui/Card";
 import { Input, Label } from "@/components/ui/Field";
 import { Chip } from "@/components/ui/Chip";
 import { Check, Copy, LogOut, Pencil, X } from "lucide-react";
@@ -411,5 +414,113 @@ export function LeaveOrSignOut({
         </>
       )}
     </div>
+  );
+}
+
+
+export function DangerZone({
+  babyId,
+  babyName,
+  isOwner,
+}: {
+  babyId: string;
+  babyName: string;
+  isOwner: boolean;
+}) {
+  const [pending, startTransition] = useTransition();
+  const [confirmBaby, setConfirmBaby] = useState(false);
+  const [confirmAcct, setConfirmAcct] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  return (
+    <Card className="border-alert/30 p-5">
+      <CardTitle className="text-alert">Danger zone</CardTitle>
+
+      {isOwner && (
+        <div className="mt-3 border-b border-line pb-4">
+          <p className="text-sm font-medium">Delete {babyName}</p>
+          <p className="mt-0.5 text-xs text-muted">
+            Permanently removes {babyName}’s feeds, nappies, sleep, weights,
+            notes and photos — for every carer. This can’t be undone.
+          </p>
+          {confirmBaby ? (
+            <div className="mt-2 flex gap-2">
+              <Button
+                variant="danger"
+                size="sm"
+                disabled={pending}
+                onClick={() =>
+                  startTransition(async () => {
+                    setError(null);
+                    try {
+                      await deleteBaby(babyId);
+                    } catch (e) {
+                      setError(e instanceof Error ? e.message : "Could not delete");
+                    }
+                  })
+                }
+              >
+                {pending ? "Deleting…" : `Yes, delete everything`}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setConfirmBaby(false)}>
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="danger"
+              size="sm"
+              className="mt-2"
+              onClick={() => setConfirmBaby(true)}
+            >
+              Delete {babyName}
+            </Button>
+          )}
+        </div>
+      )}
+
+      <div className="mt-4">
+        <p className="text-sm font-medium">Delete your account</p>
+        <p className="mt-0.5 text-xs text-muted">
+          Removes your sign-in and your data. Any baby you own is deleted for
+          everyone; babies shared with you simply lose your access.
+        </p>
+        {confirmAcct ? (
+          <div className="mt-2 flex gap-2">
+            <Button
+              variant="danger"
+              size="sm"
+              disabled={pending}
+              onClick={() =>
+                startTransition(async () => {
+                  setError(null);
+                  try {
+                    await deleteAccount();
+                  } catch (e) {
+                    setError(e instanceof Error ? e.message : "Could not delete");
+                  }
+                })
+              }
+            >
+              {pending ? "Deleting…" : "Yes, delete my account"}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setConfirmAcct(false)}>
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="danger"
+            size="sm"
+            className="mt-2"
+            onClick={() => setConfirmAcct(true)}
+          >
+            Delete account
+          </Button>
+        )}
+      </div>
+
+      {error && <p className="mt-3 text-sm text-alert">{error}</p>}
+    </Card>
   );
 }

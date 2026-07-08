@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Droplets,
   Milk,
+  Moon,
   Pencil,
   Scale,
   X,
@@ -27,6 +28,7 @@ export function EntryIcon({ entry }: { entry: Entry }) {
   const cls = "h-4 w-4";
   if (entry.type === "feed") return <Milk className={cls} />;
   if (entry.type === "weight") return <Scale className={cls} />;
+  if (entry.type === "sleep") return <Moon className={cls} />;
   if (entry.wet && !entry.dirty) return <Droplets className={cls} />;
   return <Baby className={cls} />;
 }

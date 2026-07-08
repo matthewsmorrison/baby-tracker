@@ -26,6 +26,7 @@ const C = {
   blue: "#2a78d6",
   orange: "#eb6834",
   brown: "#7a5a3a", // mixed nappy (poo)
+  violet: "#4a3aa7", // sleep
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -43,6 +44,8 @@ interface DayRow {
   gapSumMs: number;
   gapCount: number;
   gapAvgH: number | null;
+  sleepMs: number;
+  sleepH: number;
 }
 
 function dayKey(d: Date): string {
@@ -114,6 +117,8 @@ export function DashboardView({
         gapSumMs: 0,
         gapCount: 0,
         gapAvgH: null,
+        sleepMs: 0,
+        sleepH: 0,
       });
     }
     for (const e of entries) {
@@ -129,6 +134,9 @@ export function DashboardView({
         // Each nappy is one slot: mixed (has poo, wee assumed) or wet only.
         if (e.dirty) row.dirty += 1;
         else if (e.wet) row.wet += 1;
+      } else if (e.type === "sleep" && e.ended_at) {
+        row.sleepMs +=
+          new Date(e.ended_at).getTime() - new Date(e.occurred_at).getTime();
       }
     }
     // Time between feed starts, attributed to the day the later feed began.
@@ -142,6 +150,7 @@ export function DashboardView({
       row.gapAvgH = row.gapCount
         ? Math.round((row.gapSumMs / row.gapCount / 3600000) * 10) / 10
         : null;
+      row.sleepH = Math.round((row.sleepMs / 3_600_000) * 10) / 10;
     }
     return [...byDay.values()];
   }, [entries, birthAt]);
@@ -326,6 +335,38 @@ export function DashboardView({
           </ResponsiveContainer>
         </div>
       </Card>
+
+      {/* Sleep per day */}
+      {days.some((d) => d.sleepMs > 0) && (
+        <Card className="p-5">
+          <CardTitle>Sleep per day</CardTitle>
+          <p className="mt-0.5 text-xs text-faint">
+            Total hours asleep from logged sleeps — newborns often sleep
+            14–17h/24h (very variable).
+          </p>
+          <div className="mt-3 h-44">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={days} margin={{ top: 4, right: 4, bottom: 0, left: -22 }}>
+                <CartesianGrid vertical={false} stroke="var(--line)" />
+                <XAxis dataKey="label" {...axisProps} axisLine={{ stroke: "var(--line)" }} interval="preserveStartEnd" />
+                <YAxis {...axisProps} axisLine={false} unit="h" />
+                <ReferenceArea y1={14} y2={17} fill="var(--positive-bg)" fillOpacity={0.5} stroke="none" />
+                <Tooltip
+                  cursor={{ fill: "var(--surface-alt)" }}
+                  contentStyle={tooltipStyle}
+                  labelFormatter={(_, p) =>
+                    p?.[0]
+                      ? `Day ${(p[0].payload as DayRow).dol} · ${(p[0].payload as DayRow).label}`
+                      : ""
+                  }
+                  formatter={(v) => [`${v} h`, "asleep"]}
+                />
+                <Bar dataKey="sleepH" fill={C.violet} radius={[4, 4, 0, 0]} maxBarSize={22} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      )}
 
       {/* Nappies */}
       <Card className="p-5">

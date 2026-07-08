@@ -41,6 +41,17 @@ export default async function TodayPage() {
   const wetCount = nappies.length - dirtyCount;
   const feeds = summariseFeeds(last24);
 
+  // Sleep in the last 24h — sum the portion of each sleep that falls in-window.
+  const windowStart = now.getTime() - DAY_MS;
+  const sleepMs = entries
+    .filter((e) => e.type === "sleep" && e.ended_at)
+    .reduce((sum, e) => {
+      const s = Math.max(new Date(e.occurred_at).getTime(), windowStart);
+      const en = Math.min(new Date(e.ended_at!).getTime(), now.getTime());
+      return sum + Math.max(0, en - s);
+    }, 0);
+  const sleepHrs = Math.round((sleepMs / 3_600_000) * 10) / 10;
+
   const latestWeight = entries.find((e) => e.type === "weight");
   const band = expectedWeightBand(day, ctx.baby.birth_weight_g);
   const ws = latestWeight
@@ -102,6 +113,11 @@ export default async function TodayPage() {
           value={String(feeds.sessions)}
           target={EXPECTED_FEEDS.label}
           tone={feeds.sessions >= EXPECTED_FEEDS.min ? "positive" : "watch"}
+        />
+        <KpiCard
+          label="Sleep · last 24h"
+          value={sleepMs > 0 ? `${sleepHrs}h` : "—"}
+          sub="newborns often 14–17h"
         />
         <KpiCard
           label="Latest weight"

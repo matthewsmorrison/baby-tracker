@@ -298,3 +298,77 @@ export async function deleteNote(noteId: string) {
   if (error) throw new Error(error.message);
   revalidatePath("/notes");
 }
+
+// --- Deletion (GDPR) ------------------------------------------------------
+
+/** Remove every stored photo under a baby's storage folder. */
+async function removeBabyPhotos(
+  service: ReturnType<typeof createServiceClient>,
+  babyId: string
+) {
+  const { data: files } = await service.storage
+    .from("nappy-photos")
+    .list(babyId, { limit: 1000 });
+  if (files && files.length) {
+    await service.storage
+      .from("nappy-photos")
+      .remove(files.map((f) => `${babyId}/${f.name}`));
+  }
+}
+
+/** Delete a baby and all its data. Owner only (RLS enforces the row delete);
+ *  storage objects are cleaned up with the service role. */
+export async function deleteBaby(babyId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  // Confirm ownership before touching storage.
+  const { data: owner } = await supabase.rpc("is_baby_owner", { bid: babyId });
+  if (!owner) throw new Error("Only the owner can delete this baby.");
+
+  await removeBabyPhotos(createServiceClient(), babyId);
+
+  // Cascades entries, members, invites, notes, alert log via FKs.
+  const { error } = await supabase.from("babies").delete().eq("id", babyId);
+  if (error) throw new Error(error.message);
+
+  const cookieStore = await cookies();
+  cookieStore.delete(ACTIVE_BABY_COOKIE);
+  redirect("/today");
+}
+
+/** Delete the signed-in user's account: any babies they own (with photos),
+ *  their memberships, subscriptions, profile, and the auth user itself. */
+export async function deleteAccount() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const service = createServiceClient();
+
+  // Babies this user owns → delete outright (photos + cascade).
+  const { data: owned } = await service
+    .from("baby_members")
+    .select("baby_id")
+    .eq("user_id", user.id)
+    .eq("role", "owner");
+  for (const m of owned ?? []) {
+    await removeBabyPhotos(service, m.baby_id);
+    await service.from("babies").delete().eq("id", m.baby_id);
+  }
+
+  // Deleting the auth user cascades their remaining memberships, push
+  // subscriptions and profile row.
+  const { error } = await service.auth.admin.deleteUser(user.id);
+  if (error) throw new Error(error.message);
+
+  await supabase.auth.signOut();
+  const cookieStore = await cookies();
+  cookieStore.delete(ACTIVE_BABY_COOKIE);
+  redirect("/login");
+}
