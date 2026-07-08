@@ -5,6 +5,7 @@ import { dayWithDate } from "@/lib/dates";
 import type { BabyInvite, BabyMember, Profile } from "@/lib/types";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
+import { PushToggle } from "@/components/notifications/PushToggle";
 import {
   BabySettings,
   InviteSection,
@@ -74,6 +75,8 @@ export default async function ProfilePage() {
         </ul>
         {ctx.isOwner && <InviteSection babyId={ctx.baby.id} invites={invites} />}
       </Card>
+
+      {ctx.canEdit && <PushToggle />}
 
       {/* Membership tier */}
       <Card className="p-5">

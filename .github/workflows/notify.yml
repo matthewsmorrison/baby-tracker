@@ -1,0 +1,21 @@
+name: Send push alerts
+
+# Checks for due feeds / low nappies and sends push notifications. Every 15
+# minutes (GitHub cron is best-effort and can run late — feed-due nudges are
+# therefore approximate, which suits a gentle reminder).
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger notify endpoint
+        run: |
+          code=$(curl -sS -o /tmp/out -w "%{http_code}" -X POST \
+            "${{ secrets.APP_URL }}/api/cron/notify" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+          echo "HTTP $code"; cat /tmp/out; echo
+          [ "$code" = "200" ] || { echo "::error::notify endpoint returned $code"; exit 1; }
