@@ -95,6 +95,7 @@ export interface AiAnalysis {
 export interface BabyNote {
   id: string;
   baby_id: string;
+  kind: "question" | "note";
   body: string;
   answer: string | null;
   answered_at: string | null;

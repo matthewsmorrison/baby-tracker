@@ -12,11 +12,13 @@ import type { BabyNote, MemberRole } from "@/lib/types";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
+import { Segmented } from "@/components/ui/Segmented";
 import {
   Check,
   MessageCircleQuestion,
   Pencil,
   RotateCcw,
+  StickyNote,
   Trash2,
   X,
 } from "lucide-react";
@@ -98,6 +100,7 @@ function Composer({
   babyId: string;
   members: TagMember[];
 }) {
+  const [kind, setKind] = useState<"question" | "note">("question");
   const [body, setBody] = useState("");
   const [tagged, setTagged] = useState<string[]>([]);
   const [pending, startTransition] = useTransition();
@@ -108,18 +111,30 @@ function Composer({
 
   return (
     <Card className="p-5">
-      <CardTitle className="mb-2">Add a question or note</CardTitle>
+      <Segmented<"question" | "note">
+        className="mb-3"
+        options={[
+          { value: "question", label: "Question" },
+          { value: "note", label: "Note" },
+        ]}
+        value={kind}
+        onChange={setKind}
+      />
       <textarea
         rows={2}
         value={body}
         onChange={(e) => setBody(e.target.value)}
-        placeholder="e.g. Is his weight gain on track? Should we keep topping up with formula?"
+        placeholder={
+          kind === "question"
+            ? "e.g. Is his weight gain on track? Should we keep topping up with formula?"
+            : "e.g. Started tummy time today — seems to prefer turning left."
+        }
         className="w-full rounded-2xl border border-line bg-surface-alt px-4 py-3 text-base placeholder:text-faint focus:border-ink focus:outline-none resize-none"
       />
       {members.length > 0 && (
         <>
           <p className="mt-3 mb-1.5 text-xs font-medium text-muted">
-            Who is this for?
+            {kind === "question" ? "Who is this for?" : "Tag anyone (optional)"}
           </p>
           <PeoplePicker members={members} selected={tagged} onToggle={toggle} />
         </>
@@ -132,7 +147,7 @@ function Composer({
           startTransition(async () => {
             setError(null);
             try {
-              await createNote(babyId, body, tagged);
+              await createNote(babyId, body, tagged, kind);
               setBody("");
               setTagged([]);
             } catch (e) {
@@ -141,7 +156,7 @@ function Composer({
           })
         }
       >
-        {pending ? "Saving…" : "Add"}
+        {pending ? "Saving…" : kind === "question" ? "Add question" : "Add note"}
       </Button>
     </Card>
   );
@@ -166,6 +181,7 @@ function NoteCard({
   const [tagged, setTagged] = useState<string[]>(note.tagged_user_ids ?? []);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  const isNote = note.kind === "note";
   const answered = !!note.answer;
   const toggleTag = (id: string) =>
     setTagged((t) => (t.includes(id) ? t.filter((x) => x !== id) : [...t, id]));
@@ -208,10 +224,16 @@ function NoteCard({
       <div className="flex items-start gap-3">
         <span
           className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-            answered ? "bg-positive-bg text-positive" : "bg-accent-soft text-accent"
+            isNote
+              ? "bg-surface-alt text-muted"
+              : answered
+                ? "bg-positive-bg text-positive"
+                : "bg-accent-soft text-accent"
           }`}
         >
-          {answered ? (
+          {isNote ? (
+            <StickyNote className="h-4 w-4" />
+          ) : answered ? (
             <Check className="h-4 w-4" />
           ) : (
             <MessageCircleQuestion className="h-4 w-4" />
@@ -258,7 +280,7 @@ function NoteCard({
       </div>
 
       {/* Answer block */}
-      {answered && !answering ? (
+      {isNote ? null : answered && !answering ? (
         <div className="mt-3 rounded-2xl bg-positive-bg/60 px-4 py-3">
           <p className="text-xs font-semibold text-positive">Answer</p>
           <p className="mt-0.5 text-sm whitespace-pre-wrap">{note.answer}</p>
@@ -355,8 +377,9 @@ export function NotesClient({
     () => new Map(members.map((m) => [m.userId, m])),
     [members]
   );
-  const open = notes.filter((n) => !n.answer);
-  const answered = notes.filter((n) => n.answer);
+  const open = notes.filter((n) => n.kind !== "note" && !n.answer);
+  const plainNotes = notes.filter((n) => n.kind === "note");
+  const answered = notes.filter((n) => n.kind !== "note" && n.answer);
 
   const [showAnswered, setShowAnswered] = useState(false);
 
@@ -366,10 +389,11 @@ export function NotesClient({
 
       {notes.length === 0 ? (
         <Card className="p-6 text-center">
-          <p className="font-semibold">No notes yet</p>
+          <p className="font-semibold">Nothing here yet</p>
           <p className="mt-1 text-sm text-muted">
-            Jot down questions before a midwife or health-visitor visit, tag
-            who they’re for, and record the answers here.
+            Jot down questions before a midwife or health-visitor visit (tag
+            who they’re for, record the answers), or add plain notes about how
+            things are going. The Ask chat can use all of them.
           </p>
         </Card>
       ) : (
@@ -380,6 +404,21 @@ export function NotesClient({
                 To ask ({open.length})
               </h2>
               {open.map((n) => (
+                <NoteCard
+                  key={n.id}
+                  note={n}
+                  members={members}
+                  memberById={memberById}
+                  canEdit={canEdit}
+                />
+              ))}
+            </section>
+          )}
+
+          {plainNotes.length > 0 && (
+            <section className="space-y-3">
+              <h2 className="px-2 text-sm font-bold">Notes ({plainNotes.length})</h2>
+              {plainNotes.map((n) => (
                 <NoteCard
                   key={n.id}
                   note={n}

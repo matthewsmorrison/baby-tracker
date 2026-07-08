@@ -180,6 +180,24 @@ export async function POST(request: Request) {
     .eq("baby_id", baby.id)
     .order("occurred_at", { ascending: true });
 
+  const { data: notes } = await supabase
+    .from("baby_notes")
+    .select("kind, body, answer, answered_at, created_at")
+    .eq("baby_id", baby.id)
+    .order("created_at", { ascending: true });
+
+  const notesBlock =
+    (notes ?? []).length > 0
+      ? "\n\n## Parent's notes & questions\n" +
+        (notes ?? [])
+          .map((n) => {
+            const when = fmt(n.created_at, tz, { day: "numeric", month: "short" });
+            if (n.kind === "note") return `(${when}) NOTE: ${n.body}`;
+            return `(${when}) Q: ${n.body}${n.answer ? `\n    A: ${n.answer}` : " (unanswered)"}`;
+          })
+          .join("\n")
+      : "";
+
   const today = dayOfLife(baby.birth_at, new Date());
   const framing = `You are the assistant inside "hearth", a newborn tracking app, answering a parent's (or their healthcare professional's) questions about ${baby.name}'s logged data.
 
@@ -190,6 +208,7 @@ HARD RULES:
 - Pale/white/chalky stool, blood, black tarry stool after day 4, or worrying feeding/weight patterns: advise contacting the midwife or doctor today, calmly.
 - Answer ONLY from the provided data. If the data can't answer, say so plainly. Never invent entries or numbers.
 - Use the pre-computed daily summaries for totals and comparisons rather than re-adding raw rows yourself.
+- The parent's own notes and questions (with any recorded answers) are included below — draw on them for context and refer back to them when relevant.
 - Times in the data are already in the family's timezone (${tz}).
 - Be concise and warm — the reader is a tired parent. Prefer a direct answer first, then one or two supporting numbers.
 - ${DISCLAIMER}`;
@@ -202,7 +221,7 @@ HARD RULES:
       { type: "text", text: framing },
       {
         type: "text",
-        text: serialise(baby, (entries ?? []) as Entry[], tz),
+        text: serialise(baby, (entries ?? []) as Entry[], tz) + notesBlock,
         cache_control: { type: "ephemeral" },
       },
     ],

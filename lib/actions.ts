@@ -231,7 +231,8 @@ export async function updateBabySetting(formData: FormData) {
 export async function createNote(
   babyId: string,
   body: string,
-  taggedUserIds: string[]
+  taggedUserIds: string[],
+  kind: "question" | "note" = "question"
 ) {
   const supabase = await createClient();
   const {
@@ -242,6 +243,7 @@ export async function createNote(
   if (!text) throw new Error("Write a question or note first.");
   const { error } = await supabase.from("baby_notes").insert({
     baby_id: babyId,
+    kind,
     body: text,
     tagged_user_ids: taggedUserIds ?? [],
     created_by: user.id,
