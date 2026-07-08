@@ -3,6 +3,8 @@
 /* eslint-disable @next/next/no-img-element */
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import {
   STOOL_COLOURS,
   nappyOutputG,
@@ -21,6 +23,7 @@ import {
   Moon,
   Pencil,
   Scale,
+  Trash2,
   X,
 } from "lucide-react";
 
@@ -58,7 +61,23 @@ export function EntryRow({
   onPhotoClick: (url: string) => void;
   nappyBaseWeightG?: number | null;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function remove() {
+    setDeleting(true);
+    const supabase = createClient();
+    if (entry.photo_path) {
+      await supabase.storage.from("nappy-photos").remove([entry.photo_path]);
+    }
+    const { error } = await supabase.from("entries").delete().eq("id", entry.id);
+    setDeleting(false);
+    setConfirmDelete(false);
+    if (!error) router.refresh();
+  }
+
   const expandable =
     (entry.type === "nappy" &&
       (entry.stool_colour || entry.ai || photoUrl || entry.nappy_weight_g)) ||
@@ -123,14 +142,43 @@ export function EntryRow({
           />
         )}
       </button>
-      {canEdit && (
-        <Link
-          href={`?edit=${entry.id}`}
-          aria-label="Edit this entry in Log"
-          className="rounded-full p-2 text-faint hover:bg-surface-alt hover:text-ink"
-        >
-          <Pencil className="h-4 w-4" />
-        </Link>
+      {canEdit && !confirmDelete && (
+        <>
+          <Link
+            href={`?edit=${entry.id}`}
+            aria-label="Edit this entry in Log"
+            className="rounded-full p-2 text-faint hover:bg-surface-alt hover:text-ink"
+          >
+            <Pencil className="h-4 w-4" />
+          </Link>
+          <button
+            type="button"
+            aria-label="Delete this entry"
+            onClick={() => setConfirmDelete(true)}
+            className="rounded-full p-2 text-faint hover:bg-alert-bg hover:text-alert"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </>
+      )}
+      {canEdit && confirmDelete && (
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            type="button"
+            disabled={deleting}
+            onClick={remove}
+            className="rounded-full bg-alert-bg px-3 py-1.5 text-xs font-semibold text-alert"
+          >
+            {deleting ? "Deleting…" : "Delete?"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(false)}
+            className="rounded-full px-2 py-1.5 text-xs font-medium text-muted"
+          >
+            Keep
+          </button>
+        </div>
       )}
       </div>
 
