@@ -252,9 +252,9 @@ export function NappyForm({
         hasNewPhoto = true;
       }
 
-      // Analyse when there's a photo: always for new photos, and on edit the
-      // context (occurred_at / feeding mix) may have changed.
-      if (hasNewPhoto || (initial?.photo_path && initial)) {
+      // Label only when a NEW photo is attached — plain edits (time, ticks,
+      // notes) never re-run the analysis.
+      if (hasNewPhoto) {
         setBusy("Labelling the photo…");
         const res = await fetch(`/api/entries/${entryId}/analyze`, {
           method: "POST",
@@ -279,7 +279,7 @@ export function NappyForm({
           const body = await res.json().catch(() => null);
           setError(
             body?.error ??
-              "The photo was saved but analysis failed — you can retry from Recent entries."
+              "The photo was saved but labelling failed — you can set the labels by hand."
           );
         }
       }
