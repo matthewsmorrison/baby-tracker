@@ -35,6 +35,7 @@ export interface Baby {
   birth_at: string;
   birth_weight_g: number;
   nappy_base_weight_g: number | null; // weight of a clean, dry nappy
+  feed_interval_min: number | null; // expected time between feeds; gates "Next feed due"
   created_by: string;
   created_at: string;
 }

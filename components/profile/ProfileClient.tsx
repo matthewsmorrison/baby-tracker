@@ -94,6 +94,26 @@ export function EditBirthDetails({ baby }: { baby: Baby }) {
           wee is in it (1 g ≈ 1 ml) and marks it wet automatically.
         </p>
       </div>
+      <div>
+        <Label htmlFor="pinterval">Time between feeds (hours)</Label>
+        <Input
+          id="pinterval"
+          name="feed_interval_h"
+          type="number"
+          inputMode="decimal"
+          step={0.5}
+          min={0.5}
+          max={8}
+          defaultValue={
+            baby.feed_interval_min ? baby.feed_interval_min / 60 : ""
+          }
+          placeholder="e.g. 3 — leave empty to hide next-feed times"
+        />
+        <p className="mt-1 text-xs text-faint">
+          When set, Today shows when the next feed is due (last feed +
+          this interval). Leave empty if you’d rather feed purely on cues.
+        </p>
+      </div>
       {error && <p className="text-sm text-alert">{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" size="sm" disabled={pending}>

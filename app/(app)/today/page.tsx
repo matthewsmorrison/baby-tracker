@@ -51,16 +51,20 @@ export default async function TodayPage() {
   const colourKey = expectedColourKey(day, feeds.mix);
   const colourText = expectedColour(day, feeds.mix);
 
-  // "Next feed due": last feed start + the median of the recent gaps.
+  // "Next feed due": only when the family has configured an interval in
+  // Profile — last feed start + that interval. Recent rhythm shown as context.
+  const intervalMs = ctx.baby.feed_interval_min
+    ? ctx.baby.feed_interval_min * 60_000
+    : null;
   const gaps = feedGaps(entries);
   const recentGaps = gaps.slice(-6).map((g) => g.gapMs);
+  const typicalGap = recentGaps.length >= 2 ? median(recentGaps) : null;
   const lastFeedStart = entries
     .filter((e) => e.type === "feed")
     .map((e) => new Date(e.occurred_at).getTime())
     .sort((a, b) => b - a)[0];
-  const typicalGap = recentGaps.length >= 2 ? median(recentGaps) : null;
   const nextDue =
-    typicalGap && lastFeedStart ? new Date(lastFeedStart + typicalGap) : null;
+    intervalMs && lastFeedStart ? new Date(lastFeedStart + intervalMs) : null;
   const overdueMs = nextDue ? now.getTime() - nextDue.getTime() : 0;
 
   return (
@@ -86,8 +90,8 @@ export default async function TodayPage() {
         </p>
       </div>
 
-      {/* Next feed due */}
-      {nextDue && typicalGap && (
+      {/* Next feed due — only when an interval is configured in Profile */}
+      {nextDue && intervalMs && (
         <Card className="flex items-center gap-4 p-5">
           <span
             className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${
@@ -119,8 +123,9 @@ export default async function TodayPage() {
               </span>
             </p>
             <p className="text-xs text-muted">
-              Feeds have been ~{formatGap(typicalGap)} apart lately. A guide,
-              not a schedule — feed on cues.
+              Based on your {formatGap(intervalMs)} interval
+              {typicalGap && ` — feeds have actually been ~${formatGap(typicalGap)} apart lately`}
+              . A guide, not a schedule — feed on cues.
             </p>
           </div>
         </Card>
