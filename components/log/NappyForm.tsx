@@ -34,6 +34,7 @@ export function NappyForm({
   onDone,
   onSaved,
   nappyBaseWeightG,
+  aiEnabled,
 }: {
   babyId: string;
   birthAt: string;
@@ -44,6 +45,8 @@ export function NappyForm({
   onSaved: (message: string) => void;
   /** Dry nappy weight from Profile — enables wetness inference. */
   nappyBaseWeightG?: number | null;
+  /** Advanced membership: photo labelling by Claude. */
+  aiEnabled: boolean;
 }) {
   const router = useRouter();
   const [occurredAt, setOccurredAt] = useState(() =>
@@ -110,7 +113,7 @@ export function NappyForm({
     if (!file) return;
     // With a photo, Claude labels the colour — drop the auto-suggestion so
     // the analysis can fill it in (a parent's own tap is kept).
-    if (colourSource === "auto") {
+    if (aiEnabled && colourSource === "auto") {
       setColour(null);
       setColourSource(null);
     }
@@ -257,9 +260,9 @@ export function NappyForm({
       }
 
       let labelFailed = false;
-      // Label only when a NEW photo is attached — plain edits (time, ticks,
-      // notes) never re-run the analysis.
-      if (hasNewPhoto) {
+      // Label only when a NEW photo is attached (Advanced membership) —
+      // plain edits never re-run the analysis.
+      if (hasNewPhoto && aiEnabled) {
         setBusy("Labelling the photo…");
         const res = await fetch(`/api/entries/${entryId}/analyze`, {
           method: "POST",
@@ -297,7 +300,7 @@ export function NappyForm({
       } else {
         const msg = initial
           ? "Changes saved"
-          : hasNewPhoto
+          : hasNewPhoto && aiEnabled
             ? "Nappy saved — labelled from the photo"
             : "Nappy saved";
         resetForm();
@@ -426,7 +429,7 @@ export function NappyForm({
               doesn’t look right.
             </p>
           )}
-          {!colour && photo && (
+          {!colour && photo && aiEnabled && (
             <p className="mt-1.5 text-xs text-faint">
               Claude will identify the colour from the photo when you save —
               you can correct it afterwards.
@@ -503,8 +506,9 @@ export function NappyForm({
           </div>
         )}
         <p className="mt-1 text-xs text-faint">
-          Claude labels the colour and contents from the photo — every label
-          can be changed.
+          {aiEnabled
+            ? "Claude labels the colour and contents from the photo — every label can be changed."
+            : "Photos are kept with the entry for your records."}
         </p>
       </div>
 

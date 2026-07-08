@@ -34,6 +34,7 @@ export default async function LogPage({
       entries={entries}
       editId={edit}
       nappyBaseWeightG={ctx.baby.nappy_base_weight_g}
+      aiEnabled={ctx.baby.membership_tier === "advanced"}
     />
   );
 }

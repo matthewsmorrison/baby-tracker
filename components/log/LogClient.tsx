@@ -16,6 +16,7 @@ export function LogClient({
   entries,
   editId,
   nappyBaseWeightG,
+  aiEnabled,
 }: {
   babyId: string;
   birthAt: string;
@@ -23,6 +24,7 @@ export function LogClient({
   /** Entry to open for editing straight away (e.g. arriving from History). */
   editId?: string;
   nappyBaseWeightG?: number | null;
+  aiEnabled: boolean;
 }) {
   const [editing, setEditing] = useState<Entry | null>(
     () => entries.find((e) => e.id === editId) ?? null
@@ -98,6 +100,7 @@ export function LogClient({
           {...formProps}
           initial={editing ?? undefined}
           nappyBaseWeightG={nappyBaseWeightG}
+          aiEnabled={aiEnabled}
         />
       )}
       {tab === "feed" && (

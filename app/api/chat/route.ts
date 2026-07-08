@@ -167,6 +167,12 @@ export async function POST(request: Request) {
     .filter(Boolean);
   const baby = babies.find((b) => b.id === activeId) ?? babies[0];
   if (!baby) return NextResponse.json({ error: "No baby" }, { status: 404 });
+  if (baby.membership_tier !== "advanced") {
+    return NextResponse.json(
+      { error: "Ask is part of the Advanced membership." },
+      { status: 403 }
+    );
+  }
 
   const { data: entries } = await supabase
     .from("entries")

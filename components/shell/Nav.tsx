@@ -19,20 +19,26 @@ const items = [
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/history", label: "History", icon: Clock },
   // Mobile reaches Ask via the header sparkle — 6 bottom slots is the max.
-  { href: "/chat", label: "Ask", icon: Sparkles, sideOnly: true },
+  // Advanced membership only.
+  { href: "/chat", label: "Ask", icon: Sparkles, sideOnly: true, ai: true },
   { href: "/profile", label: "Profile", icon: UserRound },
 ];
 
 export function Nav({
   canEdit,
   orientation,
+  aiEnabled,
 }: {
   canEdit: boolean;
   orientation: "side" | "bottom";
+  aiEnabled: boolean;
 }) {
   const pathname = usePathname();
   const visible = items.filter(
-    (i) => (canEdit || !i.input) && (orientation === "side" || !i.sideOnly)
+    (i) =>
+      (canEdit || !i.input) &&
+      (orientation === "side" || !i.sideOnly) &&
+      (aiEnabled || !i.ai)
   );
 
   if (orientation === "side") {

@@ -11,6 +11,7 @@ export default async function AppLayout({
 }) {
   const ctx = await getBabyContext();
   const day = dayOfLife(ctx.baby.birth_at, new Date());
+  const aiEnabled = ctx.baby.membership_tier === "advanced";
 
   return (
     <div className="flex min-h-dvh w-full">
@@ -25,8 +26,9 @@ export default async function AppLayout({
           }))}
           activeBabyId={ctx.baby.id}
           role={ctx.role}
+          aiEnabled={aiEnabled}
         />
-        <Nav canEdit={ctx.canEdit} orientation="side" />
+        <Nav canEdit={ctx.canEdit} orientation="side" aiEnabled={aiEnabled} />
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -41,6 +43,7 @@ export default async function AppLayout({
             }))}
             activeBabyId={ctx.baby.id}
             role={ctx.role}
+            aiEnabled={aiEnabled}
             compact
           />
         </div>
@@ -52,7 +55,7 @@ export default async function AppLayout({
 
       {/* Mobile bottom bar */}
       <div className="md:hidden fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 backdrop-blur pb-[env(safe-area-inset-bottom)]">
-        <Nav canEdit={ctx.canEdit} orientation="bottom" />
+        <Nav canEdit={ctx.canEdit} orientation="bottom" aiEnabled={aiEnabled} />
       </div>
 
       {ctx.canEdit && <TimerIndicator babyId={ctx.baby.id} />}

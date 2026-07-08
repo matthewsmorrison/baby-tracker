@@ -11,6 +11,7 @@ export function Header({
   babies,
   activeBabyId,
   role,
+  aiEnabled,
   compact = false,
 }: {
   babyName: string;
@@ -18,6 +19,7 @@ export function Header({
   babies: Array<{ id: string; name: string }>;
   activeBabyId: string;
   role: MemberRole;
+  aiEnabled: boolean;
   compact?: boolean;
 }) {
   const switcher =
@@ -67,7 +69,7 @@ export function Header({
         </div>
       </div>
       <div className="flex items-center gap-2">
-        {compact && (
+        {compact && aiEnabled && (
           <Link
             href="/chat"
             aria-label="Ask about the data"

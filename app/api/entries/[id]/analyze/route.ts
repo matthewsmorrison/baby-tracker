@@ -146,6 +146,12 @@ export async function POST(
   if (!baby) {
     return NextResponse.json({ error: "Baby not found" }, { status: 404 });
   }
+  if (baby.membership_tier !== "advanced") {
+    return NextResponse.json(
+      { error: "AI photo labelling is part of the Advanced membership." },
+      { status: 403 }
+    );
+  }
 
   // Feeds for the mix window (24h before the entry's occurred_at).
   const { data: feedEntries } = await supabase

@@ -80,15 +80,27 @@ export default async function ProfilePage() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Membership</CardTitle>
-            <p className="mt-1 text-sm">
-              <span className="font-semibold">Free</span> — tracking, weight
-              chart &amp; carer sharing
-            </p>
-            <p className="text-xs text-faint mt-0.5">
-              AI photo checks included while in beta.
-            </p>
+            {ctx.baby.membership_tier === "advanced" ? (
+              <p className="mt-1 text-sm">
+                <span className="font-semibold">Advanced</span> — everything in
+                Free, plus AI photo labelling and Ask
+              </p>
+            ) : (
+              <>
+                <p className="mt-1 text-sm">
+                  <span className="font-semibold">Free</span> — tracking,
+                  charts, calendar &amp; carer sharing
+                </p>
+                <p className="text-xs text-faint mt-0.5">
+                  Advanced adds AI photo labelling and the Ask chat — upgrades
+                  coming soon.
+                </p>
+              </>
+            )}
           </div>
-          <Chip tone="accent">Beta</Chip>
+          <Chip tone={ctx.baby.membership_tier === "advanced" ? "positive" : "accent"}>
+            {ctx.baby.membership_tier === "advanced" ? "Advanced" : "Free"}
+          </Chip>
         </div>
       </Card>
 
