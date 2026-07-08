@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Entry, EntryType } from "@/lib/types";
 import { Segmented } from "@/components/ui/Segmented";
 import { NappyForm } from "./NappyForm";
 import { FeedForm } from "./FeedForm";
 import { WeightForm } from "./WeightForm";
 import { RecentEntries } from "./RecentEntries";
+import { Check } from "lucide-react";
 
 export function LogClient({
   babyId,
@@ -39,11 +40,25 @@ export function LogClient({
     setEditing(null);
   }
 
+  // Snackbar: confirm saves, then close whatever was being edited.
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+  }, []);
+  function notify(message: string) {
+    setEditing(null);
+    setToast(message);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 2500);
+  }
+
   const formProps = {
     babyId,
     birthAt,
     entries,
     onDone: done,
+    onSaved: notify,
   };
 
   return (
@@ -95,7 +110,17 @@ export function LogClient({
         entries={entries.slice(0, 20)}
         birthAt={birthAt}
         onEdit={startEdit}
+        onDeleted={() => notify("Entry deleted")}
       />
+
+      {toast && (
+        <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-40 flex justify-center md:bottom-6">
+          <div className="flex items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-white shadow-card animate-rise">
+            <Check className="h-4 w-4 text-positive-bar" />
+            {toast}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

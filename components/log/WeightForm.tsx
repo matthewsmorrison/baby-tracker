@@ -14,13 +14,15 @@ import { NoteField } from "./NappyForm";
 export function WeightForm({
   babyId,
   initial,
-  onDone,
+  onSaved,
 }: {
   babyId: string;
   birthAt?: string;
   entries?: Entry[];
   initial?: Entry;
-  onDone: () => void;
+  onDone?: () => void;
+  /** Confirm a successful save (snackbar) and close any edit state. */
+  onSaved: (message: string) => void;
 }) {
   const router = useRouter();
   const [occurredAt, setOccurredAt] = useState(() =>
@@ -71,7 +73,7 @@ export function WeightForm({
       setGrams("");
       setNote("");
       setOccurredAt(toLocalInputValue(new Date()));
-      onDone();
+      onSaved(initial ? "Changes saved" : "Weight saved");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {

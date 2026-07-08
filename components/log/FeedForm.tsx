@@ -137,13 +137,15 @@ function FeedRow({
 export function FeedForm({
   babyId,
   initial,
-  onDone,
+  onSaved,
 }: {
   babyId: string;
   birthAt?: string;
   entries?: Entry[];
   initial?: Entry;
-  onDone: () => void;
+  onDone?: () => void;
+  /** Confirm a successful save (snackbar) and close any edit state. */
+  onSaved: (message: string) => void;
 }) {
   const router = useRouter();
   const [occurredAt, setOccurredAt] = useState(() =>
@@ -449,7 +451,7 @@ export function FeedForm({
         localStorage.removeItem(timerKey);
         localStorage.removeItem(draftKey);
       } catch {}
-      onDone();
+      onSaved(initial ? "Changes saved" : "Feed saved");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {

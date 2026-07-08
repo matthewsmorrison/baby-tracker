@@ -31,6 +31,7 @@ export function NappyForm({
   entries,
   initial,
   onDone,
+  onSaved,
   nappyBaseWeightG,
 }: {
   babyId: string;
@@ -38,6 +39,8 @@ export function NappyForm({
   entries: Entry[];
   initial?: Entry;
   onDone: () => void;
+  /** Confirm a successful save (snackbar) and close any edit state. */
+  onSaved: (message: string) => void;
   /** Dry nappy weight from Profile — enables wetness inference. */
   nappyBaseWeightG?: number | null;
 }) {
@@ -252,6 +255,7 @@ export function NappyForm({
         hasNewPhoto = true;
       }
 
+      let labelFailed = false;
       // Label only when a NEW photo is attached — plain edits (time, ticks,
       // notes) never re-run the analysis.
       if (hasNewPhoto) {
@@ -275,7 +279,8 @@ export function NappyForm({
             setColour(json.stool_colour);
             setColourSource("ai");
           }
-        } else if (hasNewPhoto) {
+        } else {
+          labelFailed = true;
           const body = await res.json().catch(() => null);
           setError(
             body?.error ??
@@ -285,12 +290,17 @@ export function NappyForm({
       }
 
       router.refresh();
-      if (!hasNewPhoto && !initial?.photo_path) {
-        // No verdict to show — reset for the next quick entry.
-        resetForm();
-        onDone();
-      } else {
+      if (labelFailed) {
+        // Keep the form open so the parent can see the message and fix labels.
         setPhoto(null);
+      } else {
+        const msg = initial
+          ? "Changes saved"
+          : hasNewPhoto
+            ? "Nappy saved — labelled from the photo"
+            : "Nappy saved";
+        resetForm();
+        onSaved(msg);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");

@@ -22,10 +22,12 @@ export function RecentEntries({
   entries,
   birthAt,
   onEdit,
+  onDeleted,
 }: {
   entries: Entry[];
   birthAt: string;
   onEdit: (e: Entry) => void;
+  onDeleted?: () => void;
 }) {
   const router = useRouter();
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -40,7 +42,10 @@ export function RecentEntries({
     const { error } = await supabase.from("entries").delete().eq("id", entry.id);
     setBusyId(null);
     setConfirmId(null);
-    if (!error) router.refresh();
+    if (!error) {
+      router.refresh();
+      onDeleted?.();
+    }
   }
 
   if (entries.length === 0) return null;
