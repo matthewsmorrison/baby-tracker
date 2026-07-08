@@ -1,12 +1,12 @@
 import { getBabyContext } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
-import { dayOfLife, formatKg } from "@/lib/clinical";
+import { dayOfLife } from "@/lib/clinical";
 import { dayWithDate } from "@/lib/dates";
 import type { BabyInvite, BabyMember, Profile } from "@/lib/types";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
 import {
-  EditBirthDetails,
+  BabySettings,
   InviteSection,
   MemberRow,
   LeaveOrSignOut,
@@ -48,22 +48,10 @@ export default async function ProfilePage() {
       {/* Baby card */}
       <Card className="p-5">
         <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">{ctx.baby.name}</h1>
-            <p className="mt-1 text-sm text-muted">
-              Born{" "}
-              {new Date(ctx.baby.birth_at).toLocaleString(undefined, {
-                day: "numeric",
-                month: "long",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}{" "}
-              · {formatKg(ctx.baby.birth_weight_g)}
-            </p>
-          </div>
+          <h1 className="text-xl font-bold tracking-tight">{ctx.baby.name}</h1>
           <Chip tone="accent">{dayWithDate(ctx.baby.birth_at, day)}</Chip>
         </div>
-        {ctx.isOwner && <EditBirthDetails baby={ctx.baby} />}
+        <BabySettings baby={ctx.baby} canEdit={ctx.isOwner} />
       </Card>
 
       {/* Members */}

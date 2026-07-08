@@ -169,37 +169,58 @@ export async function leaveBaby(memberId: string) {
   redirect("/onboarding");
 }
 
-export async function updateBirthDetails(formData: FormData) {
+/** Update a single baby setting from its own row in Profile. */
+export async function updateBabySetting(formData: FormData) {
   const supabase = await createClient();
   const babyId = String(formData.get("baby_id"));
-  const name = String(formData.get("name") ?? "").trim();
-  const birthAt = String(formData.get("birth_at") ?? "");
-  const weight = parseInt(String(formData.get("birth_weight_g") ?? ""), 10);
-  const nappyBase = parseInt(
-    String(formData.get("nappy_base_weight_g") ?? ""),
-    10
-  );
-  const intervalH = parseFloat(String(formData.get("feed_interval_h") ?? ""));
+  const field = String(formData.get("field"));
+  const raw = String(formData.get("value") ?? "").trim();
 
-  if (!name || !birthAt || !Number.isFinite(weight) || weight <= 0) {
-    throw new Error("Please fill in name, birth date/time and birth weight.");
+  const updates: Record<string, unknown> = {};
+  switch (field) {
+    case "name":
+      if (!raw) throw new Error("The name can’t be empty.");
+      updates.name = raw;
+      break;
+    case "birth_at":
+      if (!raw) throw new Error("Pick the date and time of birth.");
+      updates.birth_at = new Date(raw).toISOString();
+      break;
+    case "birth_weight_g": {
+      const v = parseInt(raw, 10);
+      if (!(v >= 500 && v <= 7000))
+        throw new Error("Enter the birth weight in grams (e.g. 3800).");
+      updates.birth_weight_g = v;
+      break;
+    }
+    case "nappy_base_weight_g": {
+      if (!raw) {
+        updates.nappy_base_weight_g = null; // cleared — inference off
+        break;
+      }
+      const v = parseInt(raw, 10);
+      if (!(v > 0 && v <= 200))
+        throw new Error("Enter the dry nappy weight in grams (e.g. 28).");
+      updates.nappy_base_weight_g = v;
+      break;
+    }
+    case "feed_interval_h": {
+      if (!raw) {
+        updates.feed_interval_min = null; // cleared — next-feed card hidden
+        break;
+      }
+      const v = parseFloat(raw);
+      if (!(v > 0 && v <= 12))
+        throw new Error("Enter the interval in hours (e.g. 3 or 2.5).");
+      updates.feed_interval_min = Math.round(v * 60);
+      break;
+    }
+    default:
+      throw new Error("Unknown setting.");
   }
 
   // RLS: only the owner can update the baby.
-  const { error } = await supabase
-    .from("babies")
-    .update({
-      name,
-      birth_at: new Date(birthAt).toISOString(),
-      birth_weight_g: weight,
-      nappy_base_weight_g:
-        Number.isFinite(nappyBase) && nappyBase > 0 ? nappyBase : null,
-      feed_interval_min:
-        Number.isFinite(intervalH) && intervalH > 0
-          ? Math.round(intervalH * 60)
-          : null,
-    })
-    .eq("id", babyId);
+  const { error } = await supabase.from("babies").update(updates).eq("id", babyId);
   if (error) throw new Error(error.message);
 
   revalidatePath("/", "layout");

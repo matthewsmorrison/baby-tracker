@@ -7,7 +7,7 @@ import {
   removeMember,
   revokeInvite,
   signOut,
-  updateBirthDetails,
+  updateBabySetting,
 } from "@/lib/actions";
 import { toLocalInputValue } from "@/lib/dates";
 import type { Baby, BabyInvite, BabyMember, Profile } from "@/lib/types";
@@ -16,119 +16,174 @@ import { Input, Label } from "@/components/ui/Field";
 import { Chip } from "@/components/ui/Chip";
 import { Check, Copy, LogOut, Pencil, X } from "lucide-react";
 
-export function EditBirthDetails({ baby }: { baby: Baby }) {
-  const [open, setOpen] = useState(false);
+interface SettingSpec {
+  field: string;
+  label: string;
+  display: string;
+  /** Current raw value for the input. */
+  value: string;
+  inputType: "text" | "number" | "datetime-local";
+  placeholder?: string;
+  hint?: string;
+  step?: number;
+  min?: number;
+  max?: number;
+  required?: boolean;
+}
+
+function SettingRow({ babyId, spec, canEdit }: {
+  babyId: string;
+  spec: SettingSpec;
+  canEdit: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const id = `setting-${spec.field}`;
 
-  if (!open) {
+  if (!editing) {
     return (
-      <Button
-        variant="secondary"
-        size="sm"
-        className="mt-4"
-        onClick={() => setOpen(true)}
-      >
-        <Pencil className="h-3.5 w-3.5" /> Edit birth details
-      </Button>
+      <li className="flex items-center gap-3 py-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-muted">{spec.label}</p>
+          <p className="truncate text-sm font-medium">{spec.display}</p>
+        </div>
+        {canEdit && (
+          <button
+            type="button"
+            aria-label={`Edit ${spec.label}`}
+            onClick={() => setEditing(true)}
+            className="rounded-full p-2 text-faint hover:bg-surface-alt hover:text-ink"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+        )}
+      </li>
     );
   }
 
   return (
-    <form
-      action={(fd) =>
-        startTransition(async () => {
-          setError(null);
-          try {
-            await updateBirthDetails(fd);
-            setOpen(false);
-          } catch (e) {
-            setError(e instanceof Error ? e.message : "Could not save");
-          }
-        })
-      }
-      className="mt-4 space-y-3 rounded-2xl bg-surface-alt p-4"
-    >
-      <input type="hidden" name="baby_id" value={baby.id} />
-      <div>
-        <Label htmlFor="pname">Name</Label>
-        <Input id="pname" name="name" defaultValue={baby.name} required />
-      </div>
-      <div>
-        <Label htmlFor="pbirth">Date &amp; time of birth</Label>
+    <li className="py-3">
+      <form
+        action={(fd) =>
+          startTransition(async () => {
+            setError(null);
+            try {
+              await updateBabySetting(fd);
+              setEditing(false);
+            } catch (e) {
+              setError(e instanceof Error ? e.message : "Could not save");
+            }
+          })
+        }
+        className="space-y-2"
+      >
+        <input type="hidden" name="baby_id" value={babyId} />
+        <input type="hidden" name="field" value={spec.field} />
+        <Label htmlFor={id}>{spec.label}</Label>
         <Input
-          id="pbirth"
-          name="birth_at"
-          type="datetime-local"
-          defaultValue={toLocalInputValue(new Date(baby.birth_at))}
-          required
+          id={id}
+          name="value"
+          type={spec.inputType}
+          inputMode={spec.inputType === "number" ? "decimal" : undefined}
+          defaultValue={spec.value}
+          placeholder={spec.placeholder}
+          step={spec.step}
+          min={spec.min}
+          max={spec.max}
+          required={spec.required}
+          autoFocus
         />
-      </div>
-      <div>
-        <Label htmlFor="pweight">Birth weight (g)</Label>
-        <Input
-          id="pweight"
-          name="birth_weight_g"
-          type="number"
-          inputMode="numeric"
-          defaultValue={baby.birth_weight_g}
-          min={500}
-          max={7000}
-          required
-        />
-      </div>
-      <div>
-        <Label htmlFor="pnappy">Dry nappy weight (g)</Label>
-        <Input
-          id="pnappy"
-          name="nappy_base_weight_g"
-          type="number"
-          inputMode="numeric"
-          defaultValue={baby.nappy_base_weight_g ?? ""}
-          min={5}
-          max={200}
-          placeholder="weigh a clean nappy, e.g. 28"
-        />
-        <p className="mt-1 text-xs text-faint">
-          With this set, weighing a used nappy in Log tells the app how much
-          wee is in it (1 g ≈ 1 ml) and marks it wet automatically.
-        </p>
-      </div>
-      <div>
-        <Label htmlFor="pinterval">Time between feeds (hours)</Label>
-        <Input
-          id="pinterval"
-          name="feed_interval_h"
-          type="number"
-          inputMode="decimal"
-          step={0.5}
-          min={0.5}
-          max={8}
-          defaultValue={
-            baby.feed_interval_min ? baby.feed_interval_min / 60 : ""
-          }
-          placeholder="e.g. 3 — leave empty to hide next-feed times"
-        />
-        <p className="mt-1 text-xs text-faint">
-          When set, Today shows when the next feed is due (last feed +
-          this interval). Leave empty if you’d rather feed purely on cues.
-        </p>
-      </div>
-      {error && <p className="text-sm text-alert">{error}</p>}
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={pending}>
-          {pending ? "Saving…" : "Save"}
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => setOpen(false)}
-        >
-          Cancel
-        </Button>
-      </div>
-    </form>
+        {spec.hint && <p className="text-xs text-faint">{spec.hint}</p>}
+        {error && <p className="text-sm text-alert">{error}</p>}
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" disabled={pending}>
+            {pending ? "Saving…" : "Save"}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setEditing(false)}
+          >
+            Cancel
+          </Button>
+        </div>
+      </form>
+    </li>
+  );
+}
+
+export function BabySettings({ baby, canEdit }: { baby: Baby; canEdit: boolean }) {
+  const specs: SettingSpec[] = [
+    {
+      field: "name",
+      label: "Name",
+      display: baby.name,
+      value: baby.name,
+      inputType: "text",
+      required: true,
+    },
+    {
+      field: "birth_at",
+      label: "Date & time of birth",
+      display: new Date(baby.birth_at).toLocaleString(undefined, {
+        weekday: "short",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      value: toLocalInputValue(new Date(baby.birth_at)),
+      inputType: "datetime-local",
+      required: true,
+    },
+    {
+      field: "birth_weight_g",
+      label: "Birth weight",
+      display: `${baby.birth_weight_g} g`,
+      value: String(baby.birth_weight_g),
+      inputType: "number",
+      min: 500,
+      max: 7000,
+      required: true,
+    },
+    {
+      field: "nappy_base_weight_g",
+      label: "Dry nappy weight",
+      display: baby.nappy_base_weight_g
+        ? `${baby.nappy_base_weight_g} g`
+        : "Not set",
+      value: baby.nappy_base_weight_g?.toString() ?? "",
+      inputType: "number",
+      min: 5,
+      max: 200,
+      placeholder: "weigh a clean nappy, e.g. 28",
+      hint: "With this set, weighing a used nappy tells the app how much wee is in it (1 g ≈ 1 ml). Leave empty to turn inference off.",
+    },
+    {
+      field: "feed_interval_h",
+      label: "Time between feeds",
+      display: baby.feed_interval_min
+        ? `${baby.feed_interval_min % 60 === 0 ? baby.feed_interval_min / 60 : (baby.feed_interval_min / 60).toFixed(1)} hours`
+        : "Not set — next feed not shown",
+      value: baby.feed_interval_min ? String(baby.feed_interval_min / 60) : "",
+      inputType: "number",
+      step: 0.5,
+      min: 0.5,
+      max: 12,
+      placeholder: "e.g. 3",
+      hint: "When set, Today shows when the next feed is due. Leave empty to feed purely on cues.",
+    },
+  ];
+
+  return (
+    <ul className="mt-3 divide-y divide-line border-t border-line">
+      {specs.map((spec) => (
+        <SettingRow key={spec.field} babyId={baby.id} spec={spec} canEdit={canEdit} />
+      ))}
+    </ul>
   );
 }
 
