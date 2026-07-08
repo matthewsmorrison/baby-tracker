@@ -2,9 +2,11 @@
 
 import { useMemo } from "react";
 import {
+  Area,
   Bar,
   BarChart,
   CartesianGrid,
+  ComposedChart,
   ReferenceArea,
   ResponsiveContainer,
   Tooltip,
@@ -13,6 +15,7 @@ import {
 } from "recharts";
 import {
   EXPECTED_FEEDS,
+  URINE_PER_WEE_ML,
   dayOfLife,
   estimatedUrineMl,
   expectedDirty,
@@ -49,6 +52,8 @@ interface DayRow {
   gapCount: number;
   gapAvgH: number | null;
   urineMl: number | null;
+  weighedNappies: number;
+  urineBand: [number, number] | undefined;
 }
 
 function dayKey(d: Date): string {
@@ -123,6 +128,8 @@ export function DashboardView({
         gapCount: 0,
         gapAvgH: null,
         urineMl: null,
+        weighedNappies: 0,
+        urineBand: undefined,
       });
     }
     for (const e of entries) {
@@ -138,7 +145,10 @@ export function DashboardView({
         if (e.wet) row.wet += 1;
         if (e.dirty) row.dirty += 1;
         const urine = estimatedUrineMl(e, nappyBaseWeightG);
-        if (urine !== null) row.urineMl = (row.urineMl ?? 0) + urine;
+        if (urine !== null) {
+          row.urineMl = (row.urineMl ?? 0) + urine;
+          row.weighedNappies += 1;
+        }
       }
     }
     // Time between feed starts, attributed to the day the later feed began.
@@ -152,6 +162,14 @@ export function DashboardView({
       row.gapAvgH = row.gapCount
         ? Math.round((row.gapSumMs / row.gapCount / 3600000) * 10) / 10
         : null;
+      // Expected range scales with how many nappies were actually weighed:
+      // a normal wee is 30–45 ml, so N weighed nappies should hold N × that.
+      if (row.weighedNappies > 0) {
+        row.urineBand = [
+          row.weighedNappies * URINE_PER_WEE_ML.min,
+          row.weighedNappies * URINE_PER_WEE_ML.max,
+        ];
+      }
     }
     return [...byDay.values()];
   }, [entries, birthAt, nappyBaseWeightG]);
@@ -393,15 +411,25 @@ export function DashboardView({
         <Card className="p-5">
           <CardTitle>Estimated wee per day</CardTitle>
           <p className="mt-0.5 text-xs text-faint">
-            From weighed nappies: contents minus the poo seen in the photo
-            (1 g ≈ 1 ml). Only counts nappies that were weighed.
+            From weighed nappies (contents minus the poo seen in the photo,
+            1 g ≈ 1 ml). Band = a normal {URINE_PER_WEE_ML.min}–
+            {URINE_PER_WEE_ML.max} ml per wee × the nappies weighed that day —
+            inside it means normal-sized wees.
           </p>
           <div className="mt-3 h-44">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={days} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
+              <ComposedChart data={days} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
                 <CartesianGrid vertical={false} stroke="var(--line)" />
                 <XAxis dataKey="label" {...axisProps} axisLine={{ stroke: "var(--line)" }} interval="preserveStartEnd" />
                 <YAxis {...axisProps} axisLine={false} unit="ml" />
+                <Area
+                  dataKey="urineBand"
+                  stroke="none"
+                  fill="var(--positive-bg)"
+                  fillOpacity={0.7}
+                  connectNulls
+                  isAnimationActive={false}
+                />
                 <Tooltip
                   cursor={{ fill: "var(--surface-alt)" }}
                   contentStyle={tooltipStyle}
@@ -410,10 +438,14 @@ export function DashboardView({
                       ? `Day ${(p[0].payload as DayRow).dol} · ${(p[0].payload as DayRow).label}`
                       : ""
                   }
-                  formatter={(v) => [`≈ ${v} ml`, "estimated wee"]}
+                  formatter={(v, name) => {
+                    if (name === "urineBand" && Array.isArray(v))
+                      return [`${v[0]}–${v[1]} ml`, "expected for nappies weighed"];
+                    return [`≈ ${v} ml`, "estimated wee"];
+                  }}
                 />
                 <Bar dataKey="urineMl" fill={C.blue} radius={[4, 4, 0, 0]} maxBarSize={22} />
-              </BarChart>
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
         </Card>

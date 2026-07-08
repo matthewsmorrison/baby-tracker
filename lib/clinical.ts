@@ -243,6 +243,12 @@ export function nappyOutputG(
   return Math.max(0, nappyWeightG - baseWeightG);
 }
 
+/**
+ * A normal single wee is roughly 30–45 ml once feeding is established
+ * (Naître et grandir, "Is my baby getting enough milk?").
+ */
+export const URINE_PER_WEE_ML = { min: 30, max: 45 };
+
 /** Rough stool mass for the AI's photo estimate (rough by design). */
 export const STOOL_G_BY_AMOUNT: Record<string, number> = {
   none: 0,
