@@ -69,11 +69,13 @@ export default async function TodayPage() {
     <div className="space-y-4 animate-rise">
       {/* Hero — bleeds to the top & side edges so the warm glow reaches the
           top of the screen instead of sitting below a strip of bare sand. */}
-      <div className="relative -mx-4 -mt-6 overflow-hidden rounded-b-3xl px-6 pb-12 pt-14 text-center">
+      <div className="relative -mx-4 -mt-6 overflow-hidden rounded-b-3xl px-6 pb-11 pt-28 text-center">
         <SkyArc />
         <div className="relative z-10">
-          <p className="text-sm font-medium text-muted">{ctx.baby.name}</p>
-          <p className="stat-num text-6xl mt-1">Day {day}</p>
+          <h1 className="text-3xl font-bold tracking-tight text-ink">
+            {ctx.baby.name}
+          </h1>
+          <p className="stat-num mt-1 text-5xl text-ink/90">Day {day}</p>
           <p className="mt-2 text-sm text-muted">
             {now.toLocaleDateString(undefined, {
               weekday: "long",

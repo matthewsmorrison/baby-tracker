@@ -65,17 +65,19 @@ export function SkyArc() {
   const phase = phaseFor(hour);
 
   const targetX = 8 + progress * 84; // 8%..92%
-  const targetTop = 82 - Math.sin(progress * Math.PI) * 60; // 82%..22%..82%
+  // Confined to a shallow band at the very top so it never overlaps the name.
+  const targetTop = 62 - Math.sin(progress * Math.PI) * 34; // 62px..28px..62px
   const x = mounted ? targetX : 6;
-  const top = mounted ? targetTop : 86;
+  const top = mounted ? targetTop : 78; // sweeps up from just below the band
 
+  // Stars sit in the same top band (px from the top).
   const stars = [
-    [18, 30],
-    [34, 18],
-    [62, 22],
-    [78, 34],
-    [88, 16],
-    [48, 12],
+    [18, 22],
+    [34, 10],
+    [62, 14],
+    [78, 30],
+    [88, 8],
+    [48, 6],
   ];
 
   return (
@@ -84,7 +86,7 @@ export function SkyArc() {
       <div
         className="absolute inset-0 transition-[background] duration-1000"
         style={{
-          background: `radial-gradient(ellipse 70% 85% at ${x}% 6%, ${GLOW[phase]}, transparent 72%)`,
+          background: `radial-gradient(ellipse 75% 70% at ${x}% -6%, ${GLOW[phase]}, transparent 70%)`,
         }}
       />
 
@@ -96,7 +98,7 @@ export function SkyArc() {
             className="absolute h-1 w-1 rounded-full bg-white sky-twinkle"
             style={{
               left: `${sx}%`,
-              top: `${sy}%`,
+              top: `${sy}px`,
               animationDelay: `${i * 0.6}s`,
               boxShadow: "0 0 4px rgba(255,255,255,0.8)",
             }}
@@ -106,7 +108,7 @@ export function SkyArc() {
       {/* The sun or moon */}
       <div
         className="absolute h-9 w-9 -translate-x-1/2 -translate-y-1/2 transition-[left,top] duration-[1400ms] ease-out"
-        style={{ left: `${x}%`, top: `${top}%` }}
+        style={{ left: `${x}%`, top: `${top}px` }}
       >
         {isDay ? (
           <div
