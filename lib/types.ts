@@ -67,27 +67,27 @@ export type AnalysisAction =
   | "seek_urgent_advice";
 
 export interface AiAnalysis {
+  // The AI is a labeller only: colour, texture and amounts. Every label can
+  // be overwritten by a parent, and none of them is advice.
   visibleContents: "poo" | "wee" | "both" | "unclear";
   colour: string;
   /** AI's classification into the app's stool colour keys. */
   colourKey?: StoolColourKey | "unclear";
   consistency: string;
-  feedTypeLikely:
-    | "more breastfed-type"
-    | "more formula-type"
-    | "mixed"
-    | "unclear";
-  matchesExpected: "yes" | "partly" | "no" | "unclear";
   /** How much stool is visible in the photo. */
   stoolAmount?: "none" | "smear" | "small" | "medium" | "large";
   /** Weighed output minus the estimated stool mass, in ml (1 g ≈ 1 ml). */
   estimatedUrineMl?: number | null;
-  assessment: string;
-  redFlags: string[];
-  action: AnalysisAction;
-  note: string;
   analysedAt?: string;
   model?: string;
+  // Legacy fields from when the AI produced verdicts — no longer generated
+  // or displayed; present on older analyses.
+  feedTypeLikely?: string;
+  matchesExpected?: string;
+  assessment?: string;
+  redFlags?: string[];
+  action?: AnalysisAction;
+  note?: string;
 }
 
 export interface Entry {

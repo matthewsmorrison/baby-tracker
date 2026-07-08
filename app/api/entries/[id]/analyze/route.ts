@@ -11,7 +11,7 @@ import {
   nappyOutputG,
   summariseFeeds,
 } from "@/lib/clinical";
-import type { AiAnalysis, AnalysisAction, Baby, Entry } from "@/lib/types";
+import type { AiAnalysis, Baby, Entry } from "@/lib/types";
 
 // Server-only: reads the private photo with the service role and calls the
 // Anthropic API. The key never reaches the client.
@@ -21,19 +21,7 @@ const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5";
 const ANALYSIS_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: [
-    "visibleContents",
-    "colour",
-    "colourKey",
-    "consistency",
-    "feedTypeLikely",
-    "matchesExpected",
-    "stoolAmount",
-    "assessment",
-    "redFlags",
-    "action",
-    "note",
-  ],
+  required: ["visibleContents", "colour", "colourKey", "consistency", "stoolAmount"],
   properties: {
     visibleContents: { type: "string", enum: ["poo", "wee", "both", "unclear"] },
     colour: { type: "string" },
@@ -54,65 +42,14 @@ const ANALYSIS_SCHEMA = {
         "The single best-matching stool colour category, or 'unclear' if no stool is clearly visible",
     },
     consistency: { type: "string" },
-    feedTypeLikely: {
-      type: "string",
-      enum: ["more breastfed-type", "more formula-type", "mixed", "unclear"],
-    },
-    matchesExpected: { type: "string", enum: ["yes", "partly", "no", "unclear"] },
     stoolAmount: {
       type: "string",
       enum: ["none", "smear", "small", "medium", "large"],
       description:
         "How much stool is visible: none, a smear, small (~1-2 tbsp), medium (~3-5 tbsp), large (covers most of the nappy)",
     },
-    assessment: {
-      type: "string",
-      description: "1-2 sentences for this day AND feeding pattern",
-    },
-    redFlags: {
-      type: "array",
-      items: { type: "string" },
-      description:
-        "Only genuinely concerning findings: pale/white/chalky, blood, black tarry after day 4, meconium at day 5+",
-    },
-    action: {
-      type: "string",
-      enum: [
-        "log_and_continue",
-        "mention_at_next_check",
-        "contact_midwife_today",
-        "seek_urgent_advice",
-      ],
-    },
-    note: { type: "string", description: "one calm sentence for a tired parent" },
   },
 } as const;
-
-const ACTION_RANK: Record<AnalysisAction, number> = {
-  log_and_continue: 0,
-  mention_at_next_check: 1,
-  contact_midwife_today: 2,
-  seek_urgent_advice: 3,
-};
-
-/**
- * Server-side safety floor, independent of the model's judgement: pale/blood/
- * late-meconium red flags can never come back with a reassuring action.
- */
-function enforceSafety(ai: AiAnalysis): AiAnalysis {
-  const text = [ai.colour, ai.assessment, ...(ai.redFlags ?? [])]
-    .join(" ")
-    .toLowerCase();
-  let floor: AnalysisAction | null = null;
-  if (/(pale|white|chalky|acholic)/.test(text)) floor = "contact_midwife_today";
-  if (/(blood|bloody)/.test(text)) floor = "seek_urgent_advice";
-  if ((ai.redFlags?.length ?? 0) > 0 && !floor) floor = "contact_midwife_today";
-
-  if (floor && ACTION_RANK[ai.action] < ACTION_RANK[floor]) {
-    return { ...ai, action: floor };
-  }
-  return ai;
-}
 
 function buildPrompt(baby: Baby, entry: Entry, entries: Entry[]): string {
   const day = dayOfLife(baby.birth_at, entry.occurred_at);
@@ -145,7 +82,7 @@ Stool type depends on feeding, so judge against the matching pattern:
 - Days 1-2: meconium (black-green, tarry) is normal regardless of feeding. Days 3-4: transitional green-brown.
 - Expected for this baby today: ${expected}
 
-Analyse the photo of the nappy.
+Label the photo of the nappy. Your job is LABELLING ONLY — colour, texture and amounts. Do not give advice, verdicts, reassurance or warnings; the app derives any guidance from your labels, and the parents can overwrite every label.
 
 For stoolAmount, estimate how much stool is visible: none, smear, small (~1-2 tablespoons), medium (~3-5 tablespoons), or large (covers most of the nappy). If the nappy was weighed (context above), sanity-check your estimate against the total contents.
 
@@ -160,12 +97,10 @@ For colourKey, classify the stool into exactly ONE of:
 - blood: visible red blood or black tarry stool after day 4 (RED FLAG)
 - unclear: no stool clearly visible in the photo
 
-HARD RULES:
-- NEVER give an all-clear that could delay care. If anything is ambiguous, err toward advising the parents to ask a professional.
-- Pale/white/chalky stool, visible blood, black tarry stool after day 4, or meconium still appearing at day 5+ -> action MUST be "contact_midwife_today" or "seek_urgent_advice".
-- Do NOT flag normal formula-type tan/brown pasty stool as abnormal when the baby is having formula.
-- If the image is unclear or doesn't show stool, say what's needed (better light, wider shot) and use "log_and_continue" with matchesExpected "unclear".
-- Keep language calm and plain — the reader is a tired parent at 3am.`;
+LABELLING RULES:
+- Choose "pale" or "blood" whenever they genuinely might apply — under-labelling those could delay care. When torn between pale and another colour, choose pale.
+- Do not stretch: normal formula-type tan/brown pasty stool is tan or brown, not a concern colour.
+- If the image is unclear or shows no stool, use colourKey "unclear" and stoolAmount "none".`;
 }
 
 export async function POST(
@@ -298,7 +233,6 @@ export async function POST(
     return NextResponse.json({ error: "Could not parse analysis" }, { status: 502 });
   }
 
-  ai = enforceSafety(ai);
   ai.analysedAt = new Date().toISOString();
   ai.model = MODEL;
 

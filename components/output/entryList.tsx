@@ -12,7 +12,6 @@ import {
 import { entryLabel, feedAmounts } from "@/lib/entryDisplay";
 import { formatTime } from "@/lib/dates";
 import type { Entry } from "@/lib/types";
-import { AiActionChip, AiVerdict } from "@/components/output/AiVerdict";
 import {
   Baby,
   ChevronRight,
@@ -109,11 +108,6 @@ export function EntryRow({
             {entry.ended_at && ` – ${formatTime(entry.ended_at)}`}
             {entry.nappy_weight_g && ` · ${entry.nappy_weight_g} g`}
           </p>
-          {entry.ai?.action && !open && (
-            <div className="mt-1.5">
-              <AiActionChip action={entry.ai.action} />
-            </div>
-          )}
           {entry.note && (
             <p className="mt-1 text-xs text-muted italic">“{entry.note}”</p>
           )}
@@ -193,7 +187,25 @@ export function EntryRow({
               onClick={() => onPhotoClick(photoUrl)}
             />
           )}
-          {entry.ai && <AiVerdict ai={entry.ai} />}
+          {entry.ai && (
+            <div className="flex flex-wrap gap-1.5 text-xs">
+              {entry.ai.consistency && (
+                <span className="rounded-full border border-line bg-surface-alt px-2.5 py-1 font-medium text-muted">
+                  texture: {entry.ai.consistency}
+                </span>
+              )}
+              {entry.ai.stoolAmount && entry.ai.stoolAmount !== "none" && (
+                <span className="rounded-full border border-line bg-surface-alt px-2.5 py-1 font-medium text-muted">
+                  poo: {entry.ai.stoolAmount}
+                </span>
+              )}
+              {entry.ai.estimatedUrineMl != null && (
+                <span className="rounded-full border border-line bg-surface-alt px-2.5 py-1 font-medium text-muted">
+                  ≈ {entry.ai.estimatedUrineMl} ml wee
+                </span>
+              )}
+            </div>
+          )}
           {ws && (
             <p
               className={`text-sm font-semibold stat-num ${

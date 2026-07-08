@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Field";
 import { OccurredAtField } from "./OccurredAtField";
 import { CameraCapture } from "./CameraCapture";
-import { AiVerdict } from "@/components/output/AiVerdict";
 import { Camera, Droplets, Image as ImageIcon, X } from "lucide-react";
 
 const COLOUR_KEYS = Object.keys(STOOL_COLOURS) as StoolColourKey[];
@@ -77,7 +76,7 @@ export function NappyForm({
   );
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [ai, setAi] = useState<AiAnalysis | null>(initial?.ai ?? null);
+  const [, setAi] = useState<AiAnalysis | null>(initial?.ai ?? null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const libraryRef = useRef<HTMLInputElement>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -256,7 +255,7 @@ export function NappyForm({
       // Analyse when there's a photo: always for new photos, and on edit the
       // context (occurred_at / feeding mix) may have changed.
       if (hasNewPhoto || (initial?.photo_path && initial)) {
-        setBusy("Asking Claude to check the photo…");
+        setBusy("Labelling the photo…");
         const res = await fetch(`/api/entries/${entryId}/analyze`, {
           method: "POST",
         });
@@ -493,8 +492,8 @@ export function NappyForm({
           </div>
         )}
         <p className="mt-1 text-xs text-faint">
-          Claude checks colour &amp; consistency against this day of life and
-          feeding mix. Not a diagnosis.
+          Claude labels the colour and contents from the photo — every label
+          can be changed.
         </p>
       </div>
 
@@ -515,8 +514,6 @@ export function NappyForm({
           </p>
         )}
       </div>
-
-      {ai && <AiVerdict ai={ai} />}
 
       {error && (
         <p className="rounded-2xl bg-alert-bg px-4 py-3 text-sm text-alert">{error}</p>
