@@ -12,6 +12,7 @@ import {
 import { entryLabel, feedAmounts } from "@/lib/entryDisplay";
 import { formatTime } from "@/lib/dates";
 import type { Entry } from "@/lib/types";
+import { Portal } from "@/components/ui/Portal";
 import {
   Baby,
   ChevronRight,
@@ -254,6 +255,7 @@ export function PhotoLightbox({
 }) {
   if (!url) return null;
   return (
+    <Portal>
     <div
       role="dialog"
       aria-label="Nappy photo, enlarged"
@@ -274,5 +276,6 @@ export function PhotoLightbox({
         <X className="h-5 w-5" />
       </button>
     </div>
+    </Portal>
   );
 }

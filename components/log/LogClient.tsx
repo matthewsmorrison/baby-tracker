@@ -8,6 +8,7 @@ import { FeedForm } from "./FeedForm";
 import { WeightForm } from "./WeightForm";
 import { RecentEntries } from "./RecentEntries";
 import { Check } from "lucide-react";
+import { Portal } from "@/components/ui/Portal";
 
 export function LogClient({
   babyId,
@@ -114,12 +115,14 @@ export function LogClient({
       />
 
       {toast && (
-        <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-40 flex justify-center md:bottom-6">
-          <div className="flex items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-white shadow-card animate-rise">
-            <Check className="h-4 w-4 text-positive-bar" />
-            {toast}
+        <Portal>
+          <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-40 flex justify-center md:bottom-6">
+            <div className="flex items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-white shadow-card animate-rise">
+              <Check className="h-4 w-4 text-positive-bar" />
+              {toast}
+            </div>
           </div>
-        </div>
+        </Portal>
       )}
     </div>
   );

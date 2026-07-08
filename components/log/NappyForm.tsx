@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Field";
 import { OccurredAtField } from "./OccurredAtField";
 import { CameraCapture } from "./CameraCapture";
+import { Portal } from "@/components/ui/Portal";
 import { Camera, Droplets, Image as ImageIcon, X } from "lucide-react";
 
 const COLOUR_KEYS = Object.keys(STOOL_COLOURS) as StoolColourKey[];
@@ -534,6 +535,7 @@ export function NappyForm({
       </Button>
 
       {cameraOpen && (
+        <Portal>
         <CameraCapture
           onCapture={(file) => {
             // Live capture = taken right now; leave the "When" picker alone.
@@ -548,6 +550,7 @@ export function NappyForm({
             cameraRef.current?.click();
           }}
         />
+        </Portal>
       )}
     </Card>
   );
