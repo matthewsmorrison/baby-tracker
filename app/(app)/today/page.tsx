@@ -20,6 +20,7 @@ import { Card, CardTitle } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
 import { KpiCard } from "@/components/output/KpiCard";
 import { NextFeedCard } from "@/components/output/NextFeedCard";
+import { SkyArc } from "@/components/output/SkyArc";
 import { AlertTriangle } from "lucide-react";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -67,24 +68,19 @@ export default async function TodayPage() {
   return (
     <div className="space-y-4 animate-rise">
       {/* Hero */}
-      <div className="relative overflow-hidden rounded-3xl px-6 py-10 text-center">
-        <div
-          aria-hidden
-          className="absolute inset-0 -z-10"
-          style={{
-            background:
-              "radial-gradient(ellipse 80% 90% at 50% 0%, var(--bg-glow), transparent 75%)",
-          }}
-        />
-        <p className="text-sm font-medium text-muted">{ctx.baby.name}</p>
-        <p className="stat-num text-6xl mt-1">Day {day}</p>
-        <p className="mt-2 text-sm text-muted">
-          {now.toLocaleDateString(undefined, {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-          })}
-        </p>
+      <div className="relative overflow-hidden rounded-3xl px-6 py-12 text-center">
+        <SkyArc />
+        <div className="relative z-10">
+          <p className="text-sm font-medium text-muted">{ctx.baby.name}</p>
+          <p className="stat-num text-6xl mt-1">Day {day}</p>
+          <p className="mt-2 text-sm text-muted">
+            {now.toLocaleDateString(undefined, {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+            })}
+          </p>
+        </div>
       </div>
 
       {/* Next feed due — only when an interval is configured in Profile */}
