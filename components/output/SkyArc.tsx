@@ -123,9 +123,11 @@ export function SkyArc() {
           <div
             className="h-full w-full rounded-full"
             style={{
-              background: "radial-gradient(circle at 34% 32%, #FBFBFF, #C9CEE6)",
-              boxShadow:
-                "inset -5px -4px 0 0 rgba(150,156,190,0.35), 0 0 18px 5px rgba(180,188,224,0.5)",
+              // Soft off-centre highlight gives a gentle sphere/gibbous look
+              // without a hard-edged inset shadow (which showed a boxy corner).
+              background:
+                "radial-gradient(circle at 36% 33%, #FCFCFF 0%, #E9ECF6 48%, #C7CDE4 100%)",
+              boxShadow: "0 0 16px 4px rgba(180,188,224,0.5)",
             }}
           />
         )}
