@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient } from "./supabase/server";
@@ -18,7 +19,7 @@ const ACTIVE_BABY_COOKIE = "hearth_active_baby";
  * Resolve the signed-in user and their active baby (cookie-selected, else
  * first). Redirects to /login or /onboarding when either is missing.
  */
-export async function getBabyContext(): Promise<BabyContext> {
+export const getBabyContext = cache(async (): Promise<BabyContext> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -52,10 +53,11 @@ export async function getBabyContext(): Promise<BabyContext> {
     babies,
     userId: user.id,
   };
-}
+});
 
-/** All entries for a baby, newest first. */
-export async function getEntries(babyId: string): Promise<Entry[]> {
+/** All entries for a baby, newest first. Memoised per request so the layout
+ *  (LogModal) and the page don't fetch the same rows twice. */
+export const getEntries = cache(async (babyId: string): Promise<Entry[]> => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("entries")
@@ -63,6 +65,6 @@ export async function getEntries(babyId: string): Promise<Entry[]> {
     .eq("baby_id", babyId)
     .order("occurred_at", { ascending: false });
   return (data ?? []) as Entry[];
-}
+});
 
 export { ACTIVE_BABY_COOKIE };

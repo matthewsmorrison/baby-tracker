@@ -15,11 +15,12 @@ import {
   summariseFeeds,
   weightStatus,
 } from "@/lib/clinical";
-import { feedGaps, formatGap, median } from "@/lib/entryDisplay";
+import { feedGaps, median } from "@/lib/entryDisplay";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
 import { KpiCard } from "@/components/output/KpiCard";
-import { AlertTriangle, Clock } from "lucide-react";
+import { NextFeedCard } from "@/components/output/NextFeedCard";
+import { AlertTriangle } from "lucide-react";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -51,21 +52,17 @@ export default async function TodayPage() {
   const colourKey = expectedColourKey(day, feeds.mix);
   const colourText = expectedColour(day, feeds.mix);
 
-  // "Next feed due": only when the family has configured an interval in
-  // Profile — last feed start + that interval. Recent rhythm shown as context.
-  const intervalMs = ctx.baby.feed_interval_min
-    ? ctx.baby.feed_interval_min * 60_000
-    : null;
+  // "Next feed due" (client-rendered for correct timezone): needs the last
+  // feed and the typical recent gap for context.
   const gaps = feedGaps(entries);
   const recentGaps = gaps.slice(-6).map((g) => g.gapMs);
   const typicalGap = recentGaps.length >= 2 ? median(recentGaps) : null;
-  const lastFeedStart = entries
+  const lastFeed = entries
     .filter((e) => e.type === "feed")
-    .map((e) => new Date(e.occurred_at).getTime())
-    .sort((a, b) => b - a)[0];
-  const nextDue =
-    intervalMs && lastFeedStart ? new Date(lastFeedStart + intervalMs) : null;
-  const overdueMs = nextDue ? now.getTime() - nextDue.getTime() : 0;
+    .sort(
+      (a, b) =>
+        new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime()
+    )[0];
 
   return (
     <div className="space-y-4 animate-rise">
@@ -91,44 +88,12 @@ export default async function TodayPage() {
       </div>
 
       {/* Next feed due — only when an interval is configured in Profile */}
-      {nextDue && intervalMs && (
-        <Card className="flex items-center gap-4 p-5">
-          <span
-            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${
-              overdueMs > 0 ? "bg-accent-soft" : "bg-positive-bg"
-            }`}
-          >
-            <Clock
-              className={`h-5 w-5 ${
-                overdueMs > 0 ? "text-[#A45A1B]" : "text-positive"
-              }`}
-            />
-          </span>
-          <div className="min-w-0 flex-1">
-            <CardTitle>Next feed due</CardTitle>
-            <p className="stat-num text-2xl leading-tight">
-              ~
-              {nextDue.toLocaleTimeString(undefined, {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-              <span
-                className={`ml-2 text-sm font-medium ${
-                  overdueMs > 0 ? "text-[#A45A1B]" : "text-muted"
-                }`}
-              >
-                {overdueMs > 0
-                  ? `about now — ${formatGap(overdueMs)} past`
-                  : `in ${formatGap(-overdueMs)}`}
-              </span>
-            </p>
-            <p className="text-xs text-muted">
-              Based on your {formatGap(intervalMs)} interval
-              {typicalGap && ` — feeds have actually been ~${formatGap(typicalGap)} apart lately`}
-              . A guide, not a schedule — feed on cues.
-            </p>
-          </div>
-        </Card>
+      {ctx.baby.feed_interval_min && lastFeed && (
+        <NextFeedCard
+          lastFeedStartISO={lastFeed.occurred_at}
+          intervalMin={ctx.baby.feed_interval_min}
+          typicalGapMs={typicalGap}
+        />
       )}
 
       {/* KPIs */}
