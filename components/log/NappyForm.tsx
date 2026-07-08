@@ -31,7 +31,6 @@ export function NappyForm({
   birthAt,
   entries,
   initial,
-  onDone,
   onSaved,
   nappyBaseWeightG,
   aiEnabled,
@@ -40,7 +39,7 @@ export function NappyForm({
   birthAt: string;
   entries: Entry[];
   initial?: Entry;
-  onDone: () => void;
+  onDone?: () => void;
   /** Confirm a successful save (snackbar) and close any edit state. */
   onSaved: (message: string) => void;
   /** Dry nappy weight from Profile — enables wetness inference. */

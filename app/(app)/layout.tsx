@@ -1,8 +1,9 @@
-import { getBabyContext } from "@/lib/data";
+import { getBabyContext, getEntries } from "@/lib/data";
 import { dayOfLife } from "@/lib/clinical";
 import { Nav } from "@/components/shell/Nav";
 import { Header } from "@/components/shell/Header";
 import { TimerIndicator } from "@/components/log/TimerIndicator";
+import { LogModal } from "@/components/log/LogModal";
 
 export default async function AppLayout({
   children,
@@ -12,6 +13,7 @@ export default async function AppLayout({
   const ctx = await getBabyContext();
   const day = dayOfLife(ctx.baby.birth_at, new Date());
   const aiEnabled = ctx.baby.membership_tier === "advanced";
+  const entries = ctx.canEdit ? await getEntries(ctx.baby.id) : [];
 
   return (
     <div className="flex min-h-dvh w-full">
@@ -59,6 +61,15 @@ export default async function AppLayout({
       </div>
 
       {ctx.canEdit && <TimerIndicator babyId={ctx.baby.id} />}
+      {ctx.canEdit && (
+        <LogModal
+          babyId={ctx.baby.id}
+          birthAt={ctx.baby.birth_at}
+          entries={entries}
+          nappyBaseWeightG={ctx.baby.nappy_base_weight_g}
+          aiEnabled={aiEnabled}
+        />
+      )}
     </div>
   );
 }

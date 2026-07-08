@@ -2,30 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Sun,
-  PenLine,
-  Clock,
-  UserRound,
-  ChartColumn,
-  CalendarDays,
-  Sparkles,
-} from "lucide-react";
+import { Sun, Clock, UserRound, ChartColumn, Sparkles } from "lucide-react";
 
 const items = [
   { href: "/today", label: "Today", icon: Sun },
   { href: "/dashboard", label: "Charts", icon: ChartColumn },
-  { href: "/log", label: "Log", icon: PenLine, input: true },
-  { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/history", label: "History", icon: Clock },
-  // Mobile reaches Ask via the header sparkle — 6 bottom slots is the max.
-  // Advanced membership only.
+  // Mobile reaches Ask via the header sparkle. Advanced membership only.
   { href: "/chat", label: "Ask", icon: Sparkles, sideOnly: true, ai: true },
   { href: "/profile", label: "Profile", icon: UserRound },
 ];
 
 export function Nav({
-  canEdit,
   orientation,
   aiEnabled,
 }: {
@@ -36,9 +24,7 @@ export function Nav({
   const pathname = usePathname();
   const visible = items.filter(
     (i) =>
-      (canEdit || !i.input) &&
-      (orientation === "side" || !i.sideOnly) &&
-      (aiEnabled || !i.ai)
+      (orientation === "side" || !i.sideOnly) && (aiEnabled || !i.ai)
   );
 
   if (orientation === "side") {
@@ -65,33 +51,10 @@ export function Nav({
     );
   }
 
-  // Bottom bar: Log is the emphasised centre action
   return (
     <nav className="flex items-stretch justify-around px-2 py-1.5">
-      {visible.map(({ href, label, icon: Icon, input }) => {
+      {visible.map(({ href, label, icon: Icon }) => {
         const active = pathname.startsWith(href);
-        if (input) {
-          return (
-            <Link
-              key={href}
-              href={href}
-              aria-label={label}
-              className="flex flex-col items-center justify-center -mt-5"
-            >
-              <span
-                className={`flex h-13 w-13 items-center justify-center rounded-full shadow-card transition ${
-                  active ? "bg-ink text-white" : "bg-ink text-white"
-                }`}
-                style={{ height: 52, width: 52 }}
-              >
-                <Icon className="h-5 w-5" strokeWidth={2.2} />
-              </span>
-              <span className="mt-0.5 text-[10px] font-medium text-muted">
-                {label}
-              </span>
-            </Link>
-          );
-        }
         return (
           <Link
             key={href}

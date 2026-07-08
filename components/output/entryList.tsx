@@ -123,7 +123,7 @@ export function EntryRow({
       </button>
       {canEdit && (
         <Link
-          href={`/log?edit=${entry.id}`}
+          href={`?edit=${entry.id}`}
           aria-label="Edit this entry in Log"
           className="rounded-full p-2 text-faint hover:bg-surface-alt hover:text-ink"
         >

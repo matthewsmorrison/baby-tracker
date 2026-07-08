@@ -4,7 +4,9 @@ import { DISCLAIMER, dayOfLife } from "@/lib/clinical";
 import { dayWithDate } from "@/lib/dates";
 import type { Entry } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
+import { Segmented } from "@/components/ui/Segmented";
 import { DayTotals, EntryRow, PhotoLightbox } from "./entryList";
+import { CalendarGrid } from "./CalendarClient";
 
 function Timeline({
   entries,
@@ -78,6 +80,7 @@ export function HistoryClient({
   canEdit: boolean;
   nappyBaseWeightG?: number | null;
 }) {
+  const [view, setView] = useState<"calendar" | "timeline">("calendar");
   const [lightbox, setLightbox] = useState<string | null>(null);
 
   if (entries.length === 0) {
@@ -85,8 +88,8 @@ export function HistoryClient({
       <Card className="p-6 text-center animate-rise">
         <p className="font-semibold">Nothing logged yet</p>
         <p className="mt-1 text-sm text-muted">
-          Entries appear here as a day-by-day timeline — including any past
-          days you backdate in Log.
+          Tap the + button to log a feed, nappy or weight — including past
+          days you backdate.
         </p>
       </Card>
     );
@@ -94,15 +97,37 @@ export function HistoryClient({
 
   return (
     <div className="space-y-4 animate-rise">
-      <Timeline
-        entries={entries}
-        birthAt={birthAt}
-        birthWeightG={birthWeightG}
-        photoUrls={photoUrls}
-        canEdit={canEdit}
-        onPhotoClick={setLightbox}
-        nappyBaseWeightG={nappyBaseWeightG}
+      <Segmented<"calendar" | "timeline">
+        options={[
+          { value: "calendar", label: "Calendar" },
+          { value: "timeline", label: "Timeline" },
+        ]}
+        value={view}
+        onChange={setView}
       />
+
+      {view === "calendar" ? (
+        <CalendarGrid
+          entries={entries}
+          birthAt={birthAt}
+          birthWeightG={birthWeightG}
+          photoUrls={photoUrls}
+          canEdit={canEdit}
+          onPhotoClick={setLightbox}
+          nappyBaseWeightG={nappyBaseWeightG}
+        />
+      ) : (
+        <Timeline
+          entries={entries}
+          birthAt={birthAt}
+          birthWeightG={birthWeightG}
+          photoUrls={photoUrls}
+          canEdit={canEdit}
+          onPhotoClick={setLightbox}
+          nappyBaseWeightG={nappyBaseWeightG}
+        />
+      )}
+
       <p className="px-2 pb-2 text-center text-xs text-faint">{DISCLAIMER}</p>
       <PhotoLightbox url={lightbox} onClose={() => setLightbox(null)} />
     </div>

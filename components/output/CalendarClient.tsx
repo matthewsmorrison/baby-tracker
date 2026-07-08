@@ -11,7 +11,7 @@ import {
 } from "./entryList";
 import { Baby, ChevronLeft, ChevronRight, Milk, Scale } from "lucide-react";
 
-function CalendarGrid({
+export function CalendarGrid({
   entries,
   birthAt,
   birthWeightG,
