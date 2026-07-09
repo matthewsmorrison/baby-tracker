@@ -265,7 +265,7 @@ export function ChatClient({
           <p className="font-semibold">Ask about {babyName}’s data</p>
           <p className="mx-auto mt-1 max-w-xs text-sm text-muted">
             Feeds, nappies, weight, patterns — answered from what you’ve logged.
-            Your chats are saved so you can come back to them.
+            Chats are saved and shared with everyone caring for {babyName}.
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             {STARTERS.map((s) => (
