@@ -6,6 +6,7 @@ import {
   DISCLAIMER,
   dayOfLife,
   estimatedUrineMl,
+  expectedNappies,
   expectedWeightBand,
   formatKg,
   summariseFeeds,
@@ -60,6 +61,14 @@ function serialise(baby: Baby, entries: Entry[], tz: string): string {
     const urine = nappies
       .map((e) => estimatedUrineMl(e, baby.nappy_base_weight_g))
       .filter((v): v is number => v !== null);
+    // Sleep started this day (ended sessions only), in ms.
+    const sleepMs = dayEntries
+      .filter((e) => e.type === "sleep" && e.ended_at)
+      .reduce(
+        (s, e) =>
+          s + (new Date(e.ended_at!).getTime() - new Date(e.occurred_at).getTime()),
+        0
+      );
     const dayGaps = gapByDay.get(k) ?? [];
     const avgGap = dayGaps.length
       ? formatGap(dayGaps.reduce((a, b) => a + b, 0) / dayGaps.length)
@@ -70,7 +79,7 @@ function serialise(baby: Baby, entries: Entry[], tz: string): string {
       month: "short",
     });
     dayLines.push(
-      `Day ${day} (${label}): ${f.sessions} feeds (${f.breastMin}min nursing, ${f.expressedMl}ml EBM, ${f.formulaMl}ml formula, mix=${f.mix}); avg gap ${avgGap}; nappies ${wet} wet / ${dirty} dirty${urine.length ? `; est. urine ${urine.reduce((a, b) => a + b, 0)}ml from ${urine.length} weighed` : ""}${weights.length ? `; weight ${weights.join(", ")}` : ""}`
+      `Day ${day} (${label}): ${f.sessions} feeds (${f.breastMin}min nursing, ${f.expressedMl}ml EBM, ${f.formulaMl}ml formula, mix=${f.mix}); avg gap ${avgGap}; nappies ${wet} wet / ${dirty} dirty${urine.length ? `; est. urine ${urine.reduce((a, b) => a + b, 0)}ml from ${urine.length} weighed` : ""}${sleepMs > 0 ? `; sleep ${formatGap(sleepMs)}` : ""}${weights.length ? `; weight ${weights.join(", ")}` : ""}`
     );
   }
 
@@ -113,11 +122,50 @@ function serialise(baby: Baby, entries: Entry[], tz: string): string {
       ].filter(Boolean);
       return `d${day} ${t} NAPPY ${bits.join(", ")}${e.note ? ` note:"${e.note}"` : ""}`;
     }
+    if (e.type === "sleep") {
+      const dur = e.ended_at
+        ? formatGap(new Date(e.ended_at).getTime() - new Date(e.occurred_at).getTime())
+        : "ongoing";
+      return `d${day} ${t}${end} SLEEP ${dur}${e.note ? ` note:"${e.note}"` : ""}`;
+    }
     const band = expectedWeightBand(day, baby.birth_weight_g);
     return `d${day} ${t} WEIGHT ${e.weight_g}g (${weightStatus(e.weight_g!, baby.birth_weight_g).pct.toFixed(1)}% vs birth; expected ${band.low}–${band.high}g)${e.note ? ` note:"${e.note}"` : ""}`;
   });
 
-  return `## Daily summaries (pre-computed — use these numbers for any totals or comparisons; do not re-add raw rows)
+  // --- rolling last-24h window (matches the app's Today screen exactly) ---
+  const nowMs = Date.now();
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const windowStart = nowMs - DAY_MS;
+  const last24 = asc.filter((e) => {
+    const at = new Date(e.occurred_at).getTime();
+    return at > windowStart && at <= nowMs;
+  });
+  const f24 = summariseFeeds(last24);
+  const nappies24 = last24.filter((e) => e.type === "nappy");
+  const wet24 = nappies24.filter((e) => e.wet).length;
+  const dirty24 = nappies24.filter((e) => e.dirty).length;
+  const urine24 = nappies24
+    .map((e) => estimatedUrineMl(e, baby.nappy_base_weight_g))
+    .filter((v): v is number => v !== null)
+    .reduce((a, b) => a + b, 0);
+  // Sleep overlapping the window (same partial-attribution as Today).
+  const sleepMs24 = asc
+    .filter((e) => e.type === "sleep" && e.ended_at)
+    .reduce((s, e) => {
+      const st = Math.max(new Date(e.occurred_at).getTime(), windowStart);
+      const en = Math.min(new Date(e.ended_at!).getTime(), nowMs);
+      return s + Math.max(0, en - st);
+    }, 0);
+  const day24 = dayOfLife(baby.birth_at, new Date());
+  const exp = expectedNappies(day24);
+  const rolling = `## Last 24 hours (rolling window ending right now — USE THIS for any "last 24 hours", "past day", "past 24h", "so far", or "recently" question. This is what the app's Today screen shows. Do NOT substitute a single calendar-day summary for it.)
+- Feeds: ${f24.sessions} (${f24.breastMin}min nursing, ${f24.expressedMl}ml EBM, ${f24.formulaMl}ml formula, mix=${f24.mix})
+- Nappies: ${nappies24.length} total — ${wet24} wet, ${dirty24} dirty${urine24 > 0 ? `; est. urine ${urine24}ml` : ""}. NCT guide for day ${day24}: about ${exp.total} nappies in 24h, at least ${exp.minDirty} with poo.
+- Sleep: ${Math.round((sleepMs24 / 3_600_000) * 10) / 10}h`;
+
+  return `${rolling}
+
+## Daily summaries (pre-computed, per CALENDAR DAY — midnight to midnight in the family's timezone. Use these for a specific date or day of life, and for day-to-day comparisons. Do NOT use one of these as "the last 24 hours".)
 ${dayLines.join("\n")}
 
 ## Raw entries
@@ -207,7 +255,11 @@ HARD RULES:
 - You are a TRACKING AID, not medical advice or diagnosis. Never give an all-clear that could delay care.
 - Pale/white/chalky stool, blood, black tarry stool after day 4, or worrying feeding/weight patterns: advise contacting the midwife or doctor today, calmly.
 - Answer ONLY from the provided data. If the data can't answer, say so plainly. Never invent entries or numbers.
-- Use the pre-computed daily summaries for totals and comparisons rather than re-adding raw rows yourself.
+- TIME WINDOWS — keep these distinct and match the app:
+  · "last 24 hours" / "past day" / "so far" / "recently" → use the "Last 24 hours" block (a rolling window ending now). This is what the app's Today screen shows. Never answer these from a single calendar-day summary.
+  · "today" / a named date / "on Tuesday" → use the matching CALENDAR DAY summary (midnight–midnight).
+  · "day N" refers to day of life (counted from birth), which the daily summaries are labelled with; do not confuse it with a rolling 24h window.
+- Use the pre-computed summaries (rolling and daily) for totals and comparisons rather than re-adding raw rows yourself.
 - The parent's own notes and questions (with any recorded answers) are included below — draw on them for context and refer back to them when relevant.
 - Times in the data are already in the family's timezone (${tz}).
 - Be concise and warm — the reader is a tired parent. Prefer a direct answer first, then one or two supporting numbers.
