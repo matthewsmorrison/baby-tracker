@@ -9,6 +9,7 @@ import { PushToggle } from "@/components/notifications/PushToggle";
 import { ExportCard } from "@/components/export/ExportButtons";
 import { TrackingToggles } from "@/components/profile/TrackingToggles";
 import { ThemeToggle } from "@/components/profile/ThemeToggle";
+import { ConnectedAccounts } from "@/components/profile/ConnectedAccounts";
 import {
   BabySettings,
   DangerZone,
@@ -90,6 +91,8 @@ export default async function ProfilePage() {
       {ctx.canEdit && <PushToggle />}
 
       <ThemeToggle />
+
+      <ConnectedAccounts />
 
       {/* Membership tier */}
       <Card className="p-5">
