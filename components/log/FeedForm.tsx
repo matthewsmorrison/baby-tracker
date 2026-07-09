@@ -53,7 +53,7 @@ function FeedRow({
             onClick={timer.onToggle}
             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition ${
               timer.running
-                ? "bg-ink text-white"
+                ? "bg-ink text-on-ink"
                 : "border border-line bg-surface text-ink hover:border-ink"
             }`}
           >

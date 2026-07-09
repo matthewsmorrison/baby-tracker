@@ -31,7 +31,7 @@ export function Segmented<T extends string>({
             type="button"
             onClick={() => onChange(o.value)}
             className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition ${
-              active ? "bg-ink text-white shadow-sm" : "text-muted hover:text-ink"
+              active ? "bg-ink text-on-ink shadow-sm" : "text-muted hover:text-ink"
             }`}
           >
             {o.label}

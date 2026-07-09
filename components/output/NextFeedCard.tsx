@@ -36,7 +36,7 @@ export function NextFeedCard({
           late ? "bg-accent-soft" : "bg-positive-bg"
         }`}
       >
-        <Clock className={`h-5 w-5 ${late ? "text-[#A45A1B]" : "text-positive"}`} />
+        <Clock className={`h-5 w-5 ${late ? "text-watch" : "text-positive"}`} />
       </span>
       <div className="min-w-0 flex-1">
         <CardTitle>Next feed due</CardTitle>
@@ -48,7 +48,7 @@ export function NextFeedCard({
           })}
           <span
             className={`ml-2 text-sm font-medium ${
-              late ? "text-[#A45A1B]" : "text-muted"
+              late ? "text-watch" : "text-muted"
             }`}
           >
             {late ? `about now — ${formatGap(overdueMs)} past` : `in ${formatGap(-overdueMs)}`}

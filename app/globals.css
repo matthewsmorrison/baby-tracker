@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: light;
   --bg: #ede9e1;
   --bg-glow: #f6e3c6;
   --surface: #ffffff;
@@ -9,6 +10,9 @@
   --muted: #8c8677;
   --faint: #b4ae9f;
   --line: #e7e1d6;
+  /* Text/icon colour that sits ON an --ink-filled surface (primary buttons,
+     active tabs). White in light mode; flips dark when --ink goes light. */
+  --on-ink: #ffffff;
 
   --accent: #e9a23b;
   --accent-soft: #f7e9cf;
@@ -19,6 +23,54 @@
 
   --alert: #c0483b;
   --alert-bg: #f6e0dc;
+  /* "Watch" tone — a warm amber for keep-an-eye-on states. */
+  --watch: #a4571b;
+}
+
+/* Warm night palette — dim, low-glare, for middle-of-the-night use.
+   Applied when the user picks Dark, or when they're on System and the OS
+   is dark (but never when they've explicitly chosen Light). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #16140f;
+    --bg-glow: #2b2418;
+    --surface: #201d16;
+    --surface-alt: #29251d;
+    --ink: #f1ede4;
+    --muted: #a49d8d;
+    --faint: #6b6558;
+    --line: #322e26;
+    --on-ink: #16140f;
+    --accent: #eaa94d;
+    --accent-soft: #3a301c;
+    --positive: #8fc39b;
+    --positive-bg: #202b22;
+    --positive-bar: #6f9e7c;
+    --alert: #ec8f82;
+    --alert-bg: #3a231f;
+    --watch: #e0a24a;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #16140f;
+  --bg-glow: #2b2418;
+  --surface: #201d16;
+  --surface-alt: #29251d;
+  --ink: #f1ede4;
+  --muted: #a49d8d;
+  --faint: #6b6558;
+  --line: #322e26;
+  --on-ink: #16140f;
+  --accent: #eaa94d;
+  --accent-soft: #3a301c;
+  --positive: #8fc39b;
+  --positive-bg: #202b22;
+  --positive-bar: #6f9e7c;
+  --alert: #ec8f82;
+  --alert-bg: #3a231f;
+    --watch: #e0a24a;
 }
 
 @theme inline {
@@ -30,6 +82,7 @@
   --color-muted: var(--muted);
   --color-faint: var(--faint);
   --color-line: var(--line);
+  --color-on-ink: var(--on-ink);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
   --color-positive: var(--positive);
@@ -37,6 +90,7 @@
   --color-positive-bar: var(--positive-bar);
   --color-alert: var(--alert);
   --color-alert-bg: var(--alert-bg);
+  --color-watch: var(--watch);
 
   --font-sans: var(--font-schibsted), system-ui, sans-serif;
 
@@ -54,6 +108,17 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* The sun/moon glow uses warm/cool colours tuned for the light sand
+   background; on the dark hero they read as a bright blob, so dim them. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .sky-glow {
+    opacity: 0.28;
+  }
+}
+:root[data-theme="dark"] .sky-glow {
+  opacity: 0.28;
 }
 
 .sky-twinkle {

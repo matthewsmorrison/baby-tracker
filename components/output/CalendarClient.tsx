@@ -132,7 +132,7 @@ export function CalendarGrid({
                 onClick={() => setSelectedKey(k)}
                 className={`flex min-h-14 flex-col items-center rounded-xl border px-0.5 pb-1 pt-0.5 transition ${
                   isSelected
-                    ? "border-ink bg-ink text-white"
+                    ? "border-ink bg-ink text-on-ink"
                     : dayEntries.length > 0
                       ? "border-line bg-surface-alt hover:border-ink"
                       : "border-transparent hover:bg-surface-alt"
@@ -145,7 +145,7 @@ export function CalendarGrid({
                       : ""
                   } ${
                     isSelected
-                      ? "text-white"
+                      ? "text-on-ink"
                       : dayEntries.length > 0
                         ? "text-ink"
                         : "text-faint"
@@ -156,7 +156,7 @@ export function CalendarGrid({
                 {dayEntries.length > 0 && (
                   <span
                     className={`flex flex-col items-center gap-px text-[9px] font-semibold leading-tight ${
-                      isSelected ? "text-white/90" : "text-muted"
+                      isSelected ? "text-on-ink/90" : "text-muted"
                     }`}
                   >
                     {feeds > 0 && (
@@ -172,7 +172,7 @@ export function CalendarGrid({
                     {hasWeight && (
                       <Scale
                         className={`h-2.5 w-2.5 ${
-                          isSelected ? "text-white" : "text-positive"
+                          isSelected ? "text-on-ink" : "text-positive"
                         }`}
                       />
                     )}

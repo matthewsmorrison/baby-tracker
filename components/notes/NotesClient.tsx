@@ -55,12 +55,12 @@ function PeoplePicker({
             onClick={() => onToggle(m.userId)}
             className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
               on
-                ? "border-ink bg-ink text-white"
+                ? "border-ink bg-ink text-on-ink"
                 : "border-line bg-surface-alt text-muted hover:text-ink"
             }`}
           >
             {m.isSelf ? "You" : m.name}
-            <span className={on ? "text-white/60" : "text-faint"}>
+            <span className={on ? "text-on-ink/60" : "text-faint"}>
               {" "}
               · {roleWord(m.role)}
             </span>

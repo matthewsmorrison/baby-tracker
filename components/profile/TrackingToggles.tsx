@@ -63,7 +63,7 @@ export function TrackingToggles({
               onClick={() => toggle(value)}
               className={`flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-medium transition ${
                 on
-                  ? "border-ink bg-ink text-white"
+                  ? "border-ink bg-ink text-on-ink"
                   : "border-line bg-surface-alt text-muted hover:text-ink"
               }`}
             >

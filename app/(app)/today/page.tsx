@@ -208,7 +208,7 @@ export default async function TodayPage() {
                   : ws.tone === "alert"
                     ? "text-alert"
                     : ws.tone === "watch"
-                      ? "text-[#A45A1B]"
+                      ? "text-watch"
                       : "text-ink"
               }`}
             >

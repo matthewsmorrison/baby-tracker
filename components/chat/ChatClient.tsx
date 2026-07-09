@@ -290,7 +290,7 @@ export function ChatClient({
               <div
                 className={
                   m.role === "user"
-                    ? "max-w-[85%] rounded-3xl rounded-br-lg bg-ink px-4 py-2.5 text-sm text-white"
+                    ? "max-w-[85%] rounded-3xl rounded-br-lg bg-ink px-4 py-2.5 text-sm text-on-ink"
                     : "chat-md max-w-[92%] rounded-3xl rounded-bl-lg border border-line bg-surface px-4 py-3 text-sm leading-relaxed shadow-card"
                 }
               >

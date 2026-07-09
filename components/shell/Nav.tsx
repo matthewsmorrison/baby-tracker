@@ -39,7 +39,7 @@ export function Nav({
               href={href}
               className={`flex items-center gap-3 rounded-full px-4 py-2.5 text-sm font-medium transition ${
                 active
-                  ? "bg-ink text-white"
+                  ? "bg-ink text-on-ink"
                   : "text-muted hover:bg-surface-alt hover:text-ink"
               }`}
             >

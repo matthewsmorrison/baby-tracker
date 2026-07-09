@@ -49,7 +49,7 @@ export function SkyArc() {
     return (
       <div
         aria-hidden
-        className="absolute inset-0"
+        className="absolute inset-0 sky-glow"
         style={{
           background:
             "radial-gradient(ellipse 70% 85% at 50% 8%, var(--bg-glow), transparent 72%)",
@@ -84,7 +84,7 @@ export function SkyArc() {
     <div aria-hidden className="absolute inset-0">
       {/* Glow follows the body's horizontal position */}
       <div
-        className="absolute inset-0 transition-[background] duration-1000"
+        className="absolute inset-0 transition-[background] duration-1000 sky-glow"
         style={{
           background: `radial-gradient(ellipse 75% 75% at ${x}% 4%, ${GLOW[phase]}, transparent 70%)`,
         }}

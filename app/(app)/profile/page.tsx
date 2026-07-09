@@ -8,6 +8,7 @@ import { Chip } from "@/components/ui/Chip";
 import { PushToggle } from "@/components/notifications/PushToggle";
 import { ExportCard } from "@/components/export/ExportButtons";
 import { TrackingToggles } from "@/components/profile/TrackingToggles";
+import { ThemeToggle } from "@/components/profile/ThemeToggle";
 import {
   BabySettings,
   DangerZone,
@@ -87,6 +88,8 @@ export default async function ProfilePage() {
       </Card>
 
       {ctx.canEdit && <PushToggle />}
+
+      <ThemeToggle />
 
       {/* Membership tier */}
       <Card className="p-5">

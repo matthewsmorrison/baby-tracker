@@ -16,7 +16,7 @@ export function KpiCard({
   const toneCls = {
     neutral: "text-ink",
     positive: "text-positive",
-    watch: "text-[#A45A1B]",
+    watch: "text-watch",
     alert: "text-alert",
   }[tone];
 

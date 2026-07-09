@@ -6,7 +6,7 @@ type Size = "sm" | "md" | "lg";
 
 const variants: Record<Variant, string> = {
   primary:
-    "bg-ink text-white hover:bg-black active:scale-[0.98] disabled:bg-faint",
+    "bg-ink text-on-ink hover:opacity-90 active:scale-[0.98] disabled:bg-faint",
   secondary:
     "bg-surface text-ink border border-line hover:bg-surface-alt active:scale-[0.98] disabled:text-faint",
   ghost: "bg-transparent text-muted hover:bg-surface-alt hover:text-ink",

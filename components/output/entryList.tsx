@@ -281,7 +281,7 @@ export function EntryRow({
                   : ws.tone === "alert"
                     ? "text-alert"
                     : ws.tone === "watch"
-                      ? "text-[#A45A1B]"
+                      ? "text-watch"
                       : "text-ink"
               }`}
             >

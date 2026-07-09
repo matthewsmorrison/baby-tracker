@@ -45,7 +45,7 @@ export function NappyQuota({
         <CardTitle>Nappies · last 24h</CardTitle>
         <span
           className={`text-xs font-semibold ${
-            allGood ? "text-positive" : "text-[#A45A1B]"
+            allGood ? "text-positive" : "text-watch"
           }`}
         >
           {allGood ? "On track ✓" : `Need ${parts.join(" · ")}`}
@@ -85,7 +85,7 @@ export function NappyQuota({
         <span className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-sm" style={{ background: DIRTY }} />
           {dirtyCount} mixed
-          <span className={dirtyMet ? "text-positive" : "text-[#A45A1B]"}>
+          <span className={dirtyMet ? "text-positive" : "text-watch"}>
             {" "}
             (aim {exp.minDirty}+)
           </span>

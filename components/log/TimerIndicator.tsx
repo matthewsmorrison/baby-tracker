@@ -48,14 +48,14 @@ export function TimerIndicator({ babyId }: { babyId: string }) {
   return (
     <Link
       href="/log"
-      className="fixed inset-x-0 z-30 mx-auto flex w-fit items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-sm font-semibold text-white shadow-card bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] md:bottom-6"
+      className="fixed inset-x-0 z-30 mx-auto flex w-fit items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-sm font-semibold text-on-ink shadow-card bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] md:bottom-6"
     >
       <span className="relative flex h-2.5 w-2.5">
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
         <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-accent" />
       </span>
       Feed timing · <span className="stat-num">{mmss}</span>
-      <span className="font-normal text-white/70">tap to return</span>
+      <span className="font-normal text-on-ink/70">tap to return</span>
     </Link>
   );
 }

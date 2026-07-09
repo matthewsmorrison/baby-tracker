@@ -451,7 +451,7 @@ export function NappyForm({
                   }}
                   className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
                     active
-                      ? "border-ink bg-ink text-white"
+                      ? "border-ink bg-ink text-on-ink"
                       : "border-line bg-surface-alt text-muted hover:text-ink"
                   }`}
                 >
@@ -696,7 +696,7 @@ export function Toggle({
       onClick={onClick}
       className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-4 text-sm font-semibold transition ${
         active
-          ? "border-ink bg-ink text-white"
+          ? "border-ink bg-ink text-on-ink"
           : "border-line bg-surface-alt text-muted hover:text-ink"
       }`}
     >

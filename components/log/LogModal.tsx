@@ -121,7 +121,7 @@ export function LogModal({
           type="button"
           onClick={openNew}
           aria-label="Log an entry"
-          className="fixed z-30 flex h-14 w-14 items-center justify-center rounded-full bg-ink text-white shadow-card transition active:scale-95 right-4 bottom-[calc(env(safe-area-inset-bottom)+5rem)] md:right-8 md:bottom-8"
+          className="fixed z-30 flex h-14 w-14 items-center justify-center rounded-full bg-ink text-on-ink shadow-card transition active:scale-95 right-4 bottom-[calc(env(safe-area-inset-bottom)+5rem)] md:right-8 md:bottom-8"
         >
           <Plus className="h-6 w-6" strokeWidth={2.4} />
         </button>
@@ -219,7 +219,7 @@ export function LogModal({
       {toast && (
         <Portal>
           <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-50 flex justify-center md:bottom-6">
-            <div className="flex items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-white shadow-card animate-rise">
+            <div className="flex items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-on-ink shadow-card animate-rise">
               <Check className="h-4 w-4 text-positive-bar" />
               {toast}
             </div>
