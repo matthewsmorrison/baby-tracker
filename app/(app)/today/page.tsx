@@ -53,6 +53,23 @@ export default async function TodayPage() {
     }, 0);
   const sleepHrs = Math.round((sleepMs / 3_600_000) * 10) / 10;
 
+  // Pumping in the last 24h — sessions and total expressed.
+  const pumps24 = last24.filter((e) => e.type === "pump");
+  const pumpMl = pumps24.reduce((sum, e) => sum + (e.expressed_ml ?? 0), 0);
+
+  // The signed-in carer's own sleep in the last 24h (their entries only).
+  const carerSleepMs = entries
+    .filter(
+      (e) =>
+        e.type === "carer_sleep" && e.ended_at && e.created_by === ctx.userId
+    )
+    .reduce((sum, e) => {
+      const s = Math.max(new Date(e.occurred_at).getTime(), windowStart);
+      const en = Math.min(new Date(e.ended_at!).getTime(), now.getTime());
+      return sum + Math.max(0, en - s);
+    }, 0);
+  const carerSleepHrs = Math.round((carerSleepMs / 3_600_000) * 10) / 10;
+
   const latestWeight = entries.find((e) => e.type === "weight");
   const band = expectedWeightBand(day, ctx.baby.birth_weight_g);
   const ws = latestWeight
@@ -138,6 +155,20 @@ export default async function TodayPage() {
                   : "watch"
                 : "neutral"
             }
+          />
+        )}
+        {track.has("pump") && (
+          <KpiCard
+            label="Pumped · last 24h"
+            value={pumpMl > 0 ? `${pumpMl} ml` : "—"}
+            sub={`${pumps24.length} ${pumps24.length === 1 ? "session" : "sessions"}`}
+          />
+        )}
+        {track.has("carer_sleep") && (
+          <KpiCard
+            label="Your sleep · last 24h"
+            value={carerSleepMs > 0 ? `${carerSleepHrs}h` : "—"}
+            sub="your own logged rest"
           />
         )}
       </div>

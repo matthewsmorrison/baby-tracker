@@ -1,5 +1,11 @@
 export type MemberRole = "owner" | "caregiver" | "viewer";
-export type EntryType = "nappy" | "feed" | "weight" | "sleep";
+export type EntryType =
+  | "nappy"
+  | "feed"
+  | "weight"
+  | "sleep"
+  | "pump"
+  | "carer_sleep";
 export type InviteStatus = "pending" | "accepted" | "revoked";
 export type FeedType = "breast" | "formula" | "expressed" | "mixed";
 

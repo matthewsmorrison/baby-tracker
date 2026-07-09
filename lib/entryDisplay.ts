@@ -81,5 +81,20 @@ export function entryLabel(e: Entry): string {
     }
     return "Sleep";
   }
+  if (e.type === "carer_sleep") {
+    if (e.ended_at) {
+      const ms =
+        new Date(e.ended_at).getTime() - new Date(e.occurred_at).getTime();
+      return `Carer slept ${formatDuration(ms)}`;
+    }
+    return "Carer sleep";
+  }
+  if (e.type === "pump") {
+    const ml = e.expressed_ml ?? 0;
+    const dur = e.ended_at
+      ? ` · ${formatDuration(new Date(e.ended_at).getTime() - new Date(e.occurred_at).getTime())}`
+      : "";
+    return ml ? `Pumped ${ml} ml${dur}` : `Pumping${dur}`;
+  }
   return `Weight · ${formatKg(e.weight_g ?? 0)}`;
 }

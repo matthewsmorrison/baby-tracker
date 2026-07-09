@@ -12,11 +12,15 @@ import { Input, Label } from "@/components/ui/Field";
 import { OccurredAtField } from "./OccurredAtField";
 import { NoteField } from "./NappyForm";
 
-export function SleepForm({
+/**
+ * Log a breast-pumping session: how much was expressed and when. The time is
+ * what powers the "best time to pump" view, so it's front and centre; an
+ * optional end time captures how long the session took.
+ */
+export function PumpForm({
   babyId,
   initial,
   onSaved,
-  variant = "baby",
 }: {
   babyId: string;
   birthAt?: string;
@@ -24,32 +28,33 @@ export function SleepForm({
   initial?: Entry;
   onDone?: () => void;
   onSaved: (message: string) => void;
-  /** "baby" logs the baby's sleep; "carer" logs the logged-in carer's rest. */
-  variant?: "baby" | "carer";
 }) {
   const router = useRouter();
-  const isCarer = variant === "carer";
   const [startAt, setStartAt] = useState(() =>
     initial
       ? toLocalInputValue(new Date(initial.occurred_at))
-      : toLocalInputValue(new Date(Date.now() - 60 * 60 * 1000)) // default: an hour ago
-  );
-  const [endAt, setEndAt] = useState(() =>
-    initial?.ended_at
-      ? toLocalInputValue(new Date(initial.ended_at))
       : toLocalInputValue(new Date())
   );
+  const [endAt, setEndAt] = useState(() =>
+    initial?.ended_at ? toLocalInputValue(new Date(initial.ended_at)) : ""
+  );
+  const [ml, setMl] = useState(initial?.expressed_ml?.toString() ?? "");
   const [note, setNote] = useState(initial?.note ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const startMs = new Date(fromLocalInputValue(startAt)).getTime();
-  const endMs = new Date(fromLocalInputValue(endAt)).getTime();
-  const durationOk = endMs > startMs;
+  const endMs = endAt ? new Date(fromLocalInputValue(endAt)).getTime() : null;
+  const durationOk = endMs === null || endMs > startMs;
 
   async function save() {
+    const amount = parseInt(ml, 10);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setError("Enter how much you expressed, in ml.");
+      return;
+    }
     if (!durationOk) {
-      setError("The wake time needs to be after the sleep started.");
+      setError("The end time needs to be after the start.");
       return;
     }
     setError(null);
@@ -58,9 +63,10 @@ export function SleepForm({
 
     const row = {
       baby_id: babyId,
-      type: (isCarer ? "carer_sleep" : "sleep") as "sleep" | "carer_sleep",
+      type: "pump" as const,
       occurred_at: fromLocalInputValue(startAt),
-      ended_at: fromLocalInputValue(endAt),
+      ended_at: endAt ? fromLocalInputValue(endAt) : null,
+      expressed_ml: amount,
       note: note.trim() || null,
     };
 
@@ -82,9 +88,7 @@ export function SleepForm({
       }
       router.refresh();
       setNote("");
-      onSaved(
-        initial ? "Changes saved" : isCarer ? "Rest saved" : "Sleep saved"
-      );
+      onSaved(initial ? "Changes saved" : "Pump saved");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
@@ -95,32 +99,45 @@ export function SleepForm({
   return (
     <Card className="p-5 space-y-5">
       <p className="text-xs text-faint">
-        {isCarer
-          ? "Log a stretch of your own sleep — when you dropped off and woke."
-          : "Log a stretch of sleep — fell asleep and woke times."}
+        Log a pumping session. Over time, the Charts tab shows which times of
+        day give you the most milk.
       </p>
 
       <div>
-        <Label>Fell asleep</Label>
+        <Label htmlFor="pump_ml">Expressed (ml)</Label>
+        <Input
+          id="pump_ml"
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={1000}
+          placeholder="e.g. 90"
+          value={ml}
+          onChange={(e) => setMl(e.target.value)}
+          autoFocus
+        />
+      </div>
+
+      <div>
+        <Label>Started</Label>
         <OccurredAtField value={startAt} onChange={setStartAt} />
       </div>
 
       <div>
-        <Label htmlFor="wake_at">Woke</Label>
+        <Label htmlFor="pump_end">Finished (optional)</Label>
         <Input
-          id="wake_at"
+          id="pump_end"
           type="datetime-local"
           value={endAt}
           min={startAt}
           onChange={(e) => setEndAt(e.target.value)}
         />
+        {endMs !== null && durationOk && (
+          <p className="mt-1.5 rounded-2xl bg-surface-alt px-4 py-2 text-xs font-medium text-muted">
+            {formatDuration(endMs - startMs)} pumping
+          </p>
+        )}
       </div>
-
-      {durationOk && (
-        <p className="rounded-2xl bg-surface-alt px-4 py-2.5 text-sm font-medium text-muted">
-          {formatDuration(endMs - startMs)} asleep
-        </p>
-      )}
 
       <NoteField note={note} setNote={setNote} />
 
@@ -129,13 +146,7 @@ export function SleepForm({
       )}
 
       <Button className="w-full" size="lg" onClick={save} disabled={busy}>
-        {busy
-          ? "Saving…"
-          : initial
-            ? "Save changes"
-            : isCarer
-              ? "Save rest"
-              : "Save sleep"}
+        {busy ? "Saving…" : initial ? "Save changes" : "Save pump"}
       </Button>
     </Card>
   );

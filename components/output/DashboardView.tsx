@@ -27,6 +27,8 @@ const C = {
   orange: "#eb6834",
   brown: "#7a5a3a", // mixed nappy (poo)
   violet: "#4a3aa7", // sleep
+  teal: "#0f8a8a", // pumping
+  plum: "#8a4a7a", // carer sleep
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -46,6 +48,8 @@ interface DayRow {
   gapAvgH: number | null;
   sleepMs: number;
   sleepH: number;
+  carerSleepMs: number;
+  carerSleepH: number;
 }
 
 function dayKey(d: Date): string {
@@ -122,6 +126,8 @@ export function DashboardView({
         gapAvgH: null,
         sleepMs: 0,
         sleepH: 0,
+        carerSleepMs: 0,
+        carerSleepH: 0,
       });
     }
     for (const e of entries) {
@@ -140,6 +146,9 @@ export function DashboardView({
       } else if (e.type === "sleep" && e.ended_at) {
         row.sleepMs +=
           new Date(e.ended_at).getTime() - new Date(e.occurred_at).getTime();
+      } else if (e.type === "carer_sleep" && e.ended_at) {
+        row.carerSleepMs +=
+          new Date(e.ended_at).getTime() - new Date(e.occurred_at).getTime();
       }
     }
     // Time between feed starts, attributed to the day the later feed began.
@@ -154,9 +163,31 @@ export function DashboardView({
         ? Math.round((row.gapSumMs / row.gapCount / 3600000) * 10) / 10
         : null;
       row.sleepH = Math.round((row.sleepMs / 3_600_000) * 10) / 10;
+      row.carerSleepH = Math.round((row.carerSleepMs / 3_600_000) * 10) / 10;
     }
     return [...byDay.values()];
   }, [entries, birthAt]);
+
+  // Pumping output by hour of day — the "when's my best time to pump" view.
+  // Average ml per session in each hour, across all logged pumps.
+  const pumpByHour = useMemo(() => {
+    const totals = Array.from({ length: 24 }, () => ({ ml: 0, n: 0 }));
+    for (const e of entries) {
+      if (e.type !== "pump") continue;
+      const h = new Date(e.occurred_at).getHours();
+      totals[h].ml += e.expressed_ml ?? 0;
+      totals[h].n += 1;
+    }
+    const fmtHour = (h: number) =>
+      h === 0 ? "12a" : h < 12 ? `${h}a` : h === 12 ? "12p" : `${h - 12}p`;
+    return totals.map((t, h) => ({
+      hour: h,
+      label: fmtHour(h),
+      avgMl: t.n ? Math.round(t.ml / t.n) : 0,
+      sessions: t.n,
+    }));
+  }, [entries]);
+  const pumpSessions = pumpByHour.reduce((s, h) => s + h.sessions, 0);
 
   const weights = entries
     .filter((e) => e.type === "weight" && e.weight_g)
@@ -370,6 +401,71 @@ export function DashboardView({
                   formatter={(v) => [`${v} h`, "asleep"]}
                 />
                 <Bar dataKey="sleepH" fill={C.violet} radius={[4, 4, 0, 0]} maxBarSize={22} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      )}
+
+      {/* Pumping — best time of day */}
+      {track.has("pump") && pumpSessions > 0 && (
+        <Card className="p-5">
+          <CardTitle>Pumping — best time of day</CardTitle>
+          <p className="mt-0.5 text-xs text-faint">
+            Average ml expressed per session, by hour — pump when your output
+            tends to be highest ({pumpSessions} sessions logged)
+          </p>
+          <div className="mt-3 h-44">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={pumpByHour} margin={{ top: 4, right: 4, bottom: 0, left: -22 }}>
+                <CartesianGrid vertical={false} stroke="var(--line)" />
+                <XAxis dataKey="label" {...axisProps} axisLine={{ stroke: "var(--line)" }} interval={2} />
+                <YAxis {...axisProps} axisLine={false} />
+                <Tooltip
+                  cursor={{ fill: "var(--surface-alt)" }}
+                  contentStyle={tooltipStyle}
+                  labelFormatter={(_, p) => {
+                    const row = p?.[0]?.payload as
+                      | { label: string; sessions: number }
+                      | undefined;
+                    return row
+                      ? `${row.label} · ${row.sessions} ${row.sessions === 1 ? "session" : "sessions"}`
+                      : "";
+                  }}
+                  formatter={(v) => [`${v} ml`, "avg output"]}
+                />
+                <Bar dataKey="avgMl" fill={C.teal} radius={[4, 4, 0, 0]} maxBarSize={22} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      )}
+
+      {/* Carer sleep per day */}
+      {track.has("carer_sleep") && days.some((d) => d.carerSleepMs > 0) && (
+        <Card className="p-5">
+          <CardTitle>Carer sleep per day</CardTitle>
+          <p className="mt-0.5 text-xs text-faint">
+            Total hours of rest from logged carer sleep — look after yourselves
+            too.
+          </p>
+          <div className="mt-3 h-44">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={days} margin={{ top: 4, right: 4, bottom: 0, left: -22 }}>
+                <CartesianGrid vertical={false} stroke="var(--line)" />
+                <XAxis dataKey="label" {...axisProps} axisLine={{ stroke: "var(--line)" }} interval="preserveStartEnd" />
+                <YAxis {...axisProps} axisLine={false} unit="h" />
+                <Tooltip
+                  cursor={{ fill: "var(--surface-alt)" }}
+                  contentStyle={tooltipStyle}
+                  labelFormatter={(_, p) =>
+                    p?.[0]
+                      ? `Day ${(p[0].payload as DayRow).dol} · ${(p[0].payload as DayRow).label}`
+                      : ""
+                  }
+                  formatter={(v) => [`${v} h`, "carer rest"]}
+                />
+                <Bar dataKey="carerSleepH" fill={C.plum} radius={[4, 4, 0, 0]} maxBarSize={22} />
               </BarChart>
             </ResponsiveContainer>
           </div>

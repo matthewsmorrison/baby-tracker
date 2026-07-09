@@ -17,7 +17,9 @@ import type { Entry } from "@/lib/types";
 import { Portal } from "@/components/ui/Portal";
 import {
   Baby,
+  BedDouble,
   ChevronRight,
+  Droplet,
   Droplets,
   Milk,
   Moon,
@@ -32,6 +34,8 @@ export function EntryIcon({ entry }: { entry: Entry }) {
   if (entry.type === "feed") return <Milk className={cls} />;
   if (entry.type === "weight") return <Scale className={cls} />;
   if (entry.type === "sleep") return <Moon className={cls} />;
+  if (entry.type === "carer_sleep") return <BedDouble className={cls} />;
+  if (entry.type === "pump") return <Droplet className={cls} />;
   if (entry.wet && !entry.dirty) return <Droplets className={cls} />;
   return <Baby className={cls} />;
 }

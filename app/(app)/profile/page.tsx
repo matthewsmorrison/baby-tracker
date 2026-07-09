@@ -120,18 +120,18 @@ export default async function ProfilePage() {
         </div>
       </Card>
 
-      <LeaveOrSignOut
-        membershipId={myMembership?.id ?? null}
-        isOwner={ctx.isOwner}
-        babyName={ctx.baby.name}
-      />
-
       <ExportCard />
 
       <DangerZone
         babyId={ctx.baby.id}
         babyName={ctx.baby.name}
         isOwner={ctx.isOwner}
+      />
+
+      <LeaveOrSignOut
+        membershipId={myMembership?.id ?? null}
+        isOwner={ctx.isOwner}
+        babyName={ctx.baby.name}
       />
 
       <p className="px-2 pb-2 text-center text-xs text-faint">

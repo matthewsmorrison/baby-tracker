@@ -52,7 +52,7 @@ export function SkyArc() {
         className="absolute inset-0 sky-glow"
         style={{
           background:
-            "radial-gradient(ellipse 70% 85% at 50% 8%, var(--bg-glow), transparent 72%)",
+            "radial-gradient(ellipse 55% 62% at 50% 2%, var(--bg-glow), transparent 60%)",
         }}
       />
     );
@@ -86,7 +86,7 @@ export function SkyArc() {
       <div
         className="absolute inset-0 transition-[background] duration-1000 sky-glow"
         style={{
-          background: `radial-gradient(ellipse 75% 75% at ${x}% 4%, ${GLOW[phase]}, transparent 70%)`,
+          background: `radial-gradient(ellipse 55% 62% at ${x}% 2%, ${GLOW[phase]}, transparent 60%)`,
         }}
       />
 

@@ -9,6 +9,7 @@ import { NappyForm } from "./NappyForm";
 import { FeedForm } from "./FeedForm";
 import { WeightForm } from "./WeightForm";
 import { SleepForm } from "./SleepForm";
+import { PumpForm } from "./PumpForm";
 import { Check, Plus, X } from "lucide-react";
 
 /**
@@ -41,8 +42,17 @@ export function LogModal({
     feed: "Feed",
     sleep: "Sleep",
     weight: "Weight",
+    pump: "Pump",
+    carer_sleep: "My sleep",
   };
-  const order: EntryType[] = ["nappy", "feed", "sleep", "weight"];
+  const order: EntryType[] = [
+    "nappy",
+    "feed",
+    "sleep",
+    "weight",
+    "pump",
+    "carer_sleep",
+  ];
   const options = order
     .filter((t) => trackedTypes.includes(t))
     .map((t) => ({ value: t, label: TAB_LABELS[t] }));
@@ -208,6 +218,21 @@ export function LogModal({
                     key={editing?.id ?? "new-weight"}
                     {...formProps}
                     initial={editing ?? undefined}
+                  />
+                )}
+                {tab === "pump" && (
+                  <PumpForm
+                    key={editing?.id ?? "new-pump"}
+                    {...formProps}
+                    initial={editing ?? undefined}
+                  />
+                )}
+                {tab === "carer_sleep" && (
+                  <SleepForm
+                    key={editing?.id ?? "new-carer-sleep"}
+                    {...formProps}
+                    initial={editing ?? undefined}
+                    variant="carer"
                   />
                 )}
               </div>

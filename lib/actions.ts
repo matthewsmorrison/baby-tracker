@@ -374,7 +374,14 @@ export async function deleteAccount() {
 }
 
 
-const TRACK_TYPES = ["nappy", "feed", "sleep", "weight"] as const;
+const TRACK_TYPES = [
+  "nappy",
+  "feed",
+  "sleep",
+  "weight",
+  "pump",
+  "carer_sleep",
+] as const;
 
 /** Set which categories a baby tracks (owner only via RLS). At least one. */
 export async function updateTrackedTypes(babyId: string, types: string[]) {
