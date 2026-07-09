@@ -19,3 +19,14 @@ export async function compressImage(file: File): Promise<Blob> {
   if (!blob) throw new Error("Could not process the photo");
   return blob;
 }
+
+/** Base64 (no data: prefix) of a blob — for sending an image to the API. */
+export async function blobToBase64(blob: Blob): Promise<string> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+  return dataUrl.slice(dataUrl.indexOf(",") + 1);
+}

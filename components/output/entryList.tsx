@@ -239,22 +239,38 @@ export function EntryRow({
             />
           )}
           {entry.ai && (
-            <div className="flex flex-wrap gap-1.5 text-xs">
-              {entry.ai.consistency && (
-                <span className="rounded-full border border-line bg-surface-alt px-2.5 py-1 font-medium text-muted">
-                  texture: {entry.ai.consistency}
-                </span>
+            <div className="space-y-2">
+              {entry.ai.summary && (
+                <p className="text-sm leading-relaxed text-muted">
+                  {entry.ai.summary}
+                </p>
               )}
-              {entry.ai.stoolAmount && entry.ai.stoolAmount !== "none" && (
-                <span className="rounded-full border border-line bg-surface-alt px-2.5 py-1 font-medium text-muted">
-                  poo: {entry.ai.stoolAmount}
-                </span>
-              )}
-              {entry.ai.estimatedUrineMl != null && (
-                <span className="rounded-full border border-line bg-surface-alt px-2.5 py-1 font-medium text-muted">
-                  ≈ {entry.ai.estimatedUrineMl} ml wee
-                </span>
-              )}
+              <div className="flex flex-wrap gap-1.5 text-xs">
+                {entry.ai.consistency && (
+                  <span className="rounded-full border border-line bg-surface-alt px-2.5 py-1 font-medium text-muted">
+                    texture: {entry.ai.consistency}
+                  </span>
+                )}
+                {entry.ai.stoolAmount && entry.ai.stoolAmount !== "none" && (
+                  <span className="rounded-full border border-line bg-surface-alt px-2.5 py-1 font-medium text-muted">
+                    poo: {entry.ai.stoolAmount}
+                  </span>
+                )}
+                {entry.ai.sizeVs2pCoin && entry.ai.sizeVs2pCoin !== "unclear" && (
+                  <span className="rounded-full border border-line bg-surface-alt px-2.5 py-1 font-medium text-muted">
+                    {entry.ai.sizeVs2pCoin === "bigger"
+                      ? "bigger than a £2 coin"
+                      : entry.ai.sizeVs2pCoin === "similar"
+                        ? "about a £2 coin"
+                        : "smaller than a £2 coin"}
+                  </span>
+                )}
+                {entry.ai.estimatedUrineMl != null && (
+                  <span className="rounded-full border border-line bg-surface-alt px-2.5 py-1 font-medium text-muted">
+                    ≈ {entry.ai.estimatedUrineMl} ml wee
+                  </span>
+                )}
+              </div>
             </div>
           )}
           {ws && (

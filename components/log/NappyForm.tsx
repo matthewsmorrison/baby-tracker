@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import exifr from "exifr";
 import { createClient } from "@/lib/supabase/client";
-import { compressImage } from "@/lib/image";
+import { blobToBase64, compressImage } from "@/lib/image";
 import { fromLocalInputValue, toLocalInputValue } from "@/lib/dates";
 import {
   NAPPY_WET_THRESHOLD_G,
@@ -22,7 +22,7 @@ import { Input, Label } from "@/components/ui/Field";
 import { OccurredAtField } from "./OccurredAtField";
 import { CameraCapture } from "./CameraCapture";
 import { Portal } from "@/components/ui/Portal";
-import { Camera, Droplets, Image as ImageIcon, X } from "lucide-react";
+import { Camera, Droplets, Image as ImageIcon, Loader2, Sparkles, X } from "lucide-react";
 
 const COLOUR_KEYS = Object.keys(STOOL_COLOURS) as StoolColourKey[];
 
@@ -82,7 +82,13 @@ export function NappyForm({
   );
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [, setAi] = useState<AiAnalysis | null>(initial?.ai ?? null);
+  const [ai, setAi] = useState<AiAnalysis | null>(initial?.ai ?? null);
+  // The analysis runs the moment a photo is chosen (Advanced only).
+  const [analysing, setAnalysing] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  // The compressed blob analysed on upload — reused for the save upload so
+  // the image is only processed once.
+  const compressedRef = useRef<Blob | null>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const libraryRef = useRef<HTMLInputElement>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -109,7 +115,14 @@ export function NappyForm({
   async function handlePhoto(file: File | null) {
     setPhoto(file);
     setTimeFromPhoto(null);
-    if (!file) return;
+    setAiError(null);
+    compressedRef.current = null;
+    if (!file) {
+      setAi(null);
+      return;
+    }
+    // A fresh photo replaces any earlier analysis.
+    setAi(null);
     // With a photo, Claude labels the colour — drop the auto-suggestion so
     // the analysis can fill it in (a parent's own tap is kept).
     if (aiEnabled && colourSource === "auto") {
@@ -153,9 +166,69 @@ export function NappyForm({
       taken = new Date(file.lastModified);
       source = "file";
     }
+    // The time to analyse against: the photo's own time if we found one,
+    // otherwise whatever the picker currently shows.
+    let analysisTimeIso = fromLocalInputValue(occurredAt);
     if (plausible(taken)) {
       setOccurredAt(toLocalInputValue(taken));
       setTimeFromPhoto(source);
+      analysisTimeIso = taken.toISOString();
+    }
+
+    if (aiEnabled) analysePhoto(file, analysisTimeIso);
+  }
+
+  /**
+   * Send the freshly-chosen photo to Claude for labelling straight away, so
+   * the colour, size and a plain-language summary are ready before saving.
+   * Non-blocking: a failure just leaves the parent to set labels by hand.
+   */
+  async function analysePhoto(file: File, occurredAtIso: string) {
+    setAnalysing(true);
+    setAiError(null);
+    try {
+      const blob = await compressImage(file);
+      compressedRef.current = blob;
+      const imageBase64 = await blobToBase64(blob);
+      const res = await fetch("/api/nappy/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          babyId,
+          occurredAt: occurredAtIso,
+          imageBase64,
+          mediaType: "image/jpeg",
+          nappyWeightG: parseInt(nappyWeight, 10) || null,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? "The photo couldn't be analysed.");
+      }
+      const { ai: result } = (await res.json()) as { ai: AiAnalysis };
+      setAi(result);
+      // A visible stool means a mixed nappy; reflect it (the parent can undo).
+      if (
+        result.visibleContents === "poo" ||
+        result.visibleContents === "both" ||
+        (result.stoolAmount && result.stoolAmount !== "none")
+      ) {
+        setDirty(true);
+        setWet(true);
+      }
+      // Show the identified colour unless the parent has already chosen one.
+      if (result.colourKey && result.colourKey !== "unclear" && colourSource !== "user") {
+        setColour(result.colourKey as StoolColourKey);
+        setColourSource("ai");
+      }
+    } catch (e) {
+      setAiError(
+        e instanceof Error
+          ? e.message
+          : "The photo couldn't be analysed — you can set the labels by hand."
+      );
+    } finally {
+      setAnalysing(false);
     }
   }
 
@@ -204,11 +277,16 @@ export function NappyForm({
       setError("Tick wet, dirty, or both — or add a photo and Claude will label it.");
       return;
     }
+    if (analysing) {
+      setError("Hold on — Claude is still analysing the photo.");
+      return;
+    }
     setError(null);
     setBusy("Saving…");
     const supabase = createClient();
 
     try {
+      const hasNewPhoto = !!photo;
       const row = {
         baby_id: babyId,
         type: "nappy" as const,
@@ -221,6 +299,8 @@ export function NappyForm({
           return Number.isFinite(g) && g > 0 ? g : null;
         })(),
         note: note.trim() || null,
+        // The analysis already ran on upload — persist it with the entry.
+        ai,
       };
 
       let entryId = initial?.id ?? savedId ?? undefined;
@@ -244,10 +324,9 @@ export function NappyForm({
         setSavedId(data.id);
       }
 
-      let hasNewPhoto = false;
       if (photo) {
         setBusy("Uploading photo…");
-        const blob = await compressImage(photo);
+        const blob = compressedRef.current ?? (await compressImage(photo));
         const path = `${babyId}/${entryId}.jpg`;
         const { error: upError } = await supabase.storage
           .from("nappy-photos")
@@ -258,56 +337,16 @@ export function NappyForm({
           .update({ photo_path: path })
           .eq("id", entryId);
         if (error) throw new Error(error.message);
-        hasNewPhoto = true;
-      }
-
-      let labelFailed = false;
-      // Label only when a NEW photo is attached (Advanced membership) —
-      // plain edits never re-run the analysis.
-      if (hasNewPhoto && aiEnabled) {
-        setBusy("Labelling the photo…");
-        const res = await fetch(`/api/entries/${entryId}/analyze`, {
-          method: "POST",
-        });
-        if (res.ok) {
-          const json = (await res.json()) as {
-            ai: AiAnalysis;
-            stool_colour: StoolColourKey | null;
-            dirty: boolean;
-            wet: boolean;
-          };
-          setAi(json.ai);
-          // Reflect the AI's labelling so the chips show it and the parent
-          // can correct it with a tap (parent choices are kept server-side).
-          if (json.dirty && !dirty) setDirty(true);
-          if (json.wet && !wet) setWet(true);
-          if (json.stool_colour && colourSource !== "user") {
-            setColour(json.stool_colour);
-            setColourSource("ai");
-          }
-        } else {
-          labelFailed = true;
-          const body = await res.json().catch(() => null);
-          setError(
-            body?.error ??
-              "The photo was saved but labelling failed — you can set the labels by hand."
-          );
-        }
       }
 
       router.refresh();
-      if (labelFailed) {
-        // Keep the form open so the parent can see the message and fix labels.
-        setPhoto(null);
-      } else {
-        const msg = initial
-          ? "Changes saved"
-          : hasNewPhoto && aiEnabled
-            ? "Nappy saved — labelled from the photo"
-            : "Nappy saved";
-        resetForm();
-        onSaved(msg);
-      }
+      const msg = initial
+        ? "Changes saved"
+        : hasNewPhoto && ai
+          ? "Nappy saved — labelled from the photo"
+          : "Nappy saved";
+      resetForm();
+      onSaved(msg);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
@@ -326,6 +365,9 @@ export function NappyForm({
     setPhoto(null);
     setTimeFromPhoto(null);
     setAi(null);
+    setAnalysing(false);
+    setAiError(null);
+    compressedRef.current = null;
     setSavedId(null);
     setOccurredAt(toLocalInputValue(new Date()));
   }
@@ -435,8 +477,9 @@ export function NappyForm({
           )}
           {!colour && photo && aiEnabled && (
             <p className="mt-1.5 text-xs text-faint">
-              Claude will identify the colour from the photo when you save —
-              you can correct it afterwards.
+              {analysing
+                ? "Claude is identifying the colour from the photo…"
+                : "Tap a chip to set the colour by hand."}
             </p>
           )}
           {warnColour && (
@@ -475,8 +518,7 @@ export function NappyForm({
               type="button"
               aria-label="Remove photo"
               onClick={() => {
-                setPhoto(null);
-                setTimeFromPhoto(null);
+                handlePhoto(null);
                 if (cameraRef.current) cameraRef.current.value = "";
                 if (libraryRef.current) libraryRef.current.value = "";
               }}
@@ -514,6 +556,20 @@ export function NappyForm({
             ? "Claude labels the colour and contents from the photo — every label can be changed."
             : "Photos are kept with the entry for your records."}
         </p>
+
+        {/* Analysis runs the moment a photo is chosen (Advanced). */}
+        {analysing && (
+          <div className="mt-3 flex items-center gap-2.5 rounded-2xl bg-surface-alt px-4 py-3 text-sm text-muted">
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+            AI is analysing the photo…
+          </div>
+        )}
+        {!analysing && aiError && (
+          <p className="mt-3 rounded-2xl bg-surface-alt px-4 py-3 text-xs text-muted">
+            {aiError}
+          </p>
+        )}
+        {!analysing && ai && <AiSummary ai={ai} />}
       </div>
 
       <NoteField note={note} setNote={setNote} />
@@ -561,6 +617,64 @@ export function NappyForm({
         </Portal>
       )}
     </Card>
+  );
+}
+
+const SIZE_LABEL: Record<string, string> = {
+  smaller: "smaller than a £2 coin",
+  similar: "about a £2 coin",
+  bigger: "bigger than a £2 coin",
+};
+const MATCH_LABEL: Record<string, string> = {
+  yes: "colour matches the feeding pattern",
+  partly: "colour roughly matches feeding",
+  no: "colour differs from the feeding pattern",
+};
+
+/**
+ * A calm, factual read of the photo: colour, size against a £2 coin, and
+ * whether the colour matches the feeding pattern. Deliberately descriptive,
+ * not a verdict — any real concern (pale/blood) surfaces via the colour
+ * warning above, not here.
+ */
+function AiSummary({ ai }: { ai: AiAnalysis }) {
+  const chips: string[] = [];
+  if (ai.colourKey && ai.colourKey !== "unclear") {
+    chips.push(STOOL_COLOURS[ai.colourKey as StoolColourKey].label.toLowerCase());
+  }
+  if (ai.sizeVs2pCoin && SIZE_LABEL[ai.sizeVs2pCoin]) {
+    chips.push(SIZE_LABEL[ai.sizeVs2pCoin]);
+  }
+  if (ai.matchesExpected && MATCH_LABEL[ai.matchesExpected]) {
+    chips.push(MATCH_LABEL[ai.matchesExpected]);
+  }
+
+  return (
+    <div className="mt-3 rounded-2xl border border-line bg-surface-alt px-4 py-3">
+      <div className="flex items-center gap-2 text-xs font-semibold text-muted">
+        <Sparkles className="h-3.5 w-3.5" />
+        Claude’s read of the photo
+      </div>
+      {ai.summary && (
+        <p className="mt-1.5 text-sm leading-relaxed text-ink">{ai.summary}</p>
+      )}
+      {chips.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
+          {chips.map((c, i) => (
+            <span
+              key={i}
+              className="rounded-full border border-line bg-surface px-2.5 py-1 font-medium text-muted"
+            >
+              {c}
+            </span>
+          ))}
+        </div>
+      )}
+      <p className="mt-2 text-xs text-faint">
+        A description to help you track — not medical advice. Correct any label
+        above if it doesn’t look right.
+      </p>
+    </div>
   );
 }
 

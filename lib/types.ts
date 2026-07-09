@@ -79,14 +79,19 @@ export interface AiAnalysis {
   consistency: string;
   /** How much stool is visible in the photo. */
   stoolAmount?: "none" | "smear" | "small" | "medium" | "large";
+  /** Estimated size against a £2 coin (NCT's reference). */
+  sizeVs2pCoin?: "smaller" | "similar" | "bigger" | "unclear";
+  /** Does the colour match the expected pattern for this feeding mix? */
+  matchesExpected?: "yes" | "partly" | "no" | "unclear";
+  /** One or two calm factual sentences: colour, size, and match. */
+  summary?: string;
   /** Weighed output minus the estimated stool mass, in ml (1 g ≈ 1 ml). */
   estimatedUrineMl?: number | null;
   analysedAt?: string;
   model?: string;
-  // Legacy fields from when the AI produced verdicts — no longer generated
-  // or displayed; present on older analyses.
+  // Legacy fields from when the AI produced verdicts — present on older
+  // analyses; no longer generated.
   feedTypeLikely?: string;
-  matchesExpected?: string;
   assessment?: string;
   redFlags?: string[];
   action?: AnalysisAction;
