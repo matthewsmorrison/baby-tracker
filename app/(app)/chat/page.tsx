@@ -22,5 +22,5 @@ export default async function ChatPage() {
     );
   }
 
-  return <ChatClient babyName={ctx.baby.name} />;
+  return <ChatClient babyId={ctx.baby.id} babyName={ctx.baby.name} />;
 }
