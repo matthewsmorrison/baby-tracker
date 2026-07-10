@@ -83,6 +83,10 @@ export default async function ProfilePage() {
     </Card>
   );
 
+  const medsCard = (
+    <MedicationManager babyId={ctx.baby.id} canEdit={ctx.canEdit} />
+  );
+
   const membershipCard = (
     <Card className="p-5">
       <div className="flex items-center justify-between">
@@ -123,18 +127,22 @@ export default async function ProfilePage() {
           {ctx.isOwner && (
             <TrackingToggles babyId={ctx.baby.id} tracked={ctx.baby.tracked_types} />
           )}
-          <MedicationManager babyId={ctx.baby.id} canEdit={ctx.canEdit} />
         </>
       ),
     },
     {
       id: "carers",
       label: "Carers",
-      content: carersCard,
+      content: (
+        <>
+          {carersCard}
+          {medsCard}
+        </>
+      ),
     },
     {
       id: "notifications",
-      label: "Notifications",
+      label: "Alerts",
       content: ctx.canEdit ? (
         <PushToggle />
       ) : (
