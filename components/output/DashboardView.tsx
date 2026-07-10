@@ -224,7 +224,7 @@ export function DashboardView({
   const todayDol = dayOfLife(birthAt, new Date());
 
   // Quick "last 24h" stats shown on each chart (time-dependent → memoised).
-  const { f24, wet24, dirty24, sleepH24, carerSleepH24, pumpMl24, avgGapH24 } =
+  const { f24, nappyCount24, sleepH24, carerSleepH24, pumpMl24, avgGapH24 } =
     useMemo(() => {
       const now = new Date().getTime();
       const winStart = now - DAY_MS;
@@ -246,8 +246,8 @@ export function DashboardView({
         .map((g) => g.gapMs);
       return {
         f24: summariseFeeds(last24),
-        wet24: nappies24.filter((e) => e.wet).length,
-        dirty24: nappies24.filter((e) => e.dirty).length,
+        // Each nappy once (a mixed nappy is both wet and dirty).
+        nappyCount24: nappies24.length,
         sleepH24: hrs(
           entries
             .filter((e) => e.type === "sleep")
@@ -543,7 +543,7 @@ export function DashboardView({
 
       {track.has("nappy") && (
       <Card className="p-5">
-        <Head title="Nappies per day" stat={`${wet24 + dirty24} in last 24h`} />
+        <Head title="Nappies per day" stat={`${nappyCount24} in last 24h`} />
         <p className="mt-0.5 text-xs text-faint">
           Day {todayDol} aim: {expectedNappies(todayDol).total} nappies, at
           least {expectedNappies(todayDol).minDirty} mixed (with poo)
