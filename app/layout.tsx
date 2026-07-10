@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Schibsted_Grotesk } from "next/font/google";
+import { cookies } from "next/headers";
 import "./globals.css";
 
 const schibsted = Schibsted_Grotesk({
@@ -30,19 +31,26 @@ export const viewport: Viewport = {
   viewportFit: "cover", // draw into the iPhone safe areas; insets handled in CSS
 };
 
-// Runs before first paint: applies the saved theme (and matching status-bar
-// colour) so there's no flash of the wrong palette on load.
-const THEME_SCRIPT = `(function(){try{var p=localStorage.getItem('theme');if(p==='dark'||p==='light')document.documentElement.setAttribute('data-theme',p);var d=p==='dark'||(p!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m);}m.setAttribute('content',d?'#16140f':'#ede9e1');}catch(e){}})();`;
+// Keeps the status-bar colour in step with the theme, and — for anyone whose
+// preference is still only in localStorage (set before the cookie existed) —
+// migrates it to the cookie so the server renders the right palette next time.
+const THEME_SCRIPT = `(function(){try{var m=document.cookie.match(/(?:^|;\\s*)theme=(dark|light|system)/);var p=m?m[1]:localStorage.getItem('theme');if(!m&&(p==='dark'||p==='light'||p==='system')){document.cookie='theme='+p+'; path=/; max-age=31536000; samesite=lax';if(p==='dark'||p==='light')document.documentElement.setAttribute('data-theme',p);}var d=p==='dark'||(p!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);var t=document.querySelector('meta[name="theme-color"]');if(t)t.setAttribute('content',d?'#16140f':'#ede9e1');}catch(e){}})();`;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Server-render the saved theme so the correct palette is present on first
+  // paint — no flash and no dependency on a client script running in time.
+  const pref = (await cookies()).get("theme")?.value;
+  const dataTheme = pref === "dark" || pref === "light" ? pref : undefined;
+
   return (
     <html
       lang="en"
       className={`${schibsted.variable} h-full antialiased`}
+      data-theme={dataTheme}
       suppressHydrationWarning
     >
       <head>
