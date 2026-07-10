@@ -262,10 +262,11 @@ export function ChatClient({
           <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-accent-soft">
             <Sparkles className="h-5 w-5 text-accent" />
           </span>
-          <p className="font-semibold">Ask about {babyName}’s data</p>
+          <p className="font-semibold">Ask Bea about {babyName}</p>
           <p className="mx-auto mt-1 max-w-xs text-sm text-muted">
-            Feeds, nappies, weight, patterns — answered from what you’ve logged.
-            Chats are saved and shared with everyone caring for {babyName}.
+            Bea answers from what you’ve logged — feeds, nappies, weight,
+            patterns. Chats are saved and shared with everyone caring for{" "}
+            {babyName}.
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             {STARTERS.map((s) => (
@@ -324,9 +325,9 @@ export function ChatClient({
       >
         <div className="flex items-center gap-2 rounded-full border border-line bg-surface p-1.5 pl-4 shadow-card">
           <input
-            aria-label={`Ask about ${babyName}'s data`}
+            aria-label={`Ask Bea about ${babyName}'s data`}
             className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-faint"
-            placeholder={`Ask about ${babyName}…`}
+            placeholder={`Ask Bea about ${babyName}…`}
             value={input}
             onChange={(e) => setInput(e.target.value)}
           />

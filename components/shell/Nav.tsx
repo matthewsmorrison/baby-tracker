@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Sun, Clock, Settings, ChartColumn, Sparkles, NotebookPen } from "lucide-react";
+import { ASSISTANT_NAME } from "@/lib/legal";
 
 const items = [
   { href: "/today", label: "Today", icon: Sun },
@@ -10,7 +11,7 @@ const items = [
   { href: "/history", label: "History", icon: Clock },
   { href: "/notes", label: "Notes", icon: NotebookPen },
   // Mobile reaches Ask via the header sparkle. Advanced membership only.
-  { href: "/chat", label: "Ask", icon: Sparkles, sideOnly: true, ai: true },
+  { href: "/chat", label: `Ask ${ASSISTANT_NAME}`, icon: Sparkles, sideOnly: true, ai: true },
   { href: "/profile", label: "Settings", icon: Settings },
 ];
 

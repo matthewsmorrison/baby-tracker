@@ -8,7 +8,7 @@ export const APP_NAME = "beanlo";
  * The name of the AI assistant, shown as "Ask {ASSISTANT_NAME}". Set to a
  * character name (e.g. "Bea", "Pip") to give it a personality, or keep "AI".
  */
-export const ASSISTANT_NAME = "AI";
+export const ASSISTANT_NAME = "Bea";
 
 /** The person or entity operating the service (currently an individual). */
 export const OPERATOR = "[OPERATOR NAME]";
