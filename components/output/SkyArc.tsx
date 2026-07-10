@@ -69,6 +69,10 @@ export function SkyArc() {
   const targetTop = 86 - Math.sin(progress * Math.PI) * 30; // 86px..56px..86px
   const x = mounted ? targetX : 6;
   const top = mounted ? targetTop : 100; // sweeps up from just below the band
+  // The glow leans toward the body but its centre is clamped so the gradient
+  // always fades to transparent before the hero's edges — otherwise
+  // overflow-hidden clips it into a hard line when the sun/moon is near a side.
+  const glowX = Math.min(64, Math.max(36, x));
 
   // Stars sit in the same top band (px from the top).
   const stars = [
@@ -82,11 +86,11 @@ export function SkyArc() {
 
   return (
     <div aria-hidden className="absolute inset-0">
-      {/* Glow follows the body's horizontal position */}
+      {/* Glow leans toward the body (clamped so it never clips at the edges) */}
       <div
         className="absolute inset-0 transition-[background] duration-1000 sky-glow"
         style={{
-          background: `radial-gradient(ellipse 55% 62% at ${x}% 2%, ${GLOW[phase]}, transparent 60%)`,
+          background: `radial-gradient(ellipse 55% 62% at ${glowX}% 2%, ${GLOW[phase]}, transparent 60%)`,
         }}
       />
 
