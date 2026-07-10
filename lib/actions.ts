@@ -241,13 +241,29 @@ export async function createNote(
   if (!user) redirect("/login");
   const text = body.trim();
   if (!text) throw new Error("Write a question or note first.");
-  const { error } = await supabase.from("baby_notes").insert({
-    baby_id: babyId,
-    kind,
-    body: text,
-    tagged_user_ids: taggedUserIds ?? [],
-    created_by: user.id,
-  });
+  const { data, error } = await supabase
+    .from("baby_notes")
+    .insert({
+      baby_id: babyId,
+      kind,
+      body: text,
+      tagged_user_ids: taggedUserIds ?? [],
+      created_by: user.id,
+    })
+    .select("id")
+    .single();
+  if (error) throw new Error(error.message);
+  revalidatePath("/notes");
+  return data.id as string;
+}
+
+/** Persist the photo paths attached to a note (uploaded client-side). */
+export async function setNotePhotos(noteId: string, paths: string[]) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("baby_notes")
+    .update({ photo_paths: paths.length ? paths : null })
+    .eq("id", noteId);
   if (error) throw new Error(error.message);
   revalidatePath("/notes");
 }
@@ -294,6 +310,16 @@ export async function setNoteAnswer(noteId: string, answer: string) {
 
 export async function deleteNote(noteId: string) {
   const supabase = await createClient();
+  // Remove any attached photos from storage first (RLS lets editors delete).
+  const { data: note } = await supabase
+    .from("baby_notes")
+    .select("photo_paths")
+    .eq("id", noteId)
+    .single();
+  const paths = (note?.photo_paths ?? []) as string[];
+  if (paths.length) {
+    await supabase.storage.from("nappy-photos").remove(paths);
+  }
   const { error } = await supabase.from("baby_notes").delete().eq("id", noteId);
   if (error) throw new Error(error.message);
   revalidatePath("/notes");

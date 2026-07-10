@@ -114,6 +114,7 @@ export interface BabyNote {
   answered_at: string | null;
   answered_by: string | null;
   tagged_user_ids: string[];
+  photo_paths: string[] | null;
   created_by: string;
   created_at: string;
   updated_at: string;

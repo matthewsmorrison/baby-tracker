@@ -13,6 +13,18 @@ export default async function NotesPage() {
     .eq("baby_id", ctx.baby.id)
     .order("created_at", { ascending: false });
 
+  // Short-TTL signed URLs for any attached note photos (private bucket).
+  const photoPaths = (notes ?? []).flatMap((n) => n.photo_paths ?? []);
+  const photoUrls: Record<string, string> = {};
+  if (photoPaths.length > 0) {
+    const { data } = await supabase.storage
+      .from("nappy-photos")
+      .createSignedUrls(photoPaths, 600);
+    for (const item of data ?? []) {
+      if (item.signedUrl && item.path) photoUrls[item.path] = item.signedUrl;
+    }
+  }
+
   // People you can tag: everyone with access to this baby.
   const { data: members } = await supabase
     .from("baby_members")
@@ -42,6 +54,7 @@ export default async function NotesPage() {
       currentUserId={ctx.userId}
       notes={(notes ?? []) as BabyNote[]}
       members={tagMembers}
+      photoUrls={photoUrls}
     />
   );
 }

@@ -1,20 +1,25 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+/* eslint-disable @next/next/no-img-element */
+import { useMemo, useRef, useState, useTransition } from "react";
 import {
   createNote,
   deleteNote,
   editNote,
   setNoteAnswer,
+  setNotePhotos,
 } from "@/lib/actions";
+import { uploadNotePhotos, removeNotePhotos } from "@/lib/notePhotos";
 import { formatDateTime } from "@/lib/dates";
 import type { BabyNote, MemberRole } from "@/lib/types";
-import { Card, CardTitle } from "@/components/ui/Card";
+import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { Segmented } from "@/components/ui/Segmented";
+import { PhotoLightbox } from "@/components/output/entryList";
 import {
   Check,
+  ImagePlus,
   MessageCircleQuestion,
   Pencil,
   RotateCcw,
@@ -93,6 +98,79 @@ function TaggedChips({
   );
 }
 
+/** Thumbnail grid for existing (removable) and newly-added note photos. */
+function PhotoPicker({
+  files,
+  setFiles,
+  existing = [],
+  onRemoveExisting,
+  photoUrls = {},
+}: {
+  files: File[];
+  setFiles: (f: File[]) => void;
+  existing?: string[];
+  onRemoveExisting?: (path: string) => void;
+  photoUrls?: Record<string, string>;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const thumb = "h-16 w-16 rounded-xl border border-line object-cover";
+  const removeBtn =
+    "absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-on-ink";
+  return (
+    <div className="flex flex-wrap gap-2">
+      {existing.map((p) =>
+        photoUrls[p] ? (
+          <div key={p} className="relative">
+            <img src={photoUrls[p]} alt="Note photo" className={thumb} />
+            {onRemoveExisting && (
+              <button
+                type="button"
+                aria-label="Remove photo"
+                onClick={() => onRemoveExisting(p)}
+                className={removeBtn}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        ) : null
+      )}
+      {files.map((f, i) => (
+        <div key={i} className="relative">
+          <img src={URL.createObjectURL(f)} alt="New photo" className={thumb} />
+          <button
+            type="button"
+            aria-label="Remove photo"
+            onClick={() => setFiles(files.filter((_, j) => j !== i))}
+            className={removeBtn}
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        aria-label="Add photos"
+        className="flex h-16 w-16 items-center justify-center rounded-xl border border-dashed border-line text-muted hover:border-ink hover:text-ink"
+      >
+        <ImagePlus className="h-5 w-5" />
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          setFiles([...files, ...Array.from(e.target.files ?? [])]);
+          e.target.value = "";
+        }}
+      />
+    </div>
+  );
+}
+
 function Composer({
   babyId,
   members,
@@ -103,11 +181,31 @@ function Composer({
   const [kind, setKind] = useState<"question" | "note">("question");
   const [body, setBody] = useState("");
   const [tagged, setTagged] = useState<string[]>([]);
-  const [pending, startTransition] = useTransition();
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const toggle = (id: string) =>
     setTagged((t) => (t.includes(id) ? t.filter((x) => x !== id) : [...t, id]));
+
+  async function submit() {
+    setBusy(true);
+    setError(null);
+    try {
+      const id = await createNote(babyId, body, tagged, kind);
+      if (photos.length) {
+        const paths = await uploadNotePhotos(babyId, id, photos);
+        await setNotePhotos(id, paths);
+      }
+      setBody("");
+      setTagged([]);
+      setPhotos([]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not save");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <Card className="p-5">
@@ -139,24 +237,23 @@ function Composer({
           <PeoplePicker members={members} selected={tagged} onToggle={toggle} />
         </>
       )}
+      <p className="mt-3 mb-1.5 text-xs font-medium text-muted">
+        Photos (optional)
+      </p>
+      <PhotoPicker files={photos} setFiles={setPhotos} />
       {error && <p className="mt-2 text-sm text-alert">{error}</p>}
       <Button
         className="mt-3 w-full"
-        disabled={pending || !body.trim()}
-        onClick={() =>
-          startTransition(async () => {
-            setError(null);
-            try {
-              await createNote(babyId, body, tagged, kind);
-              setBody("");
-              setTagged([]);
-            } catch (e) {
-              setError(e instanceof Error ? e.message : "Could not save");
-            }
-          })
-        }
+        disabled={busy || !body.trim()}
+        onClick={submit}
       >
-        {pending ? "Saving…" : kind === "question" ? "Add question" : "Add note"}
+        {busy
+          ? photos.length
+            ? "Saving photos…"
+            : "Saving…"
+          : kind === "question"
+            ? "Add question"
+            : "Add note"}
       </Button>
     </Card>
   );
@@ -164,14 +261,18 @@ function Composer({
 
 function NoteCard({
   note,
+  babyId,
   members,
   memberById,
   canEdit,
+  photoUrls,
 }: {
   note: BabyNote;
+  babyId: string;
   members: TagMember[];
   memberById: Map<string, TagMember>;
   canEdit: boolean;
+  photoUrls: Record<string, string>;
 }) {
   const [pending, startTransition] = useTransition();
   const [answering, setAnswering] = useState(false);
@@ -179,7 +280,25 @@ function NoteCard({
   const [editing, setEditing] = useState(false);
   const [body, setBody] = useState(note.body);
   const [tagged, setTagged] = useState<string[]>(note.tagged_user_ids ?? []);
+  const [keptPaths, setKeptPaths] = useState<string[]>(note.photo_paths ?? []);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [lightbox, setLightbox] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  async function saveEdit() {
+    await editNote(note.id, body, tagged);
+    const original = note.photo_paths ?? [];
+    const removed = original.filter((p) => !keptPaths.includes(p));
+    let paths = keptPaths;
+    if (newFiles.length) {
+      const uploaded = await uploadNotePhotos(babyId, note.id, newFiles);
+      paths = [...keptPaths, ...uploaded];
+    }
+    if (removed.length) await removeNotePhotos(removed);
+    if (newFiles.length || removed.length) await setNotePhotos(note.id, paths);
+    setNewFiles([]);
+    setEditing(false);
+  }
 
   const isNote = note.kind === "note";
   const answered = !!note.answer;
@@ -198,16 +317,20 @@ function NoteCard({
         {members.length > 0 && (
           <PeoplePicker members={members} selected={tagged} onToggle={toggleTag} />
         )}
+        <PhotoPicker
+          files={newFiles}
+          setFiles={setNewFiles}
+          existing={keptPaths}
+          onRemoveExisting={(p) =>
+            setKeptPaths((k) => k.filter((x) => x !== p))
+          }
+          photoUrls={photoUrls}
+        />
         <div className="flex gap-2">
           <Button
             size="sm"
             disabled={pending || !body.trim()}
-            onClick={() =>
-              startTransition(async () => {
-                await editNote(note.id, body, tagged);
-                setEditing(false);
-              })
-            }
+            onClick={() => startTransition(saveEdit)}
           >
             {pending ? "Saving…" : "Save"}
           </Button>
@@ -242,6 +365,21 @@ function NoteCard({
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium">{note.body}</p>
           <TaggedChips ids={note.tagged_user_ids} memberById={memberById} />
+          {note.photo_paths && note.photo_paths.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {note.photo_paths.map((p) =>
+                photoUrls[p] ? (
+                  <img
+                    key={p}
+                    src={photoUrls[p]}
+                    alt="Note photo"
+                    onClick={() => setLightbox(photoUrls[p])}
+                    className="h-16 w-16 cursor-zoom-in rounded-xl border border-line object-cover"
+                  />
+                ) : null
+              )}
+            </div>
+          )}
           <p className="mt-1.5 text-xs text-faint">
             {formatDateTime(note.created_at)}
           </p>
@@ -357,6 +495,8 @@ function NoteCard({
           )}
         </div>
       ) : null}
+
+      <PhotoLightbox url={lightbox} onClose={() => setLightbox(null)} />
     </Card>
   );
 }
@@ -366,12 +506,14 @@ export function NotesClient({
   canEdit,
   notes,
   members,
+  photoUrls,
 }: {
   babyId: string;
   canEdit: boolean;
   currentUserId: string;
   notes: BabyNote[];
   members: TagMember[];
+  photoUrls: Record<string, string>;
 }) {
   const memberById = useMemo(
     () => new Map(members.map((m) => [m.userId, m])),
@@ -407,9 +549,11 @@ export function NotesClient({
                 <NoteCard
                   key={n.id}
                   note={n}
+                  babyId={babyId}
                   members={members}
                   memberById={memberById}
                   canEdit={canEdit}
+                  photoUrls={photoUrls}
                 />
               ))}
             </section>
@@ -422,9 +566,11 @@ export function NotesClient({
                 <NoteCard
                   key={n.id}
                   note={n}
+                  babyId={babyId}
                   members={members}
                   memberById={memberById}
                   canEdit={canEdit}
+                  photoUrls={photoUrls}
                 />
               ))}
             </section>
@@ -449,9 +595,11 @@ export function NotesClient({
                   <NoteCard
                     key={n.id}
                     note={n}
+                    babyId={babyId}
                     members={members}
                     memberById={memberById}
                     canEdit={canEdit}
+                    photoUrls={photoUrls}
                   />
                 ))}
             </section>
