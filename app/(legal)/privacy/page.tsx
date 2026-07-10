@@ -63,8 +63,8 @@ export default function PrivacyPage() {
         </li>
         <li>
           <strong>Health data and optional features</strong> (recording care
-          logs, AI photo labelling, the Ask assistant, and notifications) — on
-          the basis of your <strong>explicit consent</strong>, which you give by
+          logs, the Ask assistant, and notifications) — on the basis of your{" "}
+          <strong>explicit consent</strong>, which you give by
           choosing to use them and can withdraw at any time by turning them off
           or deleting your data.
         </li>
@@ -86,10 +86,10 @@ export default function PrivacyPage() {
           storage (hosted in the EU).
         </li>
         <li>
-          <strong>Anthropic</strong> — powers the AI photo labelling and the Ask
-          assistant. When you use these features, the relevant photo or text
-          from your logs is sent to Anthropic to generate a response. It is not
-          used to train their models.
+          <strong>Anthropic</strong> — powers Bea, the Ask assistant. When you
+          ask a question, the relevant text from your logs (and your question)
+          is sent to Anthropic to generate a response. It is not used to train
+          their models.
         </li>
         <li>
           <strong>Vercel</strong> — hosts and serves the application.

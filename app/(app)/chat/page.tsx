@@ -14,9 +14,8 @@ export default async function ChatPage() {
         </span>
         <p className="font-semibold">Bea is part of Advanced</p>
         <p className="mx-auto mt-1 max-w-xs text-sm text-muted">
-          Advanced membership adds AI photo labelling and Bea, your assistant —
-          ask anything about {ctx.baby.name}’s feeds, nappies and weight.
-          Upgrades are coming soon.
+          Advanced membership adds Bea, your assistant — ask anything about{" "}
+          {ctx.baby.name}’s feeds, nappies and weight. Upgrades are coming soon.
         </p>
       </Card>
     );

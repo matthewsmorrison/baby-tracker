@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   Baby,
-  Camera,
   Flame,
   HeartPulse,
   LineChart,
@@ -23,11 +22,6 @@ const FEATURES = [
     icon: Baby,
     title: "Nappies, made sense of",
     body: "Log wet and dirty nappies against the day-by-day amounts newborns are expected to have, so you can see at a glance whether things are on track.",
-  },
-  {
-    icon: Camera,
-    title: "Photo labelling",
-    body: "Snap a nappy and it’s labelled for colour, texture and size — with a calm, factual read of whether the colour fits the feeding pattern. You can correct every label.",
   },
   {
     icon: HeartPulse,

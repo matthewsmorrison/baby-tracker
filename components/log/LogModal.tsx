@@ -22,14 +22,12 @@ export function LogModal({
   birthAt,
   entries,
   nappyBaseWeightG,
-  aiEnabled,
   trackedTypes,
 }: {
   babyId: string;
   birthAt: string;
   entries: Entry[];
   nappyBaseWeightG?: number | null;
-  aiEnabled: boolean;
   trackedTypes: EntryType[];
 }) {
   const router = useRouter();
@@ -197,7 +195,6 @@ export function LogModal({
                     {...formProps}
                     initial={editing ?? undefined}
                     nappyBaseWeightG={nappyBaseWeightG}
-                    aiEnabled={aiEnabled}
                   />
                 )}
                 {tab === "feed" && (

@@ -95,7 +95,7 @@ export default async function ProfilePage() {
           {ctx.baby.membership_tier === "advanced" ? (
             <p className="mt-1 text-sm">
               <span className="font-semibold">Advanced</span> — everything in
-              Free, plus AI photo labelling and Ask
+              Free, plus Bea, the AI assistant you can ask about your data
             </p>
           ) : (
             <>
@@ -104,8 +104,7 @@ export default async function ProfilePage() {
                 calendar &amp; carer sharing
               </p>
               <p className="text-xs text-faint mt-0.5">
-                Advanced adds AI photo labelling and the Ask chat — upgrades
-                coming soon.
+                Advanced adds Bea, the AI assistant — upgrades coming soon.
               </p>
             </>
           )}

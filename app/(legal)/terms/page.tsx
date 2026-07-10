@@ -62,11 +62,12 @@ export default function TermsPage() {
         </li>
       </ul>
 
-      <h2>AI features</h2>
+      <h2>Bea, the AI assistant</h2>
       <p>
-        The photo labelling and Ask features generate estimates from the data
-        you provide. They are not a clinical assessment, may be inaccurate, and
-        must be checked by you. Don’t rely on them for medical decisions.
+        Bea answers questions from the data you’ve logged and from general,
+        publicly available guidance. Her answers are not a clinical assessment,
+        may be inaccurate, and must be checked by you. Don’t rely on them for
+        medical decisions.
       </p>
 
       <h2>Availability and changes</h2>
