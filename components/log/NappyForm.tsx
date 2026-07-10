@@ -44,7 +44,7 @@ export function NappyForm({
   onSaved: (message: string) => void;
   /** Dry nappy weight from Profile — enables wetness inference. */
   nappyBaseWeightG?: number | null;
-  /** Advanced membership: photo labelling by Claude. */
+  /** Advanced membership: photo labelling by Bea. */
   aiEnabled: boolean;
 }) {
   const router = useRouter();
@@ -62,7 +62,7 @@ export function NappyForm({
   const [colour, setColour] = useState<StoolColourKey | null>(
     initial?.stool_colour ?? null
   );
-  // Who picked the colour: the day/mix suggestion, the parent, or Claude.
+  // Who picked the colour: the day/mix suggestion, the parent, or Bea.
   // Parent choices are never overwritten by analysis.
   const [colourSource, setColourSource] = useState<
     "auto" | "user" | "ai" | null
@@ -123,7 +123,7 @@ export function NappyForm({
     }
     // A fresh photo replaces any earlier analysis.
     setAi(null);
-    // With a photo, Claude labels the colour — drop the auto-suggestion so
+    // With a photo, Bea labels the colour — drop the auto-suggestion so
     // the analysis can fill it in (a parent's own tap is kept).
     if (aiEnabled && colourSource === "auto") {
       setColour(null);
@@ -179,7 +179,7 @@ export function NappyForm({
   }
 
   /**
-   * Send the freshly-chosen photo to Claude for labelling straight away, so
+   * Send the freshly-chosen photo to Bea for labelling straight away, so
    * the colour, size and a plain-language summary are ready before saving.
    * Non-blocking: a failure just leaves the parent to set labels by hand.
    */
@@ -274,11 +274,11 @@ export function NappyForm({
 
   async function save() {
     if (!wet && !dirty && !photo) {
-      setError("Tick wet, dirty, or both — or add a photo and Claude will label it.");
+      setError("Tick wet, dirty, or both — or add a photo and Bea will label it.");
       return;
     }
     if (analysing) {
-      setError("Hold on — Claude is still analysing the photo.");
+      setError("Hold on — Bea is still analysing the photo.");
       return;
     }
     setError(null);
@@ -471,14 +471,14 @@ export function NappyForm({
           )}
           {colourSource === "ai" && (
             <p className="mt-1.5 text-xs text-faint">
-              Identified by Claude from the photo — tap another chip if that
+              Identified by Bea from the photo — tap another chip if that
               doesn’t look right.
             </p>
           )}
           {!colour && photo && aiEnabled && (
             <p className="mt-1.5 text-xs text-faint">
               {analysing
-                ? "Claude is identifying the colour from the photo…"
+                ? "Bea is identifying the colour from the photo…"
                 : "Tap a chip to set the colour by hand."}
             </p>
           )}
@@ -553,7 +553,7 @@ export function NappyForm({
         )}
         <p className="mt-1 text-xs text-faint">
           {aiEnabled
-            ? "Claude labels the colour and contents from the photo — every label can be changed."
+            ? "Bea labels the colour and contents from the photo — every label can be changed."
             : "Photos are kept with the entry for your records."}
         </p>
 
@@ -668,7 +668,7 @@ function AiSummary({ ai }: { ai: AiAnalysis }) {
     <div className="mt-3 rounded-2xl border border-line bg-surface-alt px-4 py-3">
       <div className="flex items-center gap-2 text-xs font-semibold text-muted">
         <Sparkles className="h-3.5 w-3.5" />
-        Claude’s read of the photo
+        Bea’s read of the photo
       </div>
       {ai.summary && (
         <p className="mt-1.5 text-sm leading-relaxed text-ink">{ai.summary}</p>
