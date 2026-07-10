@@ -24,6 +24,18 @@ const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5";
 const MAX_TURNS = 24;
 const MAX_MSG_CHARS = 4000;
 
+// Web search is restricted to trusted health sources — NHS first, then other
+// UK/international authorities. Bea won't pull from the open web.
+const TRUSTED_DOMAINS = [
+  "nhs.uk",
+  "nice.org.uk",
+  "nct.org.uk",
+  "unicef.org.uk",
+  "rcpch.ac.uk",
+  "rcog.org.uk",
+  "who.int",
+];
+
 function fmt(iso: string, tz: string, opts: Intl.DateTimeFormatOptions) {
   return new Date(iso).toLocaleString("en-GB", { timeZone: tz, ...opts });
 }
@@ -288,7 +300,7 @@ Facts: ${baby.name} was born ${fmt(baby.birth_at, tz, { weekday: "long", day: "n
 HARD RULES:
 - You are a TRACKING AID, not medical advice or diagnosis. Never give an all-clear that could delay care.
 - Pale/white/chalky stool, blood, black tarry stool after day 4, or worrying feeding/weight patterns: advise contacting the midwife or doctor today, calmly.
-- ANSWERING: for questions about ${baby.name}'s own logs, answer from the provided data and never invent entries or numbers. For general newborn questions (what's typical, whether something is normal, how-to), you may use your own knowledge and, when it helps, SEARCH THE WEB — prefer reputable sources (NHS, NICE, NCT, WHO) and mention where the information comes from. Always make clear when you're giving general information versus something specific to ${baby.name}. If the logs can't answer a data question, say so plainly.
+- ANSWERING: for questions about ${baby.name}'s own logs, answer from the provided data and never invent entries or numbers. For general newborn questions (what's typical, whether something is normal, how-to), you may use your own knowledge and, when it helps, SEARCH THE WEB. Web search is limited to trusted health sources — CHECK THE NHS (nhs.uk) FIRST, then NICE, NCT, UNICEF UK, the Royal Colleges (RCPCH/RCOG) or WHO. Always make clear when you're giving general information versus something specific to ${baby.name}. If the logs can't answer a data question, say so plainly. Don't narrate your search process or mention tools — just give the answer (the app lists your sources automatically).
 - MEDICAL SAFETY: for anything medical — symptoms, whether something is normal or worrying, what to do, medicines or doses — ALWAYS add a short, calm reminder to check with their midwife, health visitor, GP or NHS 111 (999 in an emergency). Never diagnose, and never give an all-clear that could delay care.
 - TIME WINDOWS — keep these distinct and match the app:
   · "last 24 hours" / "past day" / "so far" / "recently" → use the "Last 24 hours" block (a rolling window ending now). This is what the app's Today screen shows. Never answer these from a single calendar-day summary.
@@ -313,24 +325,90 @@ HARD RULES:
         cache_control: { type: "ephemeral" },
       },
     ],
-    // Server-side web search so Bea can answer general questions from
-    // reputable current sources, not just the logged data.
-    tools: [{ type: "web_search_20260209", name: "web_search", max_uses: 5 }],
+    // Server-side web search, restricted to trusted health sources, so Bea
+    // can answer general questions from current authoritative guidance.
+    tools: [
+      {
+        type: "web_search_20260209",
+        name: "web_search",
+        max_uses: 5,
+        allowed_domains: TRUSTED_DOMAINS,
+      },
+    ],
     messages: history,
   });
 
   const encoder = new TextEncoder();
   const readable = new ReadableStream<Uint8Array>({
     start(controller) {
+      let closed = false;
+      const close = () => {
+        if (!closed) {
+          closed = true;
+          controller.close();
+        }
+      };
       stream.on("text", (t) => controller.enqueue(encoder.encode(t)));
       stream.on("error", (e) => {
         console.error("chat stream error:", e instanceof Error ? e.message : e);
         controller.enqueue(
           encoder.encode("\n\nSorry — something went wrong answering that. Please try again.")
         );
-        controller.close();
+        close();
       });
-      stream.on("end", () => controller.close());
+      stream.on("end", async () => {
+        // Append a Sources list from any web-search citations, deduped by URL.
+        try {
+          const final = await stream.finalMessage();
+          const seen = new Set<string>();
+          const sources: Array<{ url: string; title: string }> = [];
+          const add = (url?: string, title?: string) => {
+            if (!url || seen.has(url)) return;
+            seen.add(url);
+            let host = url;
+            try {
+              host = new URL(url).hostname;
+            } catch {
+              /* keep raw */
+            }
+            sources.push({ url, title: title || host });
+          };
+          for (const block of final.content) {
+            // Sources the search actually returned (trusted-domain results).
+            if (block.type === "web_search_tool_result") {
+              const results = (block as { content?: unknown }).content;
+              if (Array.isArray(results)) {
+                for (const r of results as Array<{
+                  type?: string;
+                  url?: string;
+                  title?: string;
+                }>) {
+                  if (r?.type === "web_search_result") add(r.url, r.title);
+                }
+              }
+            } else if (block.type === "text" && block.citations) {
+              for (const c of block.citations) {
+                if ("url" in c) {
+                  add(
+                    c.url as string,
+                    "title" in c ? (c.title as string) : undefined
+                  );
+                }
+              }
+            }
+          }
+          const top = sources.slice(0, 5);
+          if (top.length) {
+            const md =
+              "\n\n**Sources**\n" +
+              top.map((s) => `- [${s.title}](${s.url})`).join("\n");
+            controller.enqueue(encoder.encode(md));
+          }
+        } catch {
+          /* citations are best-effort */
+        }
+        close();
+      });
     },
     cancel() {
       stream.abort();

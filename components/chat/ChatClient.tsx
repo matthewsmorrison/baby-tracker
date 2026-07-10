@@ -296,7 +296,21 @@ export function ChatClient({
                 }
               >
                 {m.role === "assistant" && m.content ? (
-                  <Markdown remarkPlugins={[remarkGfm]}>{m.content}</Markdown>
+                  <Markdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      a: ({ ...props }) => (
+                        <a
+                          {...props}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline underline-offset-2"
+                        />
+                      ),
+                    }}
+                  >
+                    {m.content}
+                  </Markdown>
                 ) : null}
                 {m.role === "assistant" ? null : m.content}
                 {!m.content &&
