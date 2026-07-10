@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Flame, ChevronDown, Eye, Sparkles } from "lucide-react";
 import { setActiveBaby } from "@/lib/actions";
+import { ASSISTANT_NAME } from "@/lib/legal";
 import type { MemberRole } from "@/lib/types";
 
 export function Header({
@@ -72,10 +73,11 @@ export function Header({
         {compact && aiEnabled && (
           <Link
             href="/chat"
-            aria-label="Ask about the data"
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-surface text-accent"
+            aria-label={`Ask ${ASSISTANT_NAME} about the data`}
+            className="flex h-8 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-sm font-medium text-accent"
           >
             <Sparkles className="h-4 w-4" />
+            Ask {ASSISTANT_NAME}
           </Link>
         )}
         {switcher}
