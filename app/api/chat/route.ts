@@ -128,9 +128,6 @@ function serialise(baby: Baby, entries: Entry[], tz: string): string {
         e.wet ? "wet" : null,
         e.dirty ? `dirty(${e.stool_colour ?? "?"})` : null,
         e.nappy_weight_g ? `${e.nappy_weight_g}g nappy` : null,
-        e.ai
-          ? `photo labels:${e.ai.stoolAmount ? ` poo=${e.ai.stoolAmount}` : ""}${e.ai.consistency ? ` texture=${e.ai.consistency}` : ""}${e.ai.estimatedUrineMl != null ? ` urine≈${e.ai.estimatedUrineMl}ml` : ""}`
-          : null,
       ].filter(Boolean);
       return `d${day} ${t} NAPPY ${bits.join(", ")}${e.note ? ` note:"${e.note}"` : ""}`;
     }
