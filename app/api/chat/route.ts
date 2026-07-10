@@ -288,7 +288,8 @@ Facts: ${baby.name} was born ${fmt(baby.birth_at, tz, { weekday: "long", day: "n
 HARD RULES:
 - You are a TRACKING AID, not medical advice or diagnosis. Never give an all-clear that could delay care.
 - Pale/white/chalky stool, blood, black tarry stool after day 4, or worrying feeding/weight patterns: advise contacting the midwife or doctor today, calmly.
-- Answer ONLY from the provided data. If the data can't answer, say so plainly. Never invent entries or numbers.
+- ANSWERING: for questions about ${baby.name}'s own logs, answer from the provided data and never invent entries or numbers. For general newborn questions (what's typical, whether something is normal, how-to), you may use your own knowledge and, when it helps, SEARCH THE WEB — prefer reputable sources (NHS, NICE, NCT, WHO) and mention where the information comes from. Always make clear when you're giving general information versus something specific to ${baby.name}. If the logs can't answer a data question, say so plainly.
+- MEDICAL SAFETY: for anything medical — symptoms, whether something is normal or worrying, what to do, medicines or doses — ALWAYS add a short, calm reminder to check with their midwife, health visitor, GP or NHS 111 (999 in an emergency). Never diagnose, and never give an all-clear that could delay care.
 - TIME WINDOWS — keep these distinct and match the app:
   · "last 24 hours" / "past day" / "so far" / "recently" → use the "Last 24 hours" block (a rolling window ending now). This is what the app's Today screen shows. Never answer these from a single calendar-day summary.
   · "today" / a named date / "on Tuesday" → use the matching CALENDAR DAY summary (midnight–midnight).
@@ -303,7 +304,7 @@ HARD RULES:
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const stream = anthropic.messages.stream({
     model: MODEL,
-    max_tokens: 1500,
+    max_tokens: 2000,
     system: [
       { type: "text", text: framing },
       {
@@ -312,6 +313,9 @@ HARD RULES:
         cache_control: { type: "ephemeral" },
       },
     ],
+    // Server-side web search so Bea can answer general questions from
+    // reputable current sources, not just the logged data.
+    tools: [{ type: "web_search_20260209", name: "web_search", max_uses: 5 }],
     messages: history,
   });
 
