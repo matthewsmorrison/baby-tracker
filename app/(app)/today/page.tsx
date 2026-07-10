@@ -20,7 +20,7 @@ import { KpiCard } from "@/components/output/KpiCard";
 import { NappyQuota } from "@/components/output/NappyQuota";
 import { NextFeedCard } from "@/components/output/NextFeedCard";
 import { SkyArc } from "@/components/output/SkyArc";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Pill } from "lucide-react";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -69,6 +69,16 @@ export default async function TodayPage() {
       return sum + Math.max(0, en - s);
     }, 0);
   const carerSleepHrs = Math.round((carerSleepMs / 3_600_000) * 10) / 10;
+
+  // Mother's medications currently being taken (started, not yet stopped).
+  const activeMeds = track.has("medication")
+    ? entries.filter(
+        (e) =>
+          e.type === "medication" &&
+          new Date(e.occurred_at) <= now &&
+          (!e.ended_at || new Date(e.ended_at) >= now)
+      )
+    : [];
 
   const latestWeight = entries.find((e) => e.type === "weight");
   const band = expectedWeightBand(day, ctx.baby.birth_weight_g);
@@ -252,6 +262,34 @@ export default async function TodayPage() {
             </p>
           </div>
           <p className="mt-1.5 text-sm text-muted">{ws.message}</p>
+        </Card>
+      )}
+
+      {/* Mother's medication (active courses) */}
+      {activeMeds.length > 0 && (
+        <Card className="p-5">
+          <div className="flex items-center gap-2">
+            <Pill className="h-4 w-4 text-muted" />
+            <CardTitle>Mother’s medication</CardTitle>
+          </div>
+          <ul className="mt-3 space-y-1.5">
+            {activeMeds.map((m) => (
+              <li key={m.id} className="flex items-baseline justify-between gap-3 text-sm">
+                <span className="font-medium">{m.med_name}</span>
+                <span className="text-xs text-muted">
+                  since{" "}
+                  {new Date(m.occurred_at).toLocaleDateString(undefined, {
+                    day: "numeric",
+                    month: "short",
+                  })}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-xs text-faint">
+            Some medication passes into breastmilk and can shift stool colour —
+            e.g. iron often makes it darker or greener.
+          </p>
         </Card>
       )}
 

@@ -64,12 +64,13 @@ export async function POST(
     );
   }
 
-  // Feeds for the mix window (24h before the entry's occurred_at).
-  const { data: feedEntries } = await supabase
+  // Feeds (for the mix window) and the mother's medications (for context).
+  const { data: contextEntries } = await supabase
     .from("entries")
     .select("*")
     .eq("baby_id", entry.baby_id)
-    .eq("type", "feed");
+    .in("type", ["feed", "medication"]);
+  const ctxRows = (contextEntries ?? []) as Entry[];
 
   // 2. Read the private photo with the service role.
   const service = createServiceClient();
@@ -91,7 +92,8 @@ export async function POST(
       prompt: buildAnalysisPrompt({
         baby: baby as Baby,
         occurredAt: entry.occurred_at,
-        feedEntries: (feedEntries ?? []) as Entry[],
+        feedEntries: ctxRows.filter((e) => e.type === "feed"),
+        medEntries: ctxRows.filter((e) => e.type === "medication"),
         nappyWeightG: entry.nappy_weight_g,
       }),
     });

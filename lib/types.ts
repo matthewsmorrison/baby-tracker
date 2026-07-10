@@ -5,7 +5,8 @@ export type EntryType =
   | "weight"
   | "sleep"
   | "pump"
-  | "carer_sleep";
+  | "carer_sleep"
+  | "medication";
 export type InviteStatus = "pending" | "accepted" | "revoked";
 export type FeedType = "breast" | "formula" | "expressed" | "mixed";
 
@@ -142,6 +143,8 @@ export interface Entry {
   feed_notes: FeedNotes | null;
 
   weight_g: number | null;
+
+  med_name: string | null; // mother's medication (type = medication)
 
   note: string | null;
   photo_path: string | null;

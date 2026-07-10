@@ -96,5 +96,9 @@ export function entryLabel(e: Entry): string {
       : "";
     return ml ? `Pumped ${ml} ml${dur}` : `Pumping${dur}`;
   }
+  if (e.type === "medication") {
+    const name = e.med_name || "Medication";
+    return e.ended_at ? `${name} · stopped` : `${name} · ongoing`;
+  }
   return `Weight · ${formatKg(e.weight_g ?? 0)}`;
 }

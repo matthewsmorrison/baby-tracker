@@ -87,9 +87,10 @@ export function buildAnalysisPrompt(opts: {
   baby: Baby;
   occurredAt: string;
   feedEntries: Entry[];
+  medEntries?: Entry[];
   nappyWeightG?: number | null;
 }): string {
-  const { baby, occurredAt, feedEntries, nappyWeightG } = opts;
+  const { baby, occurredAt, feedEntries, medEntries, nappyWeightG } = opts;
   const { day, feeds, expected } = analysisContext(baby, occurredAt, feedEntries);
 
   const feedSummary =
@@ -103,13 +104,28 @@ export function buildAnalysisPrompt(opts: {
       ? `\n- The used nappy was weighed: ${nappyWeightG} g vs a ${baby.nappy_base_weight_g} g dry nappy — about ${output} g of contents (1 g ≈ 1 ml). ${output >= NAPPY_WET_THRESHOLD_G ? "So the nappy definitely contains output, whatever the photo shows." : "Very little output by weight."}`
       : "";
 
+  // Mother's medications active at the nappy's time — some pass into
+  // breastmilk and shift stool colour (e.g. iron → darker/greener).
+  const at = new Date(occurredAt).getTime();
+  const activeMeds = (medEntries ?? [])
+    .filter((m) => {
+      const start = new Date(m.occurred_at).getTime();
+      const end = m.ended_at ? new Date(m.ended_at).getTime() : Infinity;
+      return start <= at && at <= end;
+    })
+    .map((m) => m.med_name)
+    .filter(Boolean);
+  const medContext = activeMeds.length
+    ? `\n- Mother's medication around this time: ${activeMeds.join(", ")}. Some pass into breastmilk and can change stool — iron supplements commonly make it darker or greener. Still label the colour you actually SEE, but if a shift (e.g. green) fits a listed medication, you may note that likely cause in the summary. This never applies to pale/chalky stool or blood, which always matter regardless of medication.`
+    : "";
+
   return `You are helping parents of a newborn track nappy contents. This is a TRACKING AID, not medical advice or diagnosis.
 
 Context for THIS baby:
 - Day of life at the time of this nappy: day ${day} (computed from the entry's own date, which may be in the past)
 - Birth weight: ${baby.birth_weight_g} g
 - The baby was supplemented with formula in hospital for dehydration and the family is transitioning toward full breastfeeding.
-- ${feedSummary}${weightContext}
+- ${feedSummary}${weightContext}${medContext}
 
 Stool type depends on feeding, so judge against the matching pattern:
 - Breastfed / expressed breastmilk (EBM counts as breastfed): mustard-yellow, seedy, quite runny.

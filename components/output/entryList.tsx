@@ -24,6 +24,7 @@ import {
   Milk,
   Moon,
   Pencil,
+  Pill,
   Scale,
   Trash2,
   X,
@@ -36,6 +37,7 @@ export function EntryIcon({ entry }: { entry: Entry }) {
   if (entry.type === "sleep") return <Moon className={cls} />;
   if (entry.type === "carer_sleep") return <BedDouble className={cls} />;
   if (entry.type === "pump") return <Droplet className={cls} />;
+  if (entry.type === "medication") return <Pill className={cls} />;
   if (entry.wet && !entry.dirty) return <Droplets className={cls} />;
   return <Baby className={cls} />;
 }

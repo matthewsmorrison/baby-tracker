@@ -128,9 +128,26 @@ function serialise(baby: Baby, entries: Entry[], tz: string): string {
         : "ongoing";
       return `d${day} ${t}${end} SLEEP ${dur}${e.note ? ` note:"${e.note}"` : ""}`;
     }
-    const band = expectedWeightBand(day, baby.birth_weight_g);
-    return `d${day} ${t} WEIGHT ${e.weight_g}g (${weightStatus(e.weight_g!, baby.birth_weight_g).pct.toFixed(1)}% vs birth; expected ${band.low}–${band.high}g)${e.note ? ` note:"${e.note}"` : ""}`;
-  });
+    if (e.type === "carer_sleep") {
+      const dur = e.ended_at
+        ? formatGap(new Date(e.ended_at).getTime() - new Date(e.occurred_at).getTime())
+        : "ongoing";
+      return `d${day} ${t}${end} CARER-SLEEP ${dur}${e.note ? ` note:"${e.note}"` : ""}`;
+    }
+    if (e.type === "pump") {
+      const dur = e.ended_at
+        ? ` ${formatGap(new Date(e.ended_at).getTime() - new Date(e.occurred_at).getTime())}`
+        : "";
+      return `d${day} ${t}${end} PUMP ${e.expressed_ml ?? 0}ml${dur}${e.note ? ` note:"${e.note}"` : ""}`;
+    }
+    // Medications are summarised in their own section below, not as raw rows.
+    if (e.type === "medication") return "";
+    if (e.type === "weight") {
+      const band = expectedWeightBand(day, baby.birth_weight_g);
+      return `d${day} ${t} WEIGHT ${e.weight_g}g (${weightStatus(e.weight_g!, baby.birth_weight_g).pct.toFixed(1)}% vs birth; expected ${band.low}–${band.high}g)${e.note ? ` note:"${e.note}"` : ""}`;
+    }
+    return "";
+  }).filter(Boolean);
 
   // --- rolling last-24h window (matches the app's Today screen exactly) ---
   const nowMs = Date.now();
@@ -158,6 +175,23 @@ function serialise(baby: Baby, entries: Entry[], tz: string): string {
     }, 0);
   const day24 = dayOfLife(baby.birth_at, new Date());
   const exp = expectedNappies(day24);
+
+  // Mother's medications, as courses — some pass into breastmilk and can
+  // shift stool colour/texture (e.g. iron → darker/greener), so surface them.
+  const meds = asc.filter((e) => e.type === "medication");
+  const medsBlock = meds.length
+    ? "\n\n## Mother's medication (may affect breastfed stool — e.g. iron can darken/green it)\n" +
+      meds
+        .map((m) => {
+          const from = fmt(m.occurred_at, tz, { day: "numeric", month: "short" });
+          const to = m.ended_at
+            ? fmt(m.ended_at, tz, { day: "numeric", month: "short" })
+            : "ongoing";
+          return `${m.med_name ?? "medication"}: ${from} → ${to}${m.note ? ` (${m.note})` : ""}`;
+        })
+        .join("\n")
+    : "";
+
   const rolling = `## Last 24 hours (rolling window ending right now — USE THIS for any "last 24 hours", "past day", "past 24h", "so far", or "recently" question. This is what the app's Today screen shows. Do NOT substitute a single calendar-day summary for it.)
 - Feeds: ${f24.sessions} (${f24.breastMin}min nursing, ${f24.expressedMl}ml EBM, ${f24.formulaMl}ml formula, mix=${f24.mix})
 - Nappies: ${nappies24.length} total — ${wet24} wet, ${dirty24} dirty${urine24 > 0 ? `; est. urine ${urine24}ml` : ""}. NCT guide for day ${day24}: about ${exp.total} nappies in 24h, at least ${exp.minDirty} with poo.
@@ -169,7 +203,7 @@ function serialise(baby: Baby, entries: Entry[], tz: string): string {
 ${dayLines.join("\n")}
 
 ## Raw entries
-${lines.join("\n")}`;
+${lines.join("\n")}${medsBlock}`;
 }
 
 export async function POST(request: Request) {
@@ -261,6 +295,7 @@ HARD RULES:
   · "day N" refers to day of life (counted from birth), which the daily summaries are labelled with; do not confuse it with a rolling 24h window.
 - Use the pre-computed summaries (rolling and daily) for totals and comparisons rather than re-adding raw rows yourself.
 - The parent's own notes and questions (with any recorded answers) are included below — draw on them for context and refer back to them when relevant.
+- If the mother's medications are listed, factor them in when explaining stool or feeding changes — some pass into breastmilk (e.g. iron supplements commonly darken or green the stool). Note a plausible link when the timing fits; don't overstate causation.
 - Times in the data are already in the family's timezone (${tz}).
 - Be concise and warm — the reader is a tired parent. Prefer a direct answer first, then one or two supporting numbers.
 - ${DISCLAIMER}`;

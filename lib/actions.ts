@@ -381,6 +381,7 @@ const TRACK_TYPES = [
   "weight",
   "pump",
   "carer_sleep",
+  "medication",
 ] as const;
 
 /** Set which categories a baby tracks (owner only via RLS). At least one. */

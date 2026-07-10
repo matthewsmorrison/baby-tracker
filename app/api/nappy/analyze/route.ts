@@ -71,16 +71,18 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data: feedEntries } = await supabase
+  const { data: contextEntries } = await supabase
     .from("entries")
     .select("*")
     .eq("baby_id", babyId)
-    .eq("type", "feed");
+    .in("type", ["feed", "medication"]);
+  const rows = (contextEntries ?? []) as Entry[];
 
   const prompt = buildAnalysisPrompt({
     baby: baby as Baby,
     occurredAt,
-    feedEntries: (feedEntries ?? []) as Entry[],
+    feedEntries: rows.filter((e) => e.type === "feed"),
+    medEntries: rows.filter((e) => e.type === "medication"),
     nappyWeightG: body.nappyWeightG ?? null,
   });
 

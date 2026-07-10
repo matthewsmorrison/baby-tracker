@@ -10,6 +10,7 @@ import { FeedForm } from "./FeedForm";
 import { WeightForm } from "./WeightForm";
 import { SleepForm } from "./SleepForm";
 import { PumpForm } from "./PumpForm";
+import { MedicationForm } from "./MedicationForm";
 import { Check, Plus, X } from "lucide-react";
 
 /**
@@ -44,6 +45,7 @@ export function LogModal({
     weight: "Weight",
     pump: "Pump",
     carer_sleep: "My sleep",
+    medication: "Meds",
   };
   const order: EntryType[] = [
     "nappy",
@@ -52,6 +54,7 @@ export function LogModal({
     "weight",
     "pump",
     "carer_sleep",
+    "medication",
   ];
   const options = order
     .filter((t) => trackedTypes.includes(t))
@@ -233,6 +236,13 @@ export function LogModal({
                     {...formProps}
                     initial={editing ?? undefined}
                     variant="carer"
+                  />
+                )}
+                {tab === "medication" && (
+                  <MedicationForm
+                    key={editing?.id ?? "new-medication"}
+                    {...formProps}
+                    initial={editing ?? undefined}
                   />
                 )}
               </div>
