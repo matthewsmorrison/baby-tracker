@@ -106,7 +106,7 @@ function LoginForm() {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-accent-soft">
             <Flame className="h-7 w-7 text-accent" strokeWidth={2.2} />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">hearth</h1>
+          <h1 className="text-3xl font-bold tracking-tight">beanlo</h1>
           <p className="mt-2 text-sm text-muted">
             Nappies, feeds and weight for the first days and weeks
           </p>

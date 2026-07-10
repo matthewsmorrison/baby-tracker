@@ -1,6 +1,6 @@
 # Legal & compliance — before going live
 
-These pages are **drafts, not legal advice**. Because hearth handles special
+These pages are **drafts, not legal advice**. Because beanlo handles special
 category (health) data about infants, get them reviewed by a solicitor before
 you rely on them publicly.
 
@@ -24,7 +24,7 @@ would ring-fence liability — worth discussing with an accountant/solicitor
 given this is health-adjacent.
 
 ## 4. Medical device / MHRA
-hearth is positioned as a **tracking aid, not a medical device** — it doesn't
+beanlo is positioned as a **tracking aid, not a medical device** — it doesn't
 diagnose, and the AI is a labeller that never gives an all-clear. Keep it that
 way. If you ever add diagnostic claims or clinical decision support, it could
 fall under UK Medical Device Regulations (MHRA) and need registration. Get

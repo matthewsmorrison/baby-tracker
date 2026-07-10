@@ -313,7 +313,7 @@ export function estimatedUrineMl(
 }
 
 export const DISCLAIMER =
-  "Hearth is a tracking aid, not medical advice or diagnosis. If you are worried about your baby, contact your midwife, health visitor or doctor.";
+  "Beanlo is a tracking aid, not medical advice or diagnosis. If you are worried about your baby, contact your midwife, health visitor or doctor.";
 
 /** Formatting helper: grams → \"3.62 kg\" */
 export function formatKg(g: number): string {

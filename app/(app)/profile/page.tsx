@@ -187,7 +187,7 @@ export default async function ProfilePage() {
     <div>
       <SettingsTabs sections={sections} />
       <p className="px-2 pb-2 pt-6 text-center text-xs text-faint">
-        Hearth is a tracking aid, not medical advice or diagnosis.
+        Beanlo is a tracking aid, not medical advice or diagnosis.
       </p>
     </div>
   );

@@ -13,7 +13,7 @@ import { Footer } from "@/components/marketing/Footer";
 import { APP_NAME } from "@/lib/legal";
 
 export const metadata = {
-  title: "hearth — a gentle newborn tracker for the first weeks",
+  title: "beanlo — a gentle newborn tracker for the first weeks",
   description:
     "Track nappies, feeds, weight and sleep in the fourth trimester. Photo-labelled nappies, expected ranges from established newborn guidance, and sharing with everyone caring for your baby. A tracking aid, not medical advice.",
 };

@@ -13,10 +13,10 @@ export async function POST() {
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
 
   const sent = await sendToUsers([user.id], {
-    title: "hearth",
+    title: "beanlo",
     body: "Notifications are on — you’ll get gentle nudges here.",
     url: "/today",
-    tag: "hearth-test",
+    tag: "beanlo-test",
   });
   return NextResponse.json({ ok: true, sent });
 }

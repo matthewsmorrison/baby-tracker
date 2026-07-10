@@ -1,4 +1,4 @@
-# hearth — newborn tracker
+# beanlo — newborn tracker
 
 A mobile-first tracker for the first days and weeks of life. Parents log
 nappies, feeds and weight; the app shows day-by-day expectations (feeding-mix
@@ -6,7 +6,7 @@ aware stool colour, wet/dirty counts, expected weight band) and red flags to
 watch. A nappy photo can be checked by Claude against the baby's day of life
 and feeding pattern.
 
-**Hearth is a tracking aid, not medical advice or diagnosis.**
+**Beanlo is a tracking aid, not medical advice or diagnosis.**
 
 Built with Next.js (App Router) + TypeScript + Tailwind, Supabase (Postgres,
 Auth, Storage, RLS), the Anthropic API (server-side only), recharts, and

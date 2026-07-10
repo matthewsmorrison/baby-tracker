@@ -2,7 +2,7 @@
 // page and legal documents. FILL THESE IN before going live — see the notes
 // in each legal page. These drafts are not legal advice; have them reviewed
 // by a solicitor, especially as the service handles health data about infants.
-export const APP_NAME = "hearth";
+export const APP_NAME = "beanlo";
 
 /** The person or entity operating the service (currently an individual). */
 export const OPERATOR = "[OPERATOR NAME]";

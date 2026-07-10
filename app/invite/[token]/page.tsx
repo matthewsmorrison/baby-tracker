@@ -37,7 +37,7 @@ export default async function InvitePage({
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent-soft">
             <Flame className="h-6 w-6 text-accent" strokeWidth={2.2} />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">hearth</h1>
+          <h1 className="text-2xl font-bold tracking-tight">beanlo</h1>
         </div>
 
         <Card className="p-6 text-center">

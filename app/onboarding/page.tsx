@@ -68,7 +68,7 @@ export default async function OnboardingPage() {
       </Card>
 
       <p className="mt-6 text-center text-xs text-faint">
-        Hearth is a tracking aid, not medical advice or diagnosis.
+        Beanlo is a tracking aid, not medical advice or diagnosis.
       </p>
     </main>
   );

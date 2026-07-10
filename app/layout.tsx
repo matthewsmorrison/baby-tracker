@@ -9,12 +9,12 @@ const schibsted = Schibsted_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Hearth — newborn tracker",
+  title: "Beanlo — newborn tracker",
   description:
     "Track nappies, feeds and weight in the first days and weeks. A tracking aid, not medical advice.",
   appleWebApp: {
     capable: true,
-    title: "hearth",
+    title: "beanlo",
     statusBarStyle: "default",
   },
   icons: {
