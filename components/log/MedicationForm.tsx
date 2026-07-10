@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Field";
 import { OccurredAtField } from "./OccurredAtField";
 import { NoteField } from "./NappyForm";
+import { Bell, Plus, X } from "lucide-react";
 
 /**
  * Log a medication the mother is taking, as a course: what it is, when it
@@ -31,6 +32,10 @@ export function MedicationForm({
 }) {
   const router = useRouter();
   const [name, setName] = useState(initial?.med_name ?? "");
+  const [dose, setDose] = useState(initial?.med_dose ?? "");
+  const [reminders, setReminders] = useState<string[]>(
+    initial?.reminder_times ?? []
+  );
   const [startAt, setStartAt] = useState(() =>
     initial
       ? toLocalInputValue(new Date(initial.occurred_at))
@@ -60,12 +65,18 @@ export function MedicationForm({
     setBusy(true);
     const supabase = createClient();
 
+    const times = reminders.filter(Boolean).sort();
     const row = {
       baby_id: babyId,
       type: "medication" as const,
       med_name: name.trim(),
+      med_dose: dose.trim() || null,
       occurred_at: fromLocalInputValue(startAt),
       ended_at: endAt ? fromLocalInputValue(endAt) : null,
+      reminder_times: times.length ? times : null,
+      reminder_tz: times.length
+        ? Intl.DateTimeFormat().resolvedOptions().timeZone
+        : null,
       note: note.trim() || null,
     };
 
@@ -113,6 +124,61 @@ export function MedicationForm({
           onChange={(e) => setName(e.target.value)}
           autoFocus
         />
+      </div>
+
+      <div>
+        <Label htmlFor="med_dose">Dose (optional)</Label>
+        <Input
+          id="med_dose"
+          type="text"
+          placeholder="e.g. 200 mg, one tablet"
+          value={dose}
+          onChange={(e) => setDose(e.target.value)}
+        />
+      </div>
+
+      <div>
+        <Label>Reminders (optional)</Label>
+        <div className="space-y-2">
+          {reminders.map((t, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <Input
+                type="time"
+                value={t}
+                onChange={(e) =>
+                  setReminders((r) =>
+                    r.map((x, j) => (j === i ? e.target.value : x))
+                  )
+                }
+              />
+              <button
+                type="button"
+                aria-label="Remove reminder"
+                onClick={() =>
+                  setReminders((r) => r.filter((_, j) => j !== i))
+                }
+                className="rounded-full p-2 text-faint hover:bg-alert-bg hover:text-alert"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => setReminders((r) => [...r, "08:00"])}
+            className="flex items-center gap-1.5 rounded-full border border-line bg-surface-alt px-3.5 py-2 text-xs font-medium text-muted hover:border-ink hover:text-ink"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add a reminder time
+          </button>
+        </div>
+        {reminders.length > 0 && (
+          <p className="mt-2 flex items-start gap-1.5 text-xs text-faint">
+            <Bell className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            You’ll get a phone alert at these times while you’re taking it. Turn
+            on notifications in Profile for these to arrive.
+          </p>
+        )}
       </div>
 
       <div>

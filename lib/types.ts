@@ -145,6 +145,9 @@ export interface Entry {
   weight_g: number | null;
 
   med_name: string | null; // mother's medication (type = medication)
+  med_dose: string | null; // e.g. "200 mg"
+  reminder_times: string[] | null; // local "HH:MM" times to be reminded
+  reminder_tz: string | null; // IANA tz the reminder times are in
 
   note: string | null;
   photo_path: string | null;

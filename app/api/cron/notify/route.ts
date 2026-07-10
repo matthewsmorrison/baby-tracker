@@ -11,6 +11,27 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // A feed-due nudge fires once the feed is due and only within this window
 // after, so a late cron run doesn't ping about a long-passed due time.
 const FEED_DUE_WINDOW_MS = 45 * 60 * 1000;
+// A medication reminder fires if the cron tick is within this many minutes
+// after the reminder time (cron runs every 15 min and can be late).
+const MED_REMINDER_WINDOW_MIN = 30;
+
+/** Minutes-since-midnight in a given IANA timezone. */
+function localMinutes(now: Date, tz: string): number {
+  const p = new Intl.DateTimeFormat("en-GB", {
+    timeZone: tz,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const hh = Number(p.find((x) => x.type === "hour")?.value ?? "0");
+  const mm = Number(p.find((x) => x.type === "minute")?.value ?? "0");
+  return hh * 60 + mm;
+}
+
+/** Local calendar date "YYYY-MM-DD" in a given timezone (for per-day dedupe). */
+function localDateKey(now: Date, tz: string): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(now);
+}
 
 /**
  * Scheduled alert sender (called by the notify GitHub Action). Guarded by a
@@ -25,7 +46,7 @@ export async function POST(request: Request) {
 
   const svc = createServiceClient();
   const now = Date.now();
-  const results = { feedDue: 0, lowNappies: 0 };
+  const results = { feedDue: 0, lowNappies: 0, medReminders: 0 };
 
   // Only bother with babies that have at least one subscribed member.
   const { data: subs } = await svc
@@ -128,6 +149,49 @@ export async function POST(request: Request) {
         if (n > 0) {
           await markSent(baby.id, "low_nappies", key);
           results.lowNappies += 1;
+        }
+      }
+    }
+
+    // --- Medication reminders ----------------------------------------------
+    if (track.has("medication")) {
+      const { data: meds } = await svc
+        .from("entries")
+        .select(
+          "id, created_by, med_name, med_dose, reminder_times, reminder_tz, occurred_at, ended_at"
+        )
+        .eq("baby_id", baby.id)
+        .eq("type", "medication")
+        .not("reminder_times", "is", null);
+
+      for (const med of meds ?? []) {
+        if (!med.reminder_times?.length || !med.reminder_tz) continue;
+        // Only while the course is active and the recipient is subscribed.
+        const startMs = new Date(med.occurred_at).getTime();
+        const endMs = med.ended_at ? new Date(med.ended_at).getTime() : Infinity;
+        if (now < startMs || now > endMs) continue;
+        if (!subscribedUsers.has(med.created_by)) continue;
+
+        const nowMin = localMinutes(new Date(now), med.reminder_tz);
+        const dateKey = localDateKey(new Date(now), med.reminder_tz);
+        for (const time of med.reminder_times as string[]) {
+          const m = /^(\d{1,2}):(\d{2})$/.exec(time);
+          if (!m) continue;
+          const remMin = Number(m[1]) * 60 + Number(m[2]);
+          const diff = nowMin - remMin;
+          if (diff < 0 || diff > MED_REMINDER_WINDOW_MIN) continue;
+          const key = `${med.id}:${dateKey}:${time}`;
+          if (await alreadySent(baby.id, "med_reminder", key)) continue;
+          const n = await sendToUsers([med.created_by], {
+            title: "Medication reminder",
+            body: `Time for ${med.med_name}${med.med_dose ? ` — ${med.med_dose}` : ""}.`,
+            url: "/today",
+            tag: `med-${med.id}-${time}`,
+          });
+          if (n > 0) {
+            await markSent(baby.id, "med_reminder", key);
+            results.medReminders += 1;
+          }
         }
       }
     }

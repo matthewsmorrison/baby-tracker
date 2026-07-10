@@ -272,17 +272,31 @@ export default async function TodayPage() {
             <Pill className="h-4 w-4 text-muted" />
             <CardTitle>Mother’s medication</CardTitle>
           </div>
-          <ul className="mt-3 space-y-1.5">
+          <ul className="mt-3 space-y-2">
             {activeMeds.map((m) => (
-              <li key={m.id} className="flex items-baseline justify-between gap-3 text-sm">
-                <span className="font-medium">{m.med_name}</span>
-                <span className="text-xs text-muted">
-                  since{" "}
-                  {new Date(m.occurred_at).toLocaleDateString(undefined, {
-                    day: "numeric",
-                    month: "short",
-                  })}
-                </span>
+              <li key={m.id} className="text-sm">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="font-medium">
+                    {m.med_name}
+                    {m.med_dose && (
+                      <span className="ml-1.5 font-normal text-muted">
+                        {m.med_dose}
+                      </span>
+                    )}
+                  </span>
+                  <span className="shrink-0 text-xs text-muted">
+                    since{" "}
+                    {new Date(m.occurred_at).toLocaleDateString(undefined, {
+                      day: "numeric",
+                      month: "short",
+                    })}
+                  </span>
+                </div>
+                {m.reminder_times && m.reminder_times.length > 0 && (
+                  <p className="mt-0.5 text-xs text-faint">
+                    Reminders at {m.reminder_times.join(", ")}
+                  </p>
+                )}
               </li>
             ))}
           </ul>
