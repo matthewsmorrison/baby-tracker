@@ -71,14 +71,13 @@ export default async function TodayPage() {
   const carerSleepHrs = Math.round((carerSleepMs / 3_600_000) * 10) / 10;
 
   // Mother's medications currently being taken (started, not yet stopped).
-  const activeMeds = track.has("medication")
-    ? entries.filter(
-        (e) =>
-          e.type === "medication" &&
-          new Date(e.occurred_at) <= now &&
-          (!e.ended_at || new Date(e.ended_at) >= now)
-      )
-    : [];
+  // Managed in Profile now, so always shown when present (no track toggle).
+  const activeMeds = entries.filter(
+    (e) =>
+      e.type === "medication" &&
+      new Date(e.occurred_at) <= now &&
+      (!e.ended_at || new Date(e.ended_at) >= now)
+  );
 
   const latestWeight = entries.find((e) => e.type === "weight");
   const band = expectedWeightBand(day, ctx.baby.birth_weight_g);

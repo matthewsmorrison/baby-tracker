@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { fromLocalInputValue, toLocalInputValue } from "@/lib/dates";
@@ -36,6 +36,10 @@ export function MedicationForm({
   const [reminders, setReminders] = useState<string[]>(
     initial?.reminder_times ?? []
   );
+  const [members, setMembers] = useState<{ id: string; name: string }[]>([]);
+  const [reminderUsers, setReminderUsers] = useState<string[]>(
+    initial?.reminder_user_ids ?? []
+  );
   const [startAt, setStartAt] = useState(() =>
     initial
       ? toLocalInputValue(new Date(initial.occurred_at))
@@ -47,6 +51,40 @@ export function MedicationForm({
   const [note, setNote] = useState(initial?.note ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Load the baby's carers so reminders can be sent to any of them, and
+  // default a new medication's recipients to the person adding it.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const sb = createClient();
+      const {
+        data: { user },
+      } = await sb.auth.getUser();
+      const { data: mems } = await sb
+        .from("baby_members")
+        .select("user_id, role")
+        .eq("baby_id", babyId)
+        .neq("role", "viewer");
+      const ids = (mems ?? []).map((m) => m.user_id);
+      const { data: profs } = await sb
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+      if (!alive) return;
+      const nameFor = (id: string) => {
+        const p = (profs ?? []).find((x) => x.id === id);
+        return p?.full_name || p?.email || "Carer";
+      };
+      setMembers(ids.map((id) => ({ id, name: nameFor(id) })));
+      if (!initial && user) {
+        setReminderUsers((prev) => (prev.length ? prev : [user.id]));
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [babyId, initial]);
 
   const startMs = new Date(fromLocalInputValue(startAt)).getTime();
   const endMs = endAt ? new Date(fromLocalInputValue(endAt)).getTime() : null;
@@ -77,6 +115,8 @@ export function MedicationForm({
       reminder_tz: times.length
         ? Intl.DateTimeFormat().resolvedOptions().timeZone
         : null,
+      reminder_user_ids:
+        times.length && reminderUsers.length ? reminderUsers : null,
       note: note.trim() || null,
     };
 
@@ -175,11 +215,46 @@ export function MedicationForm({
         {reminders.length > 0 && (
           <p className="mt-2 flex items-start gap-1.5 text-xs text-faint">
             <Bell className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            You’ll get a phone alert at these times while you’re taking it. Turn
-            on notifications in Profile for these to arrive.
+            A phone alert is sent at these times while the course is active.
+            Each recipient needs notifications turned on in their Profile.
           </p>
         )}
       </div>
+
+      {reminders.length > 0 && members.length > 0 && (
+        <div>
+          <Label>Send reminders to</Label>
+          <div className="flex flex-wrap gap-2">
+            {members.map((m) => {
+              const on = reminderUsers.includes(m.id);
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() =>
+                    setReminderUsers((u) =>
+                      on ? u.filter((x) => x !== m.id) : [...u, m.id]
+                    )
+                  }
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                    on
+                      ? "border-ink bg-ink text-on-ink"
+                      : "border-line bg-surface-alt text-muted hover:text-ink"
+                  }`}
+                >
+                  {m.name}
+                </button>
+              );
+            })}
+          </div>
+          {reminderUsers.length === 0 && (
+            <p className="mt-1.5 text-xs text-faint">
+              No one selected — the person who added this will be reminded.
+            </p>
+          )}
+        </div>
+      )}
 
       <div>
         <Label>Started</Label>

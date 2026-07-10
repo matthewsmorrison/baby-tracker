@@ -4,25 +4,15 @@ import { useState, useTransition } from "react";
 import { updateTrackedTypes } from "@/lib/actions";
 import type { EntryType } from "@/lib/types";
 import { Card, CardTitle } from "@/components/ui/Card";
-import {
-  Baby,
-  BedDouble,
-  Check,
-  Droplet,
-  Milk,
-  Moon,
-  Pill,
-  Scale,
-} from "lucide-react";
+import { Baby, BedDouble, Check, Droplet, Milk, Moon, Scale } from "lucide-react";
 
 const TYPES: Array<{ value: EntryType; label: string; icon: typeof Milk }> = [
   { value: "feed", label: "Feeds", icon: Milk },
   { value: "nappy", label: "Nappies", icon: Baby },
-  { value: "sleep", label: "Sleep", icon: Moon },
+  { value: "sleep", label: "Baby Sleep", icon: Moon },
   { value: "weight", label: "Weight", icon: Scale },
   { value: "pump", label: "Pumping", icon: Droplet },
   { value: "carer_sleep", label: "Carer sleep", icon: BedDouble },
-  { value: "medication", label: "Mother’s meds", icon: Pill },
 ];
 
 export function TrackingToggles({

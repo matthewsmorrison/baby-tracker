@@ -4,7 +4,11 @@ import { HistoryClient } from "@/components/output/HistoryClient";
 
 export default async function HistoryPage() {
   const ctx = await getBabyContext();
-  const entries = await getEntries(ctx.baby.id); // newest first
+  // Medications are an ongoing state managed in Profile, not discrete log
+  // events — keep them out of the chronological feed.
+  const entries = (await getEntries(ctx.baby.id)).filter(
+    (e) => e.type !== "medication"
+  ); // newest first
 
   // Short-TTL signed URLs for photo thumbnails (private bucket).
   const photoPaths = entries.filter((e) => e.photo_path).map((e) => e.photo_path!);

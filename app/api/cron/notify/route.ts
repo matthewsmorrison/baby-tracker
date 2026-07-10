@@ -153,12 +153,12 @@ export async function POST(request: Request) {
       }
     }
 
-    // --- Medication reminders ----------------------------------------------
-    if (track.has("medication")) {
+    // --- Medication reminders (managed in Profile; always checked) ---------
+    {
       const { data: meds } = await svc
         .from("entries")
         .select(
-          "id, created_by, med_name, med_dose, reminder_times, reminder_tz, occurred_at, ended_at"
+          "id, created_by, med_name, med_dose, reminder_times, reminder_tz, reminder_user_ids, occurred_at, ended_at"
         )
         .eq("baby_id", baby.id)
         .eq("type", "medication")
@@ -166,11 +166,19 @@ export async function POST(request: Request) {
 
       for (const med of meds ?? []) {
         if (!med.reminder_times?.length || !med.reminder_tz) continue;
-        // Only while the course is active and the recipient is subscribed.
+        // Only while the course is active.
         const startMs = new Date(med.occurred_at).getTime();
         const endMs = med.ended_at ? new Date(med.ended_at).getTime() : Infinity;
         if (now < startMs || now > endMs) continue;
-        if (!subscribedUsers.has(med.created_by)) continue;
+
+        // Recipients: the chosen carers (fallback to whoever logged it),
+        // filtered to those with a push subscription.
+        const chosen =
+          med.reminder_user_ids?.length ? med.reminder_user_ids : [med.created_by];
+        const targets = (chosen as string[]).filter((u) =>
+          subscribedUsers.has(u)
+        );
+        if (targets.length === 0) continue;
 
         const nowMin = localMinutes(new Date(now), med.reminder_tz);
         const dateKey = localDateKey(new Date(now), med.reminder_tz);
@@ -182,7 +190,7 @@ export async function POST(request: Request) {
           if (diff < 0 || diff > MED_REMINDER_WINDOW_MIN) continue;
           const key = `${med.id}:${dateKey}:${time}`;
           if (await alreadySent(baby.id, "med_reminder", key)) continue;
-          const n = await sendToUsers([med.created_by], {
+          const n = await sendToUsers(targets, {
             title: "Medication reminder",
             body: `Time for ${med.med_name}${med.med_dose ? ` — ${med.med_dose}` : ""}.`,
             url: "/today",

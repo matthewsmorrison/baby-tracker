@@ -10,6 +10,7 @@ import { ExportCard } from "@/components/export/ExportButtons";
 import { TrackingToggles } from "@/components/profile/TrackingToggles";
 import { ThemeToggle } from "@/components/profile/ThemeToggle";
 import { ConnectedAccounts } from "@/components/profile/ConnectedAccounts";
+import { MedicationManager } from "@/components/profile/MedicationManager";
 import {
   BabySettings,
   DangerZone,
@@ -89,6 +90,8 @@ export default async function ProfilePage() {
       </Card>
 
       {ctx.canEdit && <PushToggle />}
+
+      <MedicationManager babyId={ctx.baby.id} canEdit={ctx.canEdit} />
 
       <ThemeToggle />
 

@@ -148,6 +148,7 @@ export interface Entry {
   med_dose: string | null; // e.g. "200 mg"
   reminder_times: string[] | null; // local "HH:MM" times to be reminded
   reminder_tz: string | null; // IANA tz the reminder times are in
+  reminder_user_ids: string[] | null; // carers who get the reminder push
 
   note: string | null;
   photo_path: string | null;
