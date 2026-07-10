@@ -5,6 +5,10 @@ const PUBLIC_PATHS = [
   "/login",
   "/auth",
   "/invite",
+  "/privacy",
+  "/terms",
+  "/cookies",
+  "/disclaimer",
   "/manifest.webmanifest",
   "/sw.js",
   "/api/cron", // secret-authenticated; must not redirect to /login
@@ -41,7 +45,9 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  // "/" is the public landing (exact match — startsWith "/" would match all).
+  const isPublic =
+    pathname === "/" || PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
