@@ -594,18 +594,33 @@ export function NappyForm({
         <p className="rounded-2xl bg-alert-bg px-4 py-3 text-sm text-alert">{error}</p>
       )}
 
-      <Button className="w-full" size="lg" onClick={save} disabled={!!busy}>
-        {busy ?? (initial ? "Save changes" : "Save nappy")}
+      <Button
+        className="w-full"
+        size="lg"
+        onClick={save}
+        disabled={!!busy || analysing}
+      >
+        {busy ??
+          (analysing
+            ? "Analysing photo…"
+            : initial
+              ? "Save changes"
+              : "Save nappy")}
       </Button>
 
       {cameraOpen && (
         <Portal>
         <CameraCapture
           onCapture={(file) => {
-            // Live capture = taken right now; leave the "When" picker alone.
+            // Live capture = taken right now; leave the "When" picker alone,
+            // but still kick off the analysis just like an upload does.
+            setCameraOpen(false);
             setPhoto(file);
             setTimeFromPhoto(null);
-            setCameraOpen(false);
+            setAi(null);
+            setAiError(null);
+            compressedRef.current = null;
+            if (aiEnabled) analysePhoto(file, fromLocalInputValue(occurredAt));
           }}
           onCancel={() => setCameraOpen(false)}
           onUnavailable={() => {

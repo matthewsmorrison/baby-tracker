@@ -109,15 +109,16 @@ export function CameraCapture({
           className="absolute inset-0 h-full w-full object-cover"
         />
 
-        {/* Shade everything OUTSIDE the guide box */}
+        {/* Shade everything OUTSIDE the guide box. The box is a tall portrait
+            rectangle — nappies are long and thin, so a square is hard to fit. */}
         <div className="absolute inset-0 flex flex-col">
           <div className="flex-1 bg-black/60" />
-          <div className="flex" style={{ height: "min(62vw, 46vh)" }}>
+          <div className="flex" style={{ height: "min(125vw, 72vh)" }}>
             <div className="flex-1 bg-black/60" />
             <div
               ref={boxRef}
               className="relative rounded-3xl border-2 border-dashed border-white/90"
-              style={{ width: "min(82vw, 62vh)" }}
+              style={{ width: "min(58vw, 42vh)" }}
               aria-hidden
             >
               {flash && (
@@ -132,7 +133,7 @@ export function CameraCapture({
         {/* Guidance */}
         <div className="absolute inset-x-0 top-0 px-6 pb-4 pt-[max(1.25rem,env(safe-area-inset-top))] text-center">
           <p className="text-base font-semibold text-white">
-            Fit just the nappy inside the box
+            Fit the whole nappy inside the box — lengthways
           </p>
           <p className="mt-1 text-sm text-white/80">
             Please keep your baby out of the frame — only what’s inside the
