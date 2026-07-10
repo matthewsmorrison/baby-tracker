@@ -427,7 +427,7 @@ export function NappyForm({
           !nappyBaseWeightG &&
           nappyWeight && (
             <p className="mt-1 text-xs text-faint">
-              Set the dry nappy weight in Profile and wetness will be inferred
+              Set the dry nappy weight in Settings and wetness will be inferred
               automatically.
             </p>
           )

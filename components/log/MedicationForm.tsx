@@ -216,7 +216,7 @@ export function MedicationForm({
           <p className="mt-2 flex items-start gap-1.5 text-xs text-faint">
             <Bell className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             A phone alert is sent at these times while the course is active.
-            Each recipient needs notifications turned on in their Profile.
+            Each recipient needs notifications turned on in their Settings.
           </p>
         )}
       </div>

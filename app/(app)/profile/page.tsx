@@ -11,6 +11,7 @@ import { TrackingToggles } from "@/components/profile/TrackingToggles";
 import { ThemeToggle } from "@/components/profile/ThemeToggle";
 import { ConnectedAccounts } from "@/components/profile/ConnectedAccounts";
 import { MedicationManager } from "@/components/profile/MedicationManager";
+import { SettingsTabs } from "@/components/profile/SettingsTabs";
 import {
   BabySettings,
   DangerZone,
@@ -50,97 +51,134 @@ export default async function ProfilePage() {
   const day = dayOfLife(ctx.baby.birth_at, new Date());
   const myMembership = (members ?? []).find((m) => m.user_id === ctx.userId);
 
-  return (
-    <div className="space-y-4 animate-rise">
-      {/* Baby card */}
-      <Card className="p-5">
-        <div className="flex items-start justify-between">
-          <h1 className="text-xl font-bold tracking-tight">{ctx.baby.name}</h1>
-          <Chip tone="accent">{dayWithDate(ctx.baby.birth_at, day)}</Chip>
-        </div>
-        <BabySettings baby={ctx.baby} canEdit={ctx.isOwner} />
-      </Card>
+  const babyCard = (
+    <Card className="p-5">
+      <div className="flex items-start justify-between">
+        <h1 className="text-xl font-bold tracking-tight">{ctx.baby.name}</h1>
+        <Chip tone="accent">{dayWithDate(ctx.baby.birth_at, day)}</Chip>
+      </div>
+      <BabySettings baby={ctx.baby} canEdit={ctx.isOwner} />
+    </Card>
+  );
 
-      {ctx.isOwner && (
-        <TrackingToggles
-          babyId={ctx.baby.id}
-          tracked={ctx.baby.tracked_types}
-        />
-      )}
+  const carersCard = (
+    <Card className="p-5">
+      <CardTitle className="mb-1">Carers &amp; access</CardTitle>
+      <p className="mb-3 text-xs text-faint">
+        Your role:{" "}
+        {ctx.role === "viewer" ? "healthcare professional (read-only)" : ctx.role}
+      </p>
+      <ul className="divide-y divide-line">
+        {(members ?? []).map((m: BabyMember) => (
+          <MemberRow
+            key={m.id}
+            member={m}
+            profile={profileMap.get(m.user_id) ?? null}
+            isSelf={m.user_id === ctx.userId}
+            canManage={ctx.isOwner}
+          />
+        ))}
+      </ul>
+      {ctx.isOwner && <InviteSection babyId={ctx.baby.id} invites={invites} />}
+    </Card>
+  );
 
-      {/* Members */}
-      <Card className="p-5">
-        <CardTitle className="mb-1">Carers &amp; access</CardTitle>
-        <p className="mb-3 text-xs text-faint">
-          Your role:{" "}
-          {ctx.role === "viewer" ? "healthcare professional (read-only)" : ctx.role}
-        </p>
-        <ul className="divide-y divide-line">
-          {(members ?? []).map((m: BabyMember) => (
-            <MemberRow
-              key={m.id}
-              member={m}
-              profile={profileMap.get(m.user_id) ?? null}
-              isSelf={m.user_id === ctx.userId}
-              canManage={ctx.isOwner}
-            />
-          ))}
-        </ul>
-        {ctx.isOwner && <InviteSection babyId={ctx.baby.id} invites={invites} />}
-      </Card>
-
-      {ctx.canEdit && <PushToggle />}
-
-      <MedicationManager babyId={ctx.baby.id} canEdit={ctx.canEdit} />
-
-      <ThemeToggle />
-
-      <ConnectedAccounts />
-
-      {/* Membership tier */}
-      <Card className="p-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Membership</CardTitle>
-            {ctx.baby.membership_tier === "advanced" ? (
+  const membershipCard = (
+    <Card className="p-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <CardTitle>Membership</CardTitle>
+          {ctx.baby.membership_tier === "advanced" ? (
+            <p className="mt-1 text-sm">
+              <span className="font-semibold">Advanced</span> — everything in
+              Free, plus AI photo labelling and Ask
+            </p>
+          ) : (
+            <>
               <p className="mt-1 text-sm">
-                <span className="font-semibold">Advanced</span> — everything in
-                Free, plus AI photo labelling and Ask
+                <span className="font-semibold">Free</span> — tracking, charts,
+                calendar &amp; carer sharing
               </p>
-            ) : (
-              <>
-                <p className="mt-1 text-sm">
-                  <span className="font-semibold">Free</span> — tracking,
-                  charts, calendar &amp; carer sharing
-                </p>
-                <p className="text-xs text-faint mt-0.5">
-                  Advanced adds AI photo labelling and the Ask chat — upgrades
-                  coming soon.
-                </p>
-              </>
-            )}
-          </div>
-          <Chip tone={ctx.baby.membership_tier === "advanced" ? "positive" : "accent"}>
-            {ctx.baby.membership_tier === "advanced" ? "Advanced" : "Free"}
-          </Chip>
+              <p className="text-xs text-faint mt-0.5">
+                Advanced adds AI photo labelling and the Ask chat — upgrades
+                coming soon.
+              </p>
+            </>
+          )}
         </div>
-      </Card>
+        <Chip tone={ctx.baby.membership_tier === "advanced" ? "positive" : "accent"}>
+          {ctx.baby.membership_tier === "advanced" ? "Advanced" : "Free"}
+        </Chip>
+      </div>
+    </Card>
+  );
 
-      <ExportCard />
+  const sections = [
+    {
+      id: "baby",
+      label: "Baby",
+      content: (
+        <>
+          {babyCard}
+          {ctx.isOwner && (
+            <TrackingToggles babyId={ctx.baby.id} tracked={ctx.baby.tracked_types} />
+          )}
+          <MedicationManager babyId={ctx.baby.id} canEdit={ctx.canEdit} />
+        </>
+      ),
+    },
+    {
+      id: "carers",
+      label: "Carers",
+      content: carersCard,
+    },
+    {
+      id: "notifications",
+      label: "Notifications",
+      content: ctx.canEdit ? (
+        <PushToggle />
+      ) : (
+        <Card className="p-5 text-sm text-muted">
+          Notifications are available to carers who can edit.
+        </Card>
+      ),
+    },
+    {
+      id: "account",
+      label: "Account",
+      content: (
+        <>
+          <ConnectedAccounts />
+          <ThemeToggle />
+          {membershipCard}
+          <LeaveOrSignOut
+            membershipId={myMembership?.id ?? null}
+            isOwner={ctx.isOwner}
+            babyName={ctx.baby.name}
+          />
+        </>
+      ),
+    },
+    {
+      id: "data",
+      label: "Data",
+      content: (
+        <>
+          <ExportCard />
+          <DangerZone
+            babyId={ctx.baby.id}
+            babyName={ctx.baby.name}
+            isOwner={ctx.isOwner}
+          />
+        </>
+      ),
+    },
+  ];
 
-      <DangerZone
-        babyId={ctx.baby.id}
-        babyName={ctx.baby.name}
-        isOwner={ctx.isOwner}
-      />
-
-      <LeaveOrSignOut
-        membershipId={myMembership?.id ?? null}
-        isOwner={ctx.isOwner}
-        babyName={ctx.baby.name}
-      />
-
-      <p className="px-2 pb-2 text-center text-xs text-faint">
+  return (
+    <div>
+      <SettingsTabs sections={sections} />
+      <p className="px-2 pb-2 pt-6 text-center text-xs text-faint">
         Hearth is a tracking aid, not medical advice or diagnosis.
       </p>
     </div>
