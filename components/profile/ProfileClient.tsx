@@ -308,11 +308,11 @@ export function InviteSection({
           placeholder="their@email.com"
           aria-label="Invitee email"
         />
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <select
             name="role"
             aria-label="Role"
-            className="flex-1 rounded-2xl border border-line bg-surface-alt px-4 py-2.5 text-sm"
+            className="min-w-0 flex-1 rounded-2xl border border-line bg-surface-alt px-4 py-2.5 text-sm"
             defaultValue="caregiver"
           >
             <option value="caregiver">Carer — can log &amp; edit</option>
@@ -320,7 +320,12 @@ export function InviteSection({
               Healthcare professional — read-only
             </option>
           </select>
-          <Button type="submit" size="md" disabled={pending}>
+          <Button
+            type="submit"
+            size="md"
+            disabled={pending}
+            className="w-full shrink-0 sm:w-auto"
+          >
             {pending ? "Inviting…" : "Invite"}
           </Button>
         </div>
