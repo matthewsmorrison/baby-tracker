@@ -11,8 +11,14 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { EXPECTED_FEEDS, dayOfLife, expectedNappies } from "@/lib/clinical";
-import { feedAmounts, feedGaps } from "@/lib/entryDisplay";
+import {
+  EXPECTED_FEEDS,
+  dayOfLife,
+  expectedNappies,
+  formatKg,
+  summariseFeeds,
+} from "@/lib/clinical";
+import { feedAmounts, feedGaps, median } from "@/lib/entryDisplay";
 import type { Entry, EntryType } from "@/lib/types";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { WeightChart } from "./WeightChart";
@@ -69,6 +75,21 @@ function Legend({ items }: { items: Array<[string, string]> }) {
           {label}
         </span>
       ))}
+    </div>
+  );
+}
+
+/** X-axis tick: baby age in days ("D8"). */
+const dolTick = (v: number) => `D${v}`;
+
+/** Card title with a right-aligned "last 24h" quick stat. */
+function Head({ title, stat }: { title: string; stat?: string | null }) {
+  return (
+    <div className="flex items-baseline justify-between gap-2">
+      <CardTitle>{title}</CardTitle>
+      {stat && (
+        <span className="shrink-0 text-xs font-medium text-muted">{stat}</span>
+      )}
     </div>
   );
 }
@@ -202,11 +223,59 @@ export function DashboardView({
   }));
   const todayDol = dayOfLife(birthAt, new Date());
 
+  // Quick "last 24h" stats shown on each chart (time-dependent → memoised).
+  const { f24, wet24, dirty24, sleepH24, carerSleepH24, pumpMl24, avgGapH24 } =
+    useMemo(() => {
+      const now = new Date().getTime();
+      const winStart = now - DAY_MS;
+      const inWindow = (iso: string) => {
+        const t = new Date(iso).getTime();
+        return t > winStart && t <= now;
+      };
+      const overlapMs = (e: Entry) => {
+        if (!e.ended_at) return 0;
+        const s = Math.max(new Date(e.occurred_at).getTime(), winStart);
+        const en = Math.min(new Date(e.ended_at).getTime(), now);
+        return Math.max(0, en - s);
+      };
+      const last24 = entries.filter((e) => inWindow(e.occurred_at));
+      const nappies24 = last24.filter((e) => e.type === "nappy");
+      const hrs = (ms: number) => Math.round((ms / 3_600_000) * 10) / 10;
+      const gaps24 = feedGaps(entries)
+        .filter((g) => inWindow(g.at.toISOString()))
+        .map((g) => g.gapMs);
+      return {
+        f24: summariseFeeds(last24),
+        wet24: nappies24.filter((e) => e.wet).length,
+        dirty24: nappies24.filter((e) => e.dirty).length,
+        sleepH24: hrs(
+          entries
+            .filter((e) => e.type === "sleep")
+            .reduce((s, e) => s + overlapMs(e), 0)
+        ),
+        carerSleepH24: hrs(
+          entries
+            .filter((e) => e.type === "carer_sleep")
+            .reduce((s, e) => s + overlapMs(e), 0)
+        ),
+        pumpMl24: last24
+          .filter((e) => e.type === "pump")
+          .reduce((s, e) => s + (e.expressed_ml ?? 0), 0),
+        avgGapH24:
+          gaps24.length >= 2
+            ? Math.round((median(gaps24) / 3_600_000) * 10) / 10
+            : null,
+      };
+    }, [entries]);
+  const latestWeightG = weights.length
+    ? weights[weights.length - 1].weight_g
+    : null;
+
   return (
     <div className="space-y-4">
       {track.has("feed") && (
       <Card className="p-5">
-        <CardTitle>Feeds per day</CardTitle>
+        <Head title="Feeds per day" stat={`${f24.sessions} in last 24h`} />
         <p className="mt-0.5 text-xs text-faint">
           Shaded band = the {EXPECTED_FEEDS.label} feeds/24h norm
         </p>
@@ -214,7 +283,7 @@ export function DashboardView({
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={days} margin={{ top: 4, right: 4, bottom: 0, left: -22 }}>
               <CartesianGrid vertical={false} stroke="var(--line)" strokeDasharray="0" />
-              <XAxis dataKey="label" {...axisProps} axisLine={{ stroke: "var(--line)" }} interval="preserveStartEnd" />
+              <XAxis dataKey="dol" {...axisProps} axisLine={{ stroke: "var(--line)" }} interval="preserveStartEnd" tickFormatter={dolTick} />
               <YAxis {...axisProps} axisLine={false} allowDecimals={false} />
               <ReferenceArea
                 y1={EXPECTED_FEEDS.min}
@@ -242,7 +311,7 @@ export function DashboardView({
 
       {track.has("feed") && (
       <Card className="p-5">
-        <CardTitle>Time between feeds</CardTitle>
+        <Head title="Time between feeds" stat={avgGapH24 != null ? `~${avgGapH24}h apart (24h)` : null} />
         <p className="mt-0.5 text-xs text-faint">
           Average hours from one feed&apos;s start to the next; band = every 2–3h
           (the 8–12 feeds/day norm)
@@ -251,7 +320,7 @@ export function DashboardView({
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={days} margin={{ top: 4, right: 4, bottom: 0, left: -22 }}>
               <CartesianGrid vertical={false} stroke="var(--line)" />
-              <XAxis dataKey="label" {...axisProps} axisLine={{ stroke: "var(--line)" }} interval="preserveStartEnd" />
+              <XAxis dataKey="dol" {...axisProps} axisLine={{ stroke: "var(--line)" }} interval="preserveStartEnd" tickFormatter={dolTick} />
               <YAxis {...axisProps} axisLine={false} unit="h" />
               <ReferenceArea
                 y1={2}
@@ -279,7 +348,7 @@ export function DashboardView({
 
       {track.has("weight") && (
       <Card className="p-5">
-        <CardTitle>Weight vs expected range</CardTitle>
+        <Head title="Weight vs expected range" stat={latestWeightG ? `${formatKg(latestWeightG)} latest` : null} />
         <p className="mt-0.5 text-xs text-faint">
           The signal to watch is the line turning upward — back to birth weight
           by ~day 10
@@ -297,7 +366,7 @@ export function DashboardView({
 
       {track.has("feed") && (
       <Card className="p-5">
-        <CardTitle>Bottle milk per day</CardTitle>
+        <Head title="Bottle milk per day" stat={`${f24.expressedMl + f24.formulaMl} ml in last 24h`} />
         <p className="mt-0.5 text-xs text-faint">
           Formula shrinking while breastmilk holds is the transition working
         </p>
@@ -305,7 +374,7 @@ export function DashboardView({
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={days} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
               <CartesianGrid vertical={false} stroke="var(--line)" />
-              <XAxis dataKey="label" {...axisProps} axisLine={{ stroke: "var(--line)" }} interval="preserveStartEnd" />
+              <XAxis dataKey="dol" {...axisProps} axisLine={{ stroke: "var(--line)" }} interval="preserveStartEnd" tickFormatter={dolTick} />
               <YAxis {...axisProps} axisLine={false} />
               <Tooltip
                 cursor={{ fill: "var(--surface-alt)" }}
@@ -351,12 +420,12 @@ export function DashboardView({
 
       {track.has("feed") && (
       <Card className="p-5">
-        <CardTitle>Nursing per day</CardTitle>
+        <Head title="Nursing per day" stat={`${f24.breastMin} min in last 24h`} />
         <div className="mt-3 h-40">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={days} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
               <CartesianGrid vertical={false} stroke="var(--line)" />
-              <XAxis dataKey="label" {...axisProps} axisLine={{ stroke: "var(--line)" }} interval="preserveStartEnd" />
+              <XAxis dataKey="dol" {...axisProps} axisLine={{ stroke: "var(--line)" }} interval="preserveStartEnd" tickFormatter={dolTick} />
               <YAxis {...axisProps} axisLine={false} />
               <Tooltip
                 cursor={{ fill: "var(--surface-alt)" }}
@@ -378,7 +447,7 @@ export function DashboardView({
       {/* Sleep per day */}
       {track.has("sleep") && days.some((d) => d.sleepMs > 0) && (
         <Card className="p-5">
-          <CardTitle>Sleep per day</CardTitle>
+          <Head title="Sleep per day" stat={`${sleepH24}h in last 24h`} />
           <p className="mt-0.5 text-xs text-faint">
             Total hours asleep from logged sleeps — newborns often sleep
             14–17h/24h (very variable).
@@ -387,7 +456,7 @@ export function DashboardView({
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={days} margin={{ top: 4, right: 4, bottom: 0, left: -22 }}>
                 <CartesianGrid vertical={false} stroke="var(--line)" />
-                <XAxis dataKey="label" {...axisProps} axisLine={{ stroke: "var(--line)" }} interval="preserveStartEnd" />
+                <XAxis dataKey="dol" {...axisProps} axisLine={{ stroke: "var(--line)" }} interval="preserveStartEnd" tickFormatter={dolTick} />
                 <YAxis {...axisProps} axisLine={false} unit="h" />
                 <ReferenceArea y1={14} y2={17} fill="var(--positive-bg)" fillOpacity={0.5} stroke="none" />
                 <Tooltip
@@ -410,7 +479,7 @@ export function DashboardView({
       {/* Pumping — best time of day */}
       {track.has("pump") && pumpSessions > 0 && (
         <Card className="p-5">
-          <CardTitle>Pumping — best time of day</CardTitle>
+          <Head title="Pumping — best time of day" stat={`${pumpMl24} ml in last 24h`} />
           <p className="mt-0.5 text-xs text-faint">
             Average ml expressed per session, by hour — pump when your output
             tends to be highest ({pumpSessions} sessions logged)
@@ -444,7 +513,7 @@ export function DashboardView({
       {/* Carer sleep per day */}
       {track.has("carer_sleep") && days.some((d) => d.carerSleepMs > 0) && (
         <Card className="p-5">
-          <CardTitle>Carer sleep per day</CardTitle>
+          <Head title="Carer sleep per day" stat={`${carerSleepH24}h in last 24h`} />
           <p className="mt-0.5 text-xs text-faint">
             Total hours of rest from logged carer sleep — look after yourselves
             too.
@@ -453,7 +522,7 @@ export function DashboardView({
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={days} margin={{ top: 4, right: 4, bottom: 0, left: -22 }}>
                 <CartesianGrid vertical={false} stroke="var(--line)" />
-                <XAxis dataKey="label" {...axisProps} axisLine={{ stroke: "var(--line)" }} interval="preserveStartEnd" />
+                <XAxis dataKey="dol" {...axisProps} axisLine={{ stroke: "var(--line)" }} interval="preserveStartEnd" tickFormatter={dolTick} />
                 <YAxis {...axisProps} axisLine={false} unit="h" />
                 <Tooltip
                   cursor={{ fill: "var(--surface-alt)" }}
@@ -474,7 +543,7 @@ export function DashboardView({
 
       {track.has("nappy") && (
       <Card className="p-5">
-        <CardTitle>Nappies per day</CardTitle>
+        <Head title="Nappies per day" stat={`${wet24 + dirty24} in last 24h`} />
         <p className="mt-0.5 text-xs text-faint">
           Day {todayDol} aim: {expectedNappies(todayDol).total} nappies, at
           least {expectedNappies(todayDol).minDirty} mixed (with poo)
@@ -483,7 +552,7 @@ export function DashboardView({
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={days} margin={{ top: 4, right: 4, bottom: 0, left: -22 }}>
               <CartesianGrid vertical={false} stroke="var(--line)" />
-              <XAxis dataKey="label" {...axisProps} axisLine={{ stroke: "var(--line)" }} interval="preserveStartEnd" />
+              <XAxis dataKey="dol" {...axisProps} axisLine={{ stroke: "var(--line)" }} interval="preserveStartEnd" tickFormatter={dolTick} />
               <YAxis {...axisProps} axisLine={false} allowDecimals={false} />
               <Tooltip
                 cursor={{ fill: "var(--surface-alt)" }}
