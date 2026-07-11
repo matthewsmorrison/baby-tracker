@@ -19,7 +19,7 @@ import {
   summariseFeeds,
 } from "@/lib/clinical";
 import { feedAmounts, feedGaps, median } from "@/lib/entryDisplay";
-import type { Entry, EntryType } from "@/lib/types";
+import type { BabySex, Entry, EntryType } from "@/lib/types";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { WeightChart } from "./WeightChart";
 
@@ -112,11 +112,13 @@ export function DashboardView({
   entries,
   birthAt,
   birthWeightG,
+  sex,
   trackedTypes,
 }: {
   entries: Entry[];
   birthAt: string;
   birthWeightG: number;
+  sex: BabySex | null;
   trackedTypes: EntryType[];
 }) {
   const track = new Set(trackedTypes);
@@ -348,10 +350,11 @@ export function DashboardView({
 
       {track.has("weight") && (
       <Card className="p-5">
-        <Head title="Weight vs expected range" stat={latestWeightG ? `${formatKg(latestWeightG)} latest` : null} />
+        <Head title="Weight" stat={latestWeightG ? `${formatKg(latestWeightG)} latest` : null} />
         <p className="mt-0.5 text-xs text-faint">
-          The signal to watch is the line turning upward — most babies are back
-          to their birthweight by about 3 weeks (NHS)
+          {sex
+            ? `Shaded band = the WHO 2nd–98th weight centiles for ${sex === "boy" ? "boys" : "girls"}, with the 50th (median) dashed. Crossing the band's edge is worth a word with your health visitor.`
+            : "Most babies are back to their birthweight by about 3 weeks (NHS). Set the baby's sex in Settings for the WHO growth centiles."}
         </p>
         <div className="mt-2 -ml-2">
           <WeightChart
@@ -359,6 +362,7 @@ export function DashboardView({
             birthWeightG={birthWeightG}
             maxDay={todayDol}
             birthAt={birthAt}
+            sex={sex}
           />
         </div>
       </Card>

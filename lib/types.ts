@@ -36,11 +36,14 @@ export interface Profile {
   created_at: string;
 }
 
+export type BabySex = "boy" | "girl";
+
 export interface Baby {
   id: string;
   name: string;
   birth_at: string;
   birth_weight_g: number;
+  sex: BabySex | null; // for sex-specific WHO weight centiles
   nappy_base_weight_g: number | null; // weight of a clean, dry nappy
   feed_interval_min: number | null; // expected time between feeds; gates "Next feed due"
   tracked_types: EntryType[]; // categories this family tracks

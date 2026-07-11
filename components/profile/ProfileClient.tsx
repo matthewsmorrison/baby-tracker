@@ -117,6 +117,93 @@ function SettingRow({ babyId, spec, canEdit }: {
   );
 }
 
+function SexRow({
+  babyId,
+  sex,
+  canEdit,
+}: {
+  babyId: string;
+  sex: "boy" | "girl" | null;
+  canEdit: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  function choose(v: "boy" | "girl") {
+    startTransition(async () => {
+      setError(null);
+      try {
+        const fd = new FormData();
+        fd.set("baby_id", babyId);
+        fd.set("field", "sex");
+        fd.set("value", v);
+        await updateBabySetting(fd);
+        setEditing(false);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Could not save");
+      }
+    });
+  }
+
+  if (!editing) {
+    return (
+      <li className="flex items-center gap-3 py-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-muted">Sex</p>
+          <p className="truncate text-sm font-medium capitalize">
+            {sex ?? "Not set"}
+          </p>
+        </div>
+        {canEdit && (
+          <button
+            type="button"
+            aria-label="Edit sex"
+            onClick={() => setEditing(true)}
+            className="rounded-full p-2 text-faint hover:bg-surface-alt hover:text-ink"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+        )}
+      </li>
+    );
+  }
+
+  return (
+    <li className="py-3">
+      <Label>Sex</Label>
+      <div className="grid grid-cols-2 gap-2">
+        {(["boy", "girl"] as const).map((s) => (
+          <button
+            key={s}
+            type="button"
+            disabled={pending}
+            aria-pressed={sex === s}
+            onClick={() => choose(s)}
+            className={`rounded-2xl border px-4 py-2.5 text-sm font-semibold capitalize transition ${
+              sex === s
+                ? "border-ink bg-ink text-on-ink"
+                : "border-line bg-surface-alt text-muted hover:text-ink"
+            }`}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+      <p className="mt-1 text-xs text-faint">Used for the WHO weight centiles.</p>
+      {error && <p className="mt-1 text-sm text-alert">{error}</p>}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="mt-2"
+        onClick={() => setEditing(false)}
+      >
+        Cancel
+      </Button>
+    </li>
+  );
+}
+
 export function BabySettings({ baby, canEdit }: { baby: Baby; canEdit: boolean }) {
   const specs: SettingSpec[] = [
     {
@@ -186,6 +273,7 @@ export function BabySettings({ baby, canEdit }: { baby: Baby; canEdit: boolean }
       {specs.map((spec) => (
         <SettingRow key={spec.field} babyId={baby.id} spec={spec} canEdit={canEdit} />
       ))}
+      <SexRow babyId={baby.id} sex={baby.sex} canEdit={canEdit} />
     </ul>
   );
 }

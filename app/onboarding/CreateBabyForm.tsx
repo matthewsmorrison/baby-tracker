@@ -13,6 +13,7 @@ export function CreateBabyForm() {
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sex, setSex] = useState<"boy" | "girl" | "">("");
 
   return (
     <form
@@ -57,6 +58,30 @@ export function CreateBabyForm() {
           required
           placeholder="e.g. 3800"
         />
+      </div>
+      <div>
+        <Label>Sex</Label>
+        <input type="hidden" name="sex" value={sex} />
+        <div className="grid grid-cols-2 gap-2">
+          {(["boy", "girl"] as const).map((s) => (
+            <button
+              key={s}
+              type="button"
+              aria-pressed={sex === s}
+              onClick={() => setSex(s)}
+              className={`rounded-2xl border px-4 py-3 text-sm font-semibold capitalize transition ${
+                sex === s
+                  ? "border-ink bg-ink text-on-ink"
+                  : "border-line bg-surface-alt text-muted hover:text-ink"
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+        <p className="mt-1 text-xs text-faint">
+          Used for the WHO weight growth centiles (boys and girls differ).
+        </p>
       </div>
       {error && (
         <p className="rounded-2xl bg-alert-bg px-4 py-3 text-sm text-alert">{error}</p>

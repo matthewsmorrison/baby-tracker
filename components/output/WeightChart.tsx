@@ -11,8 +11,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { expectedWeightBand } from "@/lib/clinical";
+import { weightBand } from "@/lib/clinical";
 import { dayWithDate } from "@/lib/dates";
+import type { BabySex } from "@/lib/types";
 
 export interface WeightPoint {
   day: number; // fractional day of life
@@ -24,12 +25,15 @@ export function WeightChart({
   birthWeightG,
   maxDay,
   birthAt,
+  sex,
 }: {
   points: WeightPoint[];
   birthWeightG: number;
   maxDay: number;
   birthAt?: string;
+  sex?: BabySex | null;
 }) {
+  const who = !!sex;
   const lastDay = Math.max(maxDay, 14);
 
   // Band + midline sampled per half-day; actual weights merged onto the same
@@ -41,7 +45,7 @@ export function WeightChart({
     weight?: number;
   }> = [];
   for (let d = 1; d <= lastDay; d += 0.5) {
-    const band = expectedWeightBand(d, birthWeightG);
+    const band = weightBand(d, birthWeightG, sex ?? null);
     data.push({ day: d, band: [band.low, band.high], mid: band.mid });
   }
   for (const p of points) {
@@ -51,22 +55,20 @@ export function WeightChart({
 
   const weights = points.map((p) => p.weight);
   const tenPctLine = Math.round(birthWeightG * 0.9);
+  const bandVals = data.flatMap((d) => d.band ?? []);
   const yMin =
     Math.floor(
-      (Math.min(
+      Math.min(
         birthWeightG * 0.88, // keep the -10% danger line inside the plot
+        ...bandVals,
         ...(weights.length ? weights : [birthWeightG])
-      )) /
-        100
+      ) / 100
     ) *
       100 -
     100;
   const yMax =
     Math.ceil(
-      (Math.max(
-        expectedWeightBand(lastDay, birthWeightG).high,
-        ...(weights.length ? weights : [birthWeightG])
-      )) / 100
+      Math.max(...bandVals, ...(weights.length ? weights : [birthWeightG])) / 100
     ) *
       100 +
     100;
@@ -101,9 +103,13 @@ export function WeightChart({
           <Tooltip
             formatter={(value, name) => {
               if (name === "weight") return [`${value} g`, "Weight"];
-              if (name === "mid") return [`${value} g`, "Expected"];
+              if (name === "mid")
+                return [`${value} g`, who ? "50th centile" : "Expected"];
               if (Array.isArray(value))
-                return [`${value[0]}–${value[1]} g`, "Expected range"];
+                return [
+                  `${value[0]}–${value[1]} g`,
+                  who ? "2nd–98th centile" : "Expected range",
+                ];
               return [String(value), String(name)];
             }}
             labelFormatter={(d) =>

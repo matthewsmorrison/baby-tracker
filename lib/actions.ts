@@ -18,9 +18,13 @@ export async function createBaby(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const birthAt = String(formData.get("birth_at") ?? "");
   const weight = parseInt(String(formData.get("birth_weight_g") ?? ""), 10);
+  const sex = String(formData.get("sex") ?? "");
 
   if (!name || !birthAt || !Number.isFinite(weight) || weight <= 0) {
     throw new Error("Please fill in name, birth date/time and birth weight.");
+  }
+  if (sex !== "boy" && sex !== "girl") {
+    throw new Error("Please choose boy or girl (for the growth charts).");
   }
 
   // No .select() on this insert: the RETURNING row is checked against the
@@ -32,6 +36,7 @@ export async function createBaby(formData: FormData) {
     name,
     birth_at: new Date(birthAt).toISOString(),
     birth_weight_g: weight,
+    sex,
     created_by: user.id,
   });
 
@@ -191,6 +196,12 @@ export async function updateBabySetting(formData: FormData) {
       if (!(v >= 500 && v <= 7000))
         throw new Error("Enter the birth weight in grams (e.g. 3800).");
       updates.birth_weight_g = v;
+      break;
+    }
+    case "sex": {
+      if (raw !== "boy" && raw !== "girl")
+        throw new Error("Choose boy or girl.");
+      updates.sex = raw;
       break;
     }
     case "nappy_base_weight_g": {

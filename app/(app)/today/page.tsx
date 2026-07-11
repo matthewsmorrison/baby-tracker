@@ -7,7 +7,7 @@ import {
   dayOfLife,
   expectedColour,
   expectedColourKey,
-  expectedWeightBand,
+  weightBand,
   formatKg,
   mixLabel,
   summariseFeeds,
@@ -80,7 +80,7 @@ export default async function TodayPage() {
   );
 
   const latestWeight = entries.find((e) => e.type === "weight");
-  const band = expectedWeightBand(day, ctx.baby.birth_weight_g);
+  const band = weightBand(day, ctx.baby.birth_weight_g, ctx.baby.sex);
   const ws = latestWeight
     ? weightStatus(latestWeight.weight_g!, ctx.baby.birth_weight_g)
     : null;

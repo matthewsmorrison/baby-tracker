@@ -8,7 +8,8 @@
 // Everything is computed from an entry's occurred_at (never "now") so
 // backdated entries are always assessed against the correct day of life.
 
-import type { Entry, FeedMix, StoolColourKey } from "./types";
+import type { BabySex, Entry, FeedMix, StoolColourKey } from "./types";
+import { whoWeightBand } from "./whoWeight";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -217,6 +218,20 @@ export function expectedWeightBand(
   // rough guide, not a centile chart.
   const margin = Math.max(80, Math.round(birthWeightG * 0.03));
   return { low: mid - margin, mid, high: mid + margin };
+}
+
+/**
+ * The weight band to plot for a given day of life. When the baby's sex is
+ * known we use the sex-specific WHO weight-for-age centiles (2nd–98th, with
+ * the 50th as the median); otherwise a rough birthweight-anchored guide.
+ */
+export function weightBand(
+  day: number,
+  birthWeightG: number,
+  sex: BabySex | null
+): { low: number; mid: number; high: number } {
+  if (sex) return whoWeightBand(sex, day);
+  return expectedWeightBand(day, birthWeightG);
 }
 
 /** Weight change vs birth, with the 7% / 10% loss thresholds. */
