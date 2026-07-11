@@ -4,6 +4,7 @@ import {
   Area,
   ComposedChart,
   Line,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -48,14 +49,17 @@ export function WeightChart({
   data.sort((a, b) => a.day - b.day);
 
   const weights = points.map((p) => p.weight);
+  const tenPctLine = Math.round(birthWeightG * 0.9);
   const bandVals = data.flatMap((d) => d.band ?? []);
   const yMin =
     Math.floor(
-      Math.min(...bandVals, ...(weights.length ? weights : [birthWeightG])) / 200
+      Math.min(tenPctLine, ...bandVals, ...(weights.length ? weights : [birthWeightG])) /
+        200
     ) * 200;
   const yMax =
     Math.ceil(
-      Math.max(...bandVals, ...(weights.length ? weights : [birthWeightG])) / 200
+      Math.max(birthWeightG, ...bandVals, ...(weights.length ? weights : [birthWeightG])) /
+        200
     ) * 200;
 
   return (
@@ -114,6 +118,30 @@ export function WeightChart({
             fillOpacity={0.9}
             connectNulls
             isAnimationActive={false}
+          />
+          {/* Birth weight */}
+          <ReferenceLine
+            y={birthWeightG}
+            stroke="var(--muted)"
+            strokeDasharray="4 4"
+            label={{
+              value: "birth",
+              position: "insideTopRight",
+              fill: "var(--muted)",
+              fontSize: 10,
+            }}
+          />
+          {/* −10% of birth weight: seek advice */}
+          <ReferenceLine
+            y={tenPctLine}
+            stroke="var(--alert)"
+            strokeDasharray="4 4"
+            label={{
+              value: "−10%",
+              position: "insideBottomRight",
+              fill: "var(--alert)",
+              fontSize: 10,
+            }}
           />
           {/* The baby's weights */}
           <Line

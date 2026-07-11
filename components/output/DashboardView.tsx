@@ -351,11 +351,6 @@ export function DashboardView({
       {track.has("weight") && (
       <Card className="p-5">
         <Head title="Weight" stat={latestWeightG ? `${formatKg(latestWeightG)} latest` : null} />
-        <p className="mt-0.5 text-xs text-faint">
-          {sex
-            ? `Shaded = the healthy weight range for ${sex === "boy" ? "boys" : "girls"} (WHO). Steady and inside the band is what you want; near an edge is worth a word with your health visitor.`
-            : "Set the baby's sex in Settings to show the WHO healthy weight range."}
-        </p>
         <div className="mt-2 -ml-2">
           <WeightChart
             points={weightPoints}
@@ -365,6 +360,38 @@ export function DashboardView({
             sex={sex}
           />
         </div>
+        <ul className="mt-2 space-y-1.5 text-xs text-muted">
+          <li className="flex items-center gap-2">
+            <span
+              className="h-3 w-4 shrink-0 rounded-sm"
+              style={{ background: "var(--positive-bg)" }}
+            />
+            Shaded green — the healthy weight range
+            {sex ? ` for a baby ${sex}` : ""} (WHO)
+            {sex ? "" : " (set the baby's sex in Settings)"}
+          </li>
+          <li className="flex items-center gap-2">
+            <span
+              className="w-4 shrink-0 border-t-2 border-dashed"
+              style={{ borderColor: "var(--alert)" }}
+            />
+            −10% from birth weight — worth a chat with a health professional
+          </li>
+          <li className="flex items-center gap-2">
+            <span
+              className="w-4 shrink-0 border-t-2 border-dashed"
+              style={{ borderColor: "var(--muted)" }}
+            />
+            Birth weight
+          </li>
+          <li className="flex items-center gap-2">
+            <span
+              className="h-0.5 w-4 shrink-0 rounded-full"
+              style={{ background: "var(--ink)" }}
+            />
+            Your baby’s weight
+          </li>
+        </ul>
       </Card>
       )}
 

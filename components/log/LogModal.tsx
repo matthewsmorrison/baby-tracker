@@ -34,6 +34,7 @@ export function LogModal({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const editParam = searchParams.get("edit");
+  const logParam = searchParams.get("log");
 
   const TAB_LABELS: Record<EntryType, string> = {
     nappy: "Nappy",
@@ -75,6 +76,22 @@ export function LogModal({
     return () => clearTimeout(id);
   }, [editParam, entries]);
 
+  // Deep link: ?log=<type> opens a fresh entry on that tab (e.g. the feed
+  // timer's "tap to return"). Falls back to the first tab if not tracked.
+  useEffect(() => {
+    if (!logParam) return;
+    const t = order.includes(logParam as EntryType)
+      ? (logParam as EntryType)
+      : options[0]?.value ?? "nappy";
+    const id = window.setTimeout(() => {
+      setEditing(null);
+      setTab(t);
+      setOpen(true);
+    }, 0);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [logParam]);
+
   // Lock body scroll while the modal is up.
   useEffect(() => {
     if (!open) return;
@@ -101,7 +118,7 @@ export function LogModal({
   function close() {
     setOpen(false);
     setEditing(null);
-    if (editParam) {
+    if (editParam || logParam) {
       // Drop the deep-link param without adding history noise.
       router.replace(pathname, { scroll: false });
     }
