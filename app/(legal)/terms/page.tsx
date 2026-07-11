@@ -3,7 +3,7 @@ import {
   APP_NAME,
   CONTACT_EMAIL,
   GOVERNING_LAW,
-  OPERATOR,
+  OPERATOR_LOCATION,
   OPERATOR_STATUS,
 } from "@/lib/legal";
 
@@ -15,9 +15,9 @@ export default function TermsPage() {
       <LegalHeader title="Terms of service" />
 
       <p>
-        These terms govern your use of {APP_NAME}, operated by {OPERATOR},{" "}
-        {OPERATOR_STATUS}. By creating an account or using {APP_NAME}, you agree
-        to them.
+        These terms govern your use of {APP_NAME}, which is run by{" "}
+        {OPERATOR_STATUS} in {OPERATOR_LOCATION}. By creating an account or
+        using {APP_NAME}, you agree to them.
       </p>
 
       <h2>Who can use it</h2>

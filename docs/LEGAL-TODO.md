@@ -4,12 +4,16 @@ These pages are **drafts, not legal advice**. Because beanlo handles special
 category (health) data about infants, get them reviewed by a solicitor before
 you rely on them publicly.
 
-## 1. Fill in the placeholders
-All operator/legal details live in one file: **`lib/legal.ts`**. Replace:
-- `OPERATOR` — your legal name (or company name once formed)
-- `CONTACT_EMAIL` — a real privacy/support inbox
-- `WEBSITE` — your live domain
-- `LAST_UPDATED` — bump whenever you change the documents
+## 1. Operator details (mostly done — one thing to confirm)
+All operator/legal details live in one file: **`lib/legal.ts`**. Set so far:
+- `CONTACT_EMAIL` = `privacy@beanlo.com` — **set this inbox up** so mail is received.
+- `WEBSITE` = `beanlo.com` — **register the domain** and point the deploy at it.
+- `GOVERNING_LAW` = England and Wales. `LAST_UPDATED` = 11 July 2026 (bump on edits).
+- ⚠️ `OPERATOR` = `"beanlo"`. For a sole trader the data controller is legally
+  **you as an individual**, so the documents currently say "run by an individual
+  (sole trader)" without a name. Before launch, set `OPERATOR` to your legal
+  name (e.g. `"Matthew Morrison, trading as beanlo"`) — the solicitor should
+  confirm the exact wording.
 
 ## 2. Register with the ICO (likely required)
 As an individual/sole trader processing personal data electronically, you most

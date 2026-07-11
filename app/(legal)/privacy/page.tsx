@@ -2,7 +2,6 @@ import { LegalHeader } from "@/components/marketing/LegalHeader";
 import {
   APP_NAME,
   CONTACT_EMAIL,
-  OPERATOR,
   OPERATOR_LOCATION,
   OPERATOR_STATUS,
 } from "@/lib/legal";
@@ -22,9 +21,9 @@ export default function PrivacyPage() {
 
       <h2>Who is responsible for your data</h2>
       <p>
-        {APP_NAME} is operated by {OPERATOR}, {OPERATOR_STATUS} based in{" "}
-        {OPERATOR_LOCATION}, who is the “data controller” for the personal data
-        described here. You can contact us about privacy at{" "}
+        {APP_NAME} is run by {OPERATOR_STATUS} based in {OPERATOR_LOCATION}. The
+        operator is the “data controller” for the personal data described here.
+        You can contact the operator about privacy at{" "}
         <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
       </p>
 
