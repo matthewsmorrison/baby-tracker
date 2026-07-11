@@ -219,9 +219,12 @@ export function FeedForm({
   // Restore a feed that was being timed when the page went away.
   useEffect(() => {
     if (initial || restored.current) return;
-    restored.current = true;
     // Deferred so state updates happen from a callback, not the effect body.
+    // Mark restored INSIDE the callback: under StrictMode the effect runs
+    // twice and the cleanup cancels the first timeout, so flagging it early
+    // would skip the restore entirely.
     const id = window.setTimeout(() => {
+      restored.current = true;
       try {
         // Restore any unsaved form draft first (amounts, notes, times)…
         const draftRaw = localStorage.getItem(draftKey);
