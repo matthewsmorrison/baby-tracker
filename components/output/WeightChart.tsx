@@ -4,8 +4,6 @@ import {
   Area,
   ComposedChart,
   Line,
-  ReferenceArea,
-  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -20,6 +18,11 @@ export interface WeightPoint {
   weight: number;
 }
 
+/**
+ * A deliberately simple weight chart: a shaded "healthy range" band and the
+ * baby's own line. No extra reference lines or danger zones — the aim is a
+ * glance-answer to "is it in range and trending up?".
+ */
 export function WeightChart({
   points,
   birthWeightG,
@@ -33,59 +36,38 @@ export function WeightChart({
   birthAt?: string;
   sex?: BabySex | null;
 }) {
-  const who = !!sex;
   const lastDay = Math.max(maxDay, 14);
 
-  // Band + midline sampled per half-day; actual weights merged onto the same
-  // x axis so recharts can draw both series together.
-  const data: Array<{
-    day: number;
-    band?: [number, number];
-    mid?: number;
-    weight?: number;
-  }> = [];
+  const data: Array<{ day: number; band?: [number, number]; weight?: number }> =
+    [];
   for (let d = 1; d <= lastDay; d += 0.5) {
     const band = weightBand(d, birthWeightG, sex ?? null);
-    data.push({ day: d, band: [band.low, band.high], mid: band.mid });
+    data.push({ day: d, band: [band.low, band.high] });
   }
-  for (const p of points) {
-    data.push({ day: p.day, weight: p.weight });
-  }
+  for (const p of points) data.push({ day: p.day, weight: p.weight });
   data.sort((a, b) => a.day - b.day);
 
   const weights = points.map((p) => p.weight);
-  const tenPctLine = Math.round(birthWeightG * 0.9);
   const bandVals = data.flatMap((d) => d.band ?? []);
   const yMin =
     Math.floor(
-      Math.min(
-        birthWeightG * 0.88, // keep the -10% danger line inside the plot
-        ...bandVals,
-        ...(weights.length ? weights : [birthWeightG])
-      ) / 100
-    ) *
-      100 -
-    100;
+      Math.min(...bandVals, ...(weights.length ? weights : [birthWeightG])) / 200
+    ) * 200;
   const yMax =
     Math.ceil(
-      Math.max(...bandVals, ...(weights.length ? weights : [birthWeightG])) / 100
-    ) *
-      100 +
-    100;
+      Math.max(...bandVals, ...(weights.length ? weights : [birthWeightG])) / 200
+    ) * 200;
 
   return (
-    <div className="h-72 w-full">
+    <div className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart
-          data={data}
-          margin={{ top: 10, right: 10, bottom: 0, left: 0 }}
-        >
+        <ComposedChart data={data} margin={{ top: 10, right: 12, bottom: 0, left: 0 }}>
           <XAxis
             dataKey="day"
             type="number"
             domain={[1, lastDay]}
-            tickCount={Math.min(lastDay, 14)}
-            tickFormatter={(d: number) => `d${Math.round(d)}`}
+            tickCount={Math.min(lastDay, 8)}
+            tickFormatter={(d: number) => `D${Math.round(d)}`}
             stroke="var(--faint)"
             fontSize={11}
             tickLine={false}
@@ -93,84 +75,47 @@ export function WeightChart({
           />
           <YAxis
             domain={[yMin, yMax]}
-            tickFormatter={(g: number) => `${(g / 1000).toFixed(1)}`}
+            tickFormatter={(g: number) => `${(g / 1000).toFixed(1)}kg`}
             stroke="var(--faint)"
             fontSize={11}
             tickLine={false}
             axisLine={false}
-            width={34}
+            width={40}
           />
           <Tooltip
             formatter={(value, name) => {
-              if (name === "weight") return [`${value} g`, "Weight"];
-              if (name === "mid")
-                return [`${value} g`, who ? "50th centile" : "Expected"];
+              if (name === "weight")
+                return [`${((value as number) / 1000).toFixed(3)} kg`, "Weight"];
               if (Array.isArray(value))
                 return [
-                  `${value[0]}–${value[1]} g`,
-                  who ? "2nd–98th centile" : "Expected range",
+                  `${(value[0] / 1000).toFixed(1)}–${(value[1] / 1000).toFixed(1)} kg`,
+                  "Healthy range",
                 ];
               return [String(value), String(name)];
             }}
             labelFormatter={(d) =>
               birthAt
                 ? dayWithDate(birthAt, Math.round(Number(d)))
-                : `Day ${Math.round(Number(d) * 10) / 10}`
+                : `Day ${Math.round(Number(d))}`
             }
             contentStyle={{
               borderRadius: 16,
               border: "1px solid var(--line)",
               boxShadow: "0 10px 30px rgba(0,0,0,.08)",
               fontSize: 12,
+              background: "var(--surface)",
             }}
           />
-          {/* Below −10% of birth weight: seek advice. Zone + line, not colour alone. */}
-          <ReferenceArea
-            y1={yMin}
-            y2={tenPctLine}
-            fill="var(--alert-bg)"
-            fillOpacity={0.6}
-            stroke="none"
-          />
-          <ReferenceLine
-            y={tenPctLine}
-            stroke="var(--alert)"
-            strokeDasharray="4 4"
-            label={{
-              value: "−10% — seek advice",
-              position: "insideBottomLeft",
-              fill: "var(--alert)",
-              fontSize: 10,
-            }}
-          />
+          {/* Healthy range */}
           <Area
             dataKey="band"
             stroke="none"
             fill="var(--positive-bg)"
-            fillOpacity={0.8}
+            fillOpacity={0.9}
             connectNulls
             isAnimationActive={false}
           />
-          <Line
-            dataKey="mid"
-            stroke="var(--positive-bar)"
-            strokeDasharray="5 4"
-            strokeWidth={1.5}
-            dot={false}
-            connectNulls
-            isAnimationActive={false}
-          />
-          <ReferenceLine
-            y={birthWeightG}
-            stroke="var(--muted)"
-            strokeDasharray="4 4"
-            label={{
-              value: "birth",
-              position: "insideTopRight",
-              fill: "var(--muted)",
-              fontSize: 11,
-            }}
-          />
+          {/* The baby's weights */}
           <Line
             dataKey="weight"
             stroke="var(--ink)"

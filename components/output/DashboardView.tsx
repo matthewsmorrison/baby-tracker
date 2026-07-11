@@ -353,8 +353,8 @@ export function DashboardView({
         <Head title="Weight" stat={latestWeightG ? `${formatKg(latestWeightG)} latest` : null} />
         <p className="mt-0.5 text-xs text-faint">
           {sex
-            ? `Shaded band = the WHO 2nd–98th weight centiles for ${sex === "boy" ? "boys" : "girls"}, with the 50th (median) dashed. Crossing the band's edge is worth a word with your health visitor.`
-            : "Most babies are back to their birthweight by about 3 weeks (NHS). Set the baby's sex in Settings for the WHO growth centiles."}
+            ? `Shaded = the healthy weight range for ${sex === "boy" ? "boys" : "girls"} (WHO). Steady and inside the band is what you want; near an edge is worth a word with your health visitor.`
+            : "Set the baby's sex in Settings to show the WHO healthy weight range."}
         </p>
         <div className="mt-2 -ml-2">
           <WeightChart
