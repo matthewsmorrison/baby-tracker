@@ -170,29 +170,34 @@ export function feedsBefore(entries: Entry[], occurredAt: string | Date): Entry[
 }
 
 /**
- * Expected weight for a day of life, anchored to birth weight.
- * Anchor shape (example birth 3800 g): day 3 ≈ 3625, nadir ≈ day 4 (~5% loss),
- * back to birth weight by ~day 10, then +150–200 g/week. Band is ±40 g.
+ * A rough "typical" weight-for-day guide, anchored to birth weight — NOT the
+ * official growth chart. NHS guidance (nhs.uk, reviewed 2023): babies lose a
+ * little in the first days, and MOST are back to their birthweight by about
+ * 3 weeks; a health visitor supports you if there's a large loss or it's not
+ * regained by 3 weeks. The real reference is the UK-WHO centile charts in the
+ * red book. So: nadir ~day 3–4 (~6% loss), gradually regained by ~day 21,
+ * then ~150–200 g/week.
  */
 const WEIGHT_ANCHORS: Array<[day: number, fractionOfBirth: number]> = [
   [1, 1.0],
-  [2, 0.972],
-  [3, 0.954], // 3800 → ≈3625
-  [4, 0.948], // nadir
-  [5, 0.955],
-  [7, 0.975],
-  [10, 1.0], // back to birth weight
+  [3, 0.945],
+  [4, 0.94], // nadir (~6% loss)
+  [7, 0.955],
+  [10, 0.97],
+  [14, 0.985],
+  [21, 1.0], // back to birth weight by ~3 weeks (NHS)
 ];
 
-const WEEKLY_GAIN_G = 175; // midpoint of 150–200 g/week after day 10
+const REGAIN_DAY = 21;
+const WEEKLY_GAIN_G = 175; // midpoint of 150–200 g/week once regained
 
 export function expectedWeightBand(
   day: number,
   birthWeightG: number
 ): { low: number; mid: number; high: number } {
   let mid: number;
-  if (day >= 10) {
-    mid = birthWeightG + ((day - 10) / 7) * WEEKLY_GAIN_G;
+  if (day >= REGAIN_DAY) {
+    mid = birthWeightG + ((day - REGAIN_DAY) / 7) * WEEKLY_GAIN_G;
   } else {
     let lo = WEIGHT_ANCHORS[0];
     let hi = WEIGHT_ANCHORS[WEIGHT_ANCHORS.length - 1];
@@ -208,7 +213,10 @@ export function expectedWeightBand(
     mid = birthWeightG * (lo[1] + t * (hi[1] - lo[1]));
   }
   mid = Math.round(mid);
-  return { low: mid - 40, mid, high: mid + 40 };
+  // Wide-ish margin (~3% of birth weight) — babies vary a lot and this is a
+  // rough guide, not a centile chart.
+  const margin = Math.max(80, Math.round(birthWeightG * 0.03));
+  return { low: mid - margin, mid, high: mid + margin };
 }
 
 /** Weight change vs birth, with the 7% / 10% loss thresholds. */
@@ -243,7 +251,8 @@ export function weightStatus(
   return {
     pct,
     tone: "neutral",
-    message: "Within the normal early loss range (up to ~7%). Watch for the turn back upward.",
+    message:
+      "Within the normal early loss range (up to ~7%). Most babies are back to birthweight by about 3 weeks.",
   };
 }
 

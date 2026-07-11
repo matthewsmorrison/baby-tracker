@@ -350,8 +350,8 @@ export function DashboardView({
       <Card className="p-5">
         <Head title="Weight vs expected range" stat={latestWeightG ? `${formatKg(latestWeightG)} latest` : null} />
         <p className="mt-0.5 text-xs text-faint">
-          The signal to watch is the line turning upward — back to birth weight
-          by ~day 10
+          The signal to watch is the line turning upward — most babies are back
+          to their birthweight by about 3 weeks (NHS)
         </p>
         <div className="mt-2 -ml-2">
           <WeightChart
