@@ -1,6 +1,7 @@
 import { getBabyContext, getEntries } from "@/lib/data";
 import { dayOfLife } from "@/lib/clinical";
 import { Nav } from "@/components/shell/Nav";
+import { BottomBar } from "@/components/shell/BottomBar";
 import { Header } from "@/components/shell/Header";
 import { TimerIndicator } from "@/components/log/TimerIndicator";
 import { LogModal } from "@/components/log/LogModal";
@@ -55,10 +56,8 @@ export default async function AppLayout({
         </main>
       </div>
 
-      {/* Mobile bottom bar */}
-      <div className="md:hidden fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 backdrop-blur pb-[env(safe-area-inset-bottom)]">
-        <Nav canEdit={ctx.canEdit} orientation="bottom" aiEnabled={aiEnabled} />
-      </div>
+      {/* Mobile bottom bar (portaled to body so it stays viewport-fixed) */}
+      <BottomBar canEdit={ctx.canEdit} aiEnabled={aiEnabled} />
 
       {ctx.canEdit && <TimerIndicator babyId={ctx.baby.id} />}
       {ctx.canEdit && (
