@@ -13,6 +13,8 @@ import {
   MessageSquarePlus,
   MessagesSquare,
   Sparkles,
+  ThumbsDown,
+  ThumbsUp,
   Trash2,
   X,
 } from "lucide-react";
@@ -20,6 +22,9 @@ import {
 interface Msg {
   role: "user" | "assistant";
   content: string;
+  /** DB row id — set once persisted; needed to record feedback. */
+  id?: string | null;
+  feedback?: "up" | "down" | null;
 }
 
 interface Conversation {
@@ -107,7 +112,7 @@ export function ChatClient({
     setMessages([]);
     const { data } = await supabase
       .from("chat_messages")
-      .select("role, content")
+      .select("id, role, content, feedback")
       .eq("conversation_id", id)
       .order("created_at", { ascending: true });
     setMessages((data as Msg[]) ?? []);
@@ -121,12 +126,38 @@ export function ChatClient({
     if (id === conversationId) newChat();
   }
 
-  /** Persist a message; failures (e.g. read-only viewers) don't break the chat. */
-  async function saveMessage(convoId: string, role: Msg["role"], content: string) {
+  /** Persist a message; failures (e.g. read-only viewers) don't break the
+   *  chat. Returns the row id so feedback can attach to it. */
+  async function saveMessage(
+    convoId: string,
+    role: Msg["role"],
+    content: string
+  ): Promise<string | null> {
+    try {
+      const { data } = await supabase
+        .from("chat_messages")
+        .insert({ conversation_id: convoId, role, content })
+        .select("id")
+        .single();
+      return (data as { id: string } | null)?.id ?? null;
+    } catch {
+      return null; /* best-effort */
+    }
+  }
+
+  /** Thumbs on an answer — tapping the same thumb again clears it. */
+  async function rate(index: number, value: "up" | "down") {
+    const m = messages[index];
+    if (!m?.id) return;
+    const next = m.feedback === value ? null : value;
+    setMessages((ms) =>
+      ms.map((x, i) => (i === index ? { ...x, feedback: next } : x))
+    );
     try {
       await supabase
         .from("chat_messages")
-        .insert({ conversation_id: convoId, role, content });
+        .update({ feedback: next })
+        .eq("id", m.id);
     } catch {
       /* best-effort */
     }
@@ -192,7 +223,17 @@ export function ChatClient({
         });
       }
       if (convoId && answer.trim()) {
-        await saveMessage(convoId, "assistant", answer);
+        const savedMsgId = await saveMessage(convoId, "assistant", answer);
+        if (savedMsgId) {
+          // Attach the row id so the thumbs can rate this answer.
+          setMessages((m) => {
+            const out = [...m];
+            const last = out[out.length - 1];
+            if (last?.role === "assistant")
+              out[out.length - 1] = { ...last, id: savedMsgId };
+            return out;
+          });
+        }
         // Bump the conversation to the top of the list.
         await supabase
           .from("chat_conversations")
@@ -296,21 +337,56 @@ export function ChatClient({
                 }
               >
                 {m.role === "assistant" && m.content ? (
-                  <Markdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      a: ({ ...props }) => (
-                        <a
-                          {...props}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="underline underline-offset-2"
-                        />
-                      ),
-                    }}
-                  >
-                    {m.content}
-                  </Markdown>
+                  <>
+                    <Markdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        a: ({ ...props }) => (
+                          <a
+                            {...props}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="underline underline-offset-2"
+                          />
+                        ),
+                      }}
+                    >
+                      {m.content}
+                    </Markdown>
+                    {m.id && (
+                      <div className="mt-2 flex items-center gap-1 border-t border-line/60 pt-2">
+                        <span className="mr-1 text-xs text-faint">
+                          Helpful?
+                        </span>
+                        <button
+                          type="button"
+                          aria-label="Good answer"
+                          aria-pressed={m.feedback === "up"}
+                          onClick={() => rate(i, "up")}
+                          className={`rounded-full p-1.5 transition ${
+                            m.feedback === "up"
+                              ? "bg-positive-bg text-positive"
+                              : "text-faint hover:bg-surface-alt hover:text-ink"
+                          }`}
+                        >
+                          <ThumbsUp className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Poor answer"
+                          aria-pressed={m.feedback === "down"}
+                          onClick={() => rate(i, "down")}
+                          className={`rounded-full p-1.5 transition ${
+                            m.feedback === "down"
+                              ? "bg-alert-bg text-alert"
+                              : "text-faint hover:bg-surface-alt hover:text-ink"
+                          }`}
+                        >
+                          <ThumbsDown className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </>
                 ) : null}
                 {m.role === "assistant" ? null : m.content}
                 {!m.content &&

@@ -4,13 +4,20 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { fromLocalInputValue, toLocalInputValue } from "@/lib/dates";
-import type { Entry, FeedNotes } from "@/lib/types";
+import type { Entry, FeedNotes, PostFeedMood } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Field";
 import { OccurredAtField } from "./OccurredAtField";
 import { NoteField } from "./NappyForm";
+import { OptionChips } from "./OptionChips";
 import { MessageSquarePlus, Pause, Play } from "lucide-react";
+
+const MOODS: Array<{ value: PostFeedMood; label: string }> = [
+  { value: "settled", label: "Settled" },
+  { value: "fussy", label: "Fussy" },
+  { value: "crying", label: "Crying" },
+];
 
 type RowKey = keyof FeedNotes;
 
@@ -186,6 +193,10 @@ export function FeedForm({
     formula: initial?.feed_notes?.formula ?? "",
   });
   const [note, setNote] = useState(initial?.note ?? "");
+  const [spitUp, setSpitUp] = useState(initial?.spit_up ?? false);
+  const [mood, setMood] = useState<PostFeedMood | null>(
+    initial?.post_feed_mood ?? null
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -424,6 +435,8 @@ export function FeedForm({
       formula_ml: formula,
       volume_ml: null, // superseded by the split columns
       feed_notes: Object.keys(notes).length ? notes : null,
+      spit_up: spitUp || null,
+      post_feed_mood: mood,
       note: note.trim() || null,
     };
 
@@ -447,6 +460,8 @@ export function FeedForm({
       setAmounts({ left: "", right: "", expressed: "", formula: "" });
       setRowNotes({ left: "", right: "", expressed: "", formula: "" });
       setNote("");
+      setSpitUp(false);
+      setMood(null);
       setEndedAt("");
       setOccurredAt(toLocalInputValue(new Date()));
       setTimer({ side: null, startTs: null, acc: { left: 0, right: 0 }, feedStartIso: null });
@@ -535,6 +550,25 @@ export function FeedForm({
           formula that changes colour and texture.
         </p>
       )}
+
+      <div>
+        <Label>How it ended (optional)</Label>
+        <div className="flex flex-wrap items-center gap-2">
+          <OptionChips options={MOODS} value={mood} onChange={setMood} />
+          <button
+            type="button"
+            aria-pressed={spitUp}
+            onClick={() => setSpitUp((v) => !v)}
+            className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+              spitUp
+                ? "border-ink bg-ink text-on-ink"
+                : "border-line bg-surface-alt text-muted hover:text-ink"
+            }`}
+          >
+            Spit-up
+          </button>
+        </div>
+      </div>
 
       <OccurredAtField value={occurredAt} onChange={setOccurredAt} />
 

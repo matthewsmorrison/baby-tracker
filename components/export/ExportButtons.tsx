@@ -2,7 +2,7 @@
 
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Download, FileText } from "lucide-react";
+import { Download, FileText, Sparkles } from "lucide-react";
 
 export function ExportCard() {
   const tz = () =>
@@ -33,6 +33,15 @@ export function ExportCard() {
           }}
         >
           <FileText className="h-4 w-4" /> Printable report
+        </Button>
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => {
+            window.location.href = "/report/handover";
+          }}
+        >
+          <Sparkles className="h-4 w-4" /> AI handover summary
         </Button>
       </div>
     </Card>

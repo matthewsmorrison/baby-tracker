@@ -26,6 +26,8 @@ import {
   Pencil,
   Pill,
   Scale,
+  Star,
+  Thermometer,
   Trash2,
   X,
 } from "lucide-react";
@@ -38,6 +40,8 @@ export function EntryIcon({ entry }: { entry: Entry }) {
   if (entry.type === "carer_sleep") return <BedDouble className={cls} />;
   if (entry.type === "pump") return <Droplet className={cls} />;
   if (entry.type === "medication") return <Pill className={cls} />;
+  if (entry.type === "temperature") return <Thermometer className={cls} />;
+  if (entry.type === "milestone") return <Star className={cls} />;
   if (entry.wet && !entry.dirty) return <Droplets className={cls} />;
   return <Baby className={cls} />;
 }

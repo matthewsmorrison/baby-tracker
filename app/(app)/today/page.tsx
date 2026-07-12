@@ -13,12 +13,12 @@ import {
   summariseFeeds,
   weightStatus,
 } from "@/lib/clinical";
-import { feedGaps, median } from "@/lib/entryDisplay";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
 import { KpiCard } from "@/components/output/KpiCard";
 import { NappyQuota } from "@/components/output/NappyQuota";
 import { NextFeedCard } from "@/components/output/NextFeedCard";
+import { NextNapCard } from "@/components/output/NextNapCard";
 import { SkyArc } from "@/components/output/SkyArc";
 import { AlertTriangle, Pill } from "lucide-react";
 
@@ -88,17 +88,15 @@ export default async function TodayPage() {
   const colourKey = expectedColourKey(day, feeds.mix);
   const colourText = expectedColour(day, feeds.mix);
 
-  // "Next feed due" (client-rendered for correct timezone): needs the last
-  // feed and the typical recent gap for context.
-  const gaps = feedGaps(entries);
-  const recentGaps = gaps.slice(-6).map((g) => g.gapMs);
-  const typicalGap = recentGaps.length >= 2 ? median(recentGaps) : null;
-  const lastFeed = entries
+  // Prediction cards (client-rendered for correct timezone): feeds predict
+  // the next feed from recent gaps; sleeps predict the nap "sweet spot" from
+  // awake stretches between logged sleeps.
+  const feedStarts = entries
     .filter((e) => e.type === "feed")
-    .sort(
-      (a, b) =>
-        new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime()
-    )[0];
+    .map((e) => e.occurred_at);
+  const sleepSpans = entries
+    .filter((e) => e.type === "sleep")
+    .map((e) => ({ start: e.occurred_at, end: e.ended_at }));
 
   return (
     <div className="space-y-4 animate-rise">
@@ -121,13 +119,18 @@ export default async function TodayPage() {
         </div>
       </div>
 
-      {/* Next feed due — only when an interval is configured in Profile */}
-      {track.has("feed") && ctx.baby.feed_interval_min && lastFeed && (
+      {/* Next feed due — from the configured interval, or Bea's rhythm guess */}
+      {track.has("feed") && feedStarts.length > 0 && (
         <NextFeedCard
-          lastFeedStartISO={lastFeed.occurred_at}
+          feedStartsISO={feedStarts}
           intervalMin={ctx.baby.feed_interval_min}
-          typicalGapMs={typicalGap}
         />
+      )}
+
+      {/* Nap sweet spot — teases until the first sleep is logged, then
+          predicts; hides itself while asleep or once long past */}
+      {track.has("sleep") && (
+        <NextNapCard sleeps={sleepSpans} birthAt={ctx.baby.birth_at} />
       )}
 
       {/* Nappy quota */}
@@ -269,7 +272,11 @@ export default async function TodayPage() {
         <Card className="p-5">
           <div className="flex items-center gap-2">
             <Pill className="h-4 w-4 text-muted" />
-            <CardTitle>Mother’s medication</CardTitle>
+            <CardTitle>
+              {activeMeds.some((m) => m.med_subject === "baby")
+                ? "Medication"
+                : "Mother’s medication"}
+            </CardTitle>
           </div>
           <ul className="mt-3 space-y-2">
             {activeMeds.map((m) => (
@@ -277,6 +284,11 @@ export default async function TodayPage() {
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="font-medium">
                     {m.med_name}
+                    {m.med_subject === "baby" && (
+                      <span className="ml-1.5 font-normal text-muted">
+                        (baby)
+                      </span>
+                    )}
                     {m.med_dose && (
                       <span className="ml-1.5 font-normal text-muted">
                         {m.med_dose}

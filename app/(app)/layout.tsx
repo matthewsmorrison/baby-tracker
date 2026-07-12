@@ -67,6 +67,7 @@ export default async function AppLayout({
           entries={entries}
           nappyBaseWeightG={ctx.baby.nappy_base_weight_g}
           trackedTypes={ctx.baby.tracked_types}
+          advanced={aiEnabled}
         />
       )}
     </div>

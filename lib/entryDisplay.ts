@@ -98,7 +98,14 @@ export function entryLabel(e: Entry): string {
   }
   if (e.type === "medication") {
     const name = e.med_name || "Medication";
-    return e.ended_at ? `${name} · stopped` : `${name} · ongoing`;
+    const who = e.med_subject === "baby" ? " (baby)" : "";
+    return e.ended_at ? `${name}${who} · stopped` : `${name}${who} · ongoing`;
   }
-  return `Weight · ${formatKg(e.weight_g ?? 0)}`;
+  if (e.type === "temperature") return `Temperature · ${e.temp_c ?? "?"} °C`;
+  if (e.type === "milestone") return `Milestone · ${e.milestone_label ?? ""}`;
+  const extras = [
+    e.length_mm ? `${(e.length_mm / 10).toFixed(1)} cm` : null,
+    e.head_circ_mm ? `head ${(e.head_circ_mm / 10).toFixed(1)} cm` : null,
+  ].filter(Boolean);
+  return `Weight · ${formatKg(e.weight_g ?? 0)}${extras.length ? ` · ${extras.join(" · ")}` : ""}`;
 }

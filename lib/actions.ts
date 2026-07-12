@@ -516,6 +516,8 @@ const TRACK_TYPES = [
   "weight",
   "pump",
   "carer_sleep",
+  "temperature",
+  "milestone",
   "medication",
 ] as const;
 

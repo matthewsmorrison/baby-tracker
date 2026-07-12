@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { OPEN_LOG_EVENT } from "./LogModal";
 
 /**
  * Floating "feed timer running" pill, visible on every tab except Log.
@@ -10,7 +9,6 @@ import { usePathname } from "next/navigation";
  * one-tap way back.
  */
 export function TimerIndicator({ babyId }: { babyId: string }) {
-  const pathname = usePathname();
   const [elapsed, setElapsed] = useState<number | null>(null);
 
   useEffect(() => {
@@ -45,12 +43,16 @@ export function TimerIndicator({ babyId }: { babyId: string }) {
   const sec = Math.floor(elapsed / 1000);
   const mmss = `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
 
-  // Open the feed form in place (LogModal listens for ?log=feed).
-  const href = `${pathname}${pathname.includes("?") ? "&" : "?"}log=feed`;
-
   return (
-    <Link
-      href={href}
+    <button
+      type="button"
+      // Open the feed form in place, instantly — no navigation. The form
+      // restores the running timer from localStorage when it mounts.
+      onClick={() =>
+        window.dispatchEvent(
+          new CustomEvent(OPEN_LOG_EVENT, { detail: { tab: "feed" } })
+        )
+      }
       className="fixed inset-x-0 z-30 mx-auto flex w-fit items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-sm font-semibold text-on-ink shadow-card bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] md:bottom-6"
     >
       <span className="relative flex h-2.5 w-2.5">
@@ -59,6 +61,6 @@ export function TimerIndicator({ babyId }: { babyId: string }) {
       </span>
       Feed timing · <span className="stat-num">{mmss}</span>
       <span className="font-normal text-on-ink/70">tap to return</span>
-    </Link>
+    </button>
   );
 }

@@ -51,6 +51,7 @@ export default async function NotesPage() {
     <NotesClient
       babyId={ctx.baby.id}
       canEdit={ctx.canEdit}
+      advanced={ctx.baby.membership_tier === "advanced"}
       currentUserId={ctx.userId}
       notes={(notes ?? []) as BabyNote[]}
       members={tagMembers}

@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import Anthropic from "@anthropic-ai/sdk";
 import { createServiceClient } from "@/lib/supabase/service";
 import { sendToUsers } from "@/lib/push";
 import { dayOfLife, expectedNappies } from "@/lib/clinical";
+import { BEA_MODEL, serialiseBaby } from "@/lib/aiContext";
 import type { Baby, Entry } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -14,6 +16,11 @@ const FEED_DUE_WINDOW_MS = 45 * 60 * 1000;
 // A medication reminder fires if the cron tick is within this many minutes
 // after the reminder time (cron runs every 15 min and can be late).
 const MED_REMINDER_WINDOW_MIN = 30;
+// The evening Bea digest goes out in this local-time window (the app has no
+// per-family timezone yet; it's UK/NHS-oriented, so London it is).
+const DIGEST_TZ = "Europe/London";
+const DIGEST_FROM_MIN = 19 * 60; // 19:00
+const DIGEST_TO_MIN = 21 * 60; // last chance 21:00, then skip the day
 
 /** Minutes-since-midnight in a given IANA timezone. */
 function localMinutes(now: Date, tz: string): number {
@@ -46,7 +53,7 @@ export async function POST(request: Request) {
 
   const svc = createServiceClient();
   const now = Date.now();
-  const results = { feedDue: 0, lowNappies: 0, medReminders: 0 };
+  const results = { feedDue: 0, lowNappies: 0, medReminders: 0, digests: 0 };
 
   // Only bother with babies that have at least one subscribed member.
   const { data: subs } = await svc
@@ -203,7 +210,82 @@ export async function POST(request: Request) {
         }
       }
     }
+
+    // --- Evening Bea digest (Advanced tier, once per day) -------------------
+    // A short AI-written summary of the last 24h, pushed instead of waiting to
+    // be asked. Only when there's actually something to summarise.
+    if (
+      baby.membership_tier === "advanced" &&
+      process.env.ANTHROPIC_API_KEY
+    ) {
+      const localMin = localMinutes(new Date(now), DIGEST_TZ);
+      const dateKey = localDateKey(new Date(now), DIGEST_TZ);
+      const logged24 = entries.filter(
+        (e) => now - new Date(e.occurred_at).getTime() <= DAY_MS
+      ).length;
+      if (
+        localMin >= DIGEST_FROM_MIN &&
+        localMin <= DIGEST_TO_MIN &&
+        logged24 >= 3 &&
+        !(await alreadySent(baby.id, "daily_digest", dateKey))
+      ) {
+        try {
+          const digest = await generateDigest(baby, entries);
+          if (digest) {
+            const n = await sendToUsers(recipients, {
+              title: `${baby.name} — today, from Bea`,
+              body: digest,
+              url: "/today",
+              tag: `digest-${baby.id}`,
+            });
+            if (n > 0) {
+              await markSent(baby.id, "daily_digest", dateKey);
+              results.digests += 1;
+            }
+          }
+        } catch (e) {
+          // Digest failures must never block the safety alerts above.
+          console.error(
+            "daily digest error:",
+            e instanceof Error ? e.message : e
+          );
+        }
+      }
+    }
   }
 
   return NextResponse.json({ ok: true, results });
+}
+
+/** One short, warm push-notification paragraph about the last 24 hours. */
+async function generateDigest(baby: Baby, entries: Entry[]): Promise<string | null> {
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const day = dayOfLife(baby.birth_at, new Date());
+  const msg = await anthropic.messages.create({
+    model: BEA_MODEL,
+    max_tokens: 300,
+    // Adaptive thinking (the claude-sonnet-5 default) would eat this small
+    // budget before any text is written.
+    thinking: { type: "disabled" },
+    system: `You are Bea, the warm, down-to-earth assistant inside "beanlo", a newborn tracking app. Write tonight's push-notification digest for ${baby.name}'s parents (today is day ${day} of life). Rules:
+- ONE short paragraph, max 300 characters, plain text — no markdown, no headings, no emoji.
+- Lead with the last 24 hours: one or two concrete numbers (feeds, nappies, sleep) taken ONLY from the data below — never invent numbers.
+- Add one specific, warm observation or gentle tip if the data supports it.
+- If the data shows something that needs same-day advice (pale/chalky stool, blood, >10% weight loss, very few feeds or nappies), say calmly to contact their midwife or doctor — no all-clears otherwise, just the summary.
+- You are a tracking aid, not medical advice.`,
+    messages: [
+      {
+        role: "user",
+        content: `Here is ${baby.name}'s data (times in ${DIGEST_TZ}):\n\n${serialiseBaby(baby, entries, DIGEST_TZ)}\n\nWrite tonight's digest.`,
+      },
+    ],
+  });
+  const text = msg.content
+    .filter((b): b is Extract<typeof b, { type: "text" }> => b.type === "text")
+    .map((b) => b.text)
+    .join("")
+    .trim();
+  if (!text) return null;
+  // Push payloads should stay small; clamp just in case.
+  return text.length > 360 ? `${text.slice(0, 357)}…` : text;
 }

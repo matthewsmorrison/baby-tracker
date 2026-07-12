@@ -5,12 +5,29 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { fromLocalInputValue, toLocalInputValue } from "@/lib/dates";
 import { formatDuration } from "@/lib/entryDisplay";
-import type { Entry } from "@/lib/types";
+import type { Entry, SettleMethod, SleepLocation } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Field";
 import { OccurredAtField } from "./OccurredAtField";
 import { NoteField } from "./NappyForm";
+import { OptionChips } from "./OptionChips";
+
+const LOCATIONS: Array<{ value: SleepLocation; label: string }> = [
+  { value: "cot", label: "Cot / crib" },
+  { value: "arms", label: "In arms" },
+  { value: "next_to_me", label: "Next-to-me" },
+  { value: "pram", label: "Pram" },
+  { value: "car_seat", label: "Car seat" },
+  { value: "other", label: "Other" },
+];
+const SETTLES: Array<{ value: SettleMethod; label: string }> = [
+  { value: "self", label: "Self-settled" },
+  { value: "fed", label: "Fed to sleep" },
+  { value: "rocked", label: "Rocked" },
+  { value: "dummy", label: "Dummy" },
+  { value: "other", label: "Other" },
+];
 
 export function SleepForm({
   babyId,
@@ -39,6 +56,12 @@ export function SleepForm({
       ? toLocalInputValue(new Date(initial.ended_at))
       : toLocalInputValue(new Date())
   );
+  const [location, setLocation] = useState<SleepLocation | null>(
+    initial?.sleep_location ?? null
+  );
+  const [settle, setSettle] = useState<SettleMethod | null>(
+    initial?.settle_method ?? null
+  );
   const [note, setNote] = useState(initial?.note ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +84,8 @@ export function SleepForm({
       type: (isCarer ? "carer_sleep" : "sleep") as "sleep" | "carer_sleep",
       occurred_at: fromLocalInputValue(startAt),
       ended_at: fromLocalInputValue(endAt),
+      sleep_location: isCarer ? null : location,
+      settle_method: isCarer ? null : settle,
       note: note.trim() || null,
     };
 
@@ -120,6 +145,23 @@ export function SleepForm({
         <p className="rounded-2xl bg-surface-alt px-4 py-2.5 text-sm font-medium text-muted">
           {formatDuration(endMs - startMs)} asleep
         </p>
+      )}
+
+      {!isCarer && (
+        <>
+          <div>
+            <Label>Where (optional)</Label>
+            <OptionChips
+              options={LOCATIONS}
+              value={location}
+              onChange={setLocation}
+            />
+          </div>
+          <div>
+            <Label>How they settled (optional)</Label>
+            <OptionChips options={SETTLES} value={settle} onChange={setSettle} />
+          </div>
+        </>
       )}
 
       <NoteField note={note} setNote={setNote} />

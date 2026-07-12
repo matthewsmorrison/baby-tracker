@@ -23,6 +23,7 @@ import {
   MessageCircleQuestion,
   Pencil,
   RotateCcw,
+  Sparkles,
   StickyNote,
   Trash2,
   X,
@@ -265,6 +266,7 @@ function NoteCard({
   members,
   memberById,
   canEdit,
+  advanced,
   photoUrls,
 }: {
   note: BabyNote;
@@ -272,11 +274,39 @@ function NoteCard({
   members: TagMember[];
   memberById: Map<string, TagMember>;
   canEdit: boolean;
+  advanced: boolean;
   photoUrls: Record<string, string>;
 }) {
   const [pending, startTransition] = useTransition();
   const [answering, setAnswering] = useState(false);
   const [answerText, setAnswerText] = useState(note.answer ?? "");
+  const [drafting, setDrafting] = useState(false);
+  const [draftError, setDraftError] = useState<string | null>(null);
+
+  /** Bea drafts an answer from the tracked data; a human edits and saves. */
+  async function draftWithBea() {
+    if (drafting) return;
+    setDrafting(true);
+    setDraftError(null);
+    try {
+      const res = await fetch("/api/notes/draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          noteId: note.id,
+          tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? "Something went wrong");
+      setAnswerText(data.draft);
+      setAnswering(true);
+    } catch (e) {
+      setDraftError(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setDrafting(false);
+    }
+  }
   const [editing, setEditing] = useState(false);
   const [body, setBody] = useState(note.body);
   const [tagged, setTagged] = useState<string[]>(note.tagged_user_ids ?? []);
@@ -460,7 +490,7 @@ function NoteCard({
                 placeholder="What did they say?"
                 className="w-full rounded-2xl border border-line bg-surface-alt px-4 py-2.5 text-sm focus:border-ink focus:outline-none resize-none"
               />
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   size="sm"
                   disabled={pending || !answerText.trim()}
@@ -473,6 +503,17 @@ function NoteCard({
                 >
                   {pending ? "Saving…" : "Save answer"}
                 </Button>
+                {advanced && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={drafting}
+                    onClick={draftWithBea}
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    {drafting ? "Drafting…" : "Redraft with Bea"}
+                  </Button>
+                )}
                 {answering && (
                   <Button
                     variant="ghost"
@@ -483,15 +524,32 @@ function NoteCard({
                   </Button>
                 )}
               </div>
+              {draftError && (
+                <p className="text-xs text-alert">{draftError}</p>
+              )}
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => setAnswering(true)}
-              className="text-sm font-medium text-muted underline underline-offset-2 hover:text-ink"
-            >
-              + Record the answer
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setAnswering(true)}
+                className="text-sm font-medium text-muted underline underline-offset-2 hover:text-ink"
+              >
+                + Record the answer
+              </button>
+              {advanced && (
+                <button
+                  type="button"
+                  disabled={drafting}
+                  onClick={draftWithBea}
+                  className="inline-flex items-center gap-1 text-sm font-medium text-muted underline underline-offset-2 hover:text-ink"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-accent" />
+                  {drafting ? "Bea is drafting…" : "Draft with Bea"}
+                </button>
+              )}
+              {draftError && <p className="text-xs text-alert">{draftError}</p>}
+            </div>
           )}
         </div>
       ) : null}
@@ -504,12 +562,15 @@ function NoteCard({
 export function NotesClient({
   babyId,
   canEdit,
+  advanced = false,
   notes,
   members,
   photoUrls,
 }: {
   babyId: string;
   canEdit: boolean;
+  /** Advanced tier — enables Bea's draft answers. */
+  advanced?: boolean;
   currentUserId: string;
   notes: BabyNote[];
   members: TagMember[];
@@ -553,6 +614,7 @@ export function NotesClient({
                   members={members}
                   memberById={memberById}
                   canEdit={canEdit}
+                  advanced={advanced}
                   photoUrls={photoUrls}
                 />
               ))}
@@ -570,6 +632,7 @@ export function NotesClient({
                   members={members}
                   memberById={memberById}
                   canEdit={canEdit}
+                  advanced={advanced}
                   photoUrls={photoUrls}
                 />
               ))}
@@ -599,6 +662,7 @@ export function NotesClient({
                     members={members}
                     memberById={memberById}
                     canEdit={canEdit}
+                    advanced={advanced}
                     photoUrls={photoUrls}
                   />
                 ))}

@@ -10,7 +10,15 @@ import { FeedForm } from "./FeedForm";
 import { WeightForm } from "./WeightForm";
 import { SleepForm } from "./SleepForm";
 import { PumpForm } from "./PumpForm";
+import { TemperatureForm } from "./TemperatureForm";
+import { MilestoneForm } from "./MilestoneForm";
+import { QuickLog } from "./QuickLog";
 import { Check, Plus, X } from "lucide-react";
+
+/** Fired (with `{detail: {tab}}`) to open the log modal instantly from
+ *  anywhere on the client — no router round-trip, unlike the ?log= deep link.
+ *  The feed-timer pill uses this so "tap to return" is immediate. */
+export const OPEN_LOG_EVENT = "beanlo:open-log";
 
 /**
  * The Log lives in a modal opened by the floating + button on every screen.
@@ -23,12 +31,15 @@ export function LogModal({
   entries,
   nappyBaseWeightG,
   trackedTypes,
+  advanced = false,
 }: {
   babyId: string;
   birthAt: string;
   entries: Entry[];
   nappyBaseWeightG?: number | null;
   trackedTypes: EntryType[];
+  /** Advanced tier — enables Bea's quick log and photo pre-fill. */
+  advanced?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -43,6 +54,8 @@ export function LogModal({
     weight: "Weight",
     pump: "Pump",
     carer_sleep: "My sleep",
+    temperature: "Temp",
+    milestone: "Milestone",
     medication: "Meds", // managed in Profile, never shown as a log tab
   };
   const order: EntryType[] = [
@@ -52,6 +65,8 @@ export function LogModal({
     "weight",
     "pump",
     "carer_sleep",
+    "temperature",
+    "milestone",
   ];
   const options = order
     .filter((t) => trackedTypes.includes(t))
@@ -91,6 +106,24 @@ export function LogModal({
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [logParam]);
+
+  // Instant open from anywhere on the client (e.g. the feed-timer pill) —
+  // same behaviour as ?log=<type> but without waiting on a navigation.
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const t = (e as CustomEvent<{ tab?: string }>).detail?.tab;
+      setEditing(null);
+      setTab(
+        t && order.includes(t as EntryType)
+          ? (t as EntryType)
+          : options[0]?.value ?? "nappy"
+      );
+      setOpen(true);
+    };
+    window.addEventListener(OPEN_LOG_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_LOG_EVENT, onOpen);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Lock body scroll while the modal is up.
   useEffect(() => {
@@ -182,6 +215,10 @@ export function LogModal({
               </div>
 
               <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+                {advanced && !editing && (
+                  <QuickLog babyId={babyId} onSaved={notify} />
+                )}
+
                 {options.length > 1 && (
                   <Segmented<EntryType>
                     options={options}
@@ -212,6 +249,7 @@ export function LogModal({
                     {...formProps}
                     initial={editing ?? undefined}
                     nappyBaseWeightG={nappyBaseWeightG}
+                    advanced={advanced}
                   />
                 )}
                 {tab === "feed" && (
@@ -248,6 +286,20 @@ export function LogModal({
                     {...formProps}
                     initial={editing ?? undefined}
                     variant="carer"
+                  />
+                )}
+                {tab === "temperature" && (
+                  <TemperatureForm
+                    key={editing?.id ?? "new-temperature"}
+                    {...formProps}
+                    initial={editing ?? undefined}
+                  />
+                )}
+                {tab === "milestone" && (
+                  <MilestoneForm
+                    key={editing?.id ?? "new-milestone"}
+                    {...formProps}
+                    initial={editing ?? undefined}
                   />
                 )}
               </div>

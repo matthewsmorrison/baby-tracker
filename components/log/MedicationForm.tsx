@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { fromLocalInputValue, toLocalInputValue } from "@/lib/dates";
-import type { Entry } from "@/lib/types";
+import type { Entry, MedSubject } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Field";
+import { Segmented } from "@/components/ui/Segmented";
 import { OccurredAtField } from "./OccurredAtField";
 import { NoteField } from "./NappyForm";
 import { Bell, Plus, X } from "lucide-react";
@@ -31,6 +32,9 @@ export function MedicationForm({
   onSaved: (message: string) => void;
 }) {
   const router = useRouter();
+  const [subject, setSubject] = useState<MedSubject>(
+    initial?.med_subject ?? "mother"
+  );
   const [name, setName] = useState(initial?.med_name ?? "");
   const [dose, setDose] = useState(initial?.med_dose ?? "");
   const [reminders, setReminders] = useState<string[]>(
@@ -107,6 +111,7 @@ export function MedicationForm({
     const row = {
       baby_id: babyId,
       type: "medication" as const,
+      med_subject: subject,
       med_name: name.trim(),
       med_dose: dose.trim() || null,
       occurred_at: fromLocalInputValue(startAt),
@@ -148,10 +153,18 @@ export function MedicationForm({
 
   return (
     <Card className="p-5 space-y-5">
+      <Segmented<MedSubject>
+        options={[
+          { value: "mother", label: "Mother’s" },
+          { value: "baby", label: "Baby’s" },
+        ]}
+        value={subject}
+        onChange={setSubject}
+      />
       <p className="text-xs text-faint">
-        Track medication the mother is taking. Some can affect the baby via
-        breastmilk — e.g. iron often makes stool darker or greener — so logging
-        it helps make sense of changes.
+        {subject === "mother"
+          ? "Some of the mother’s medication can affect the baby via breastmilk — e.g. iron often makes stool darker or greener — so logging it helps make sense of changes."
+          : "Track the baby’s own medicines and supplements (e.g. vitamin D drops) as a course, with reminders if you want them."}
       </p>
 
       <div>
