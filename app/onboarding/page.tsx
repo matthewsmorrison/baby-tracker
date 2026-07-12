@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { acceptInvite } from "@/lib/actions";
+import { getProfessionalForUser } from "@/lib/pro";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { CreateBabyForm } from "./CreateBabyForm";
+import { OnboardingChooser } from "./OnboardingChooser";
 import { Flame } from "lucide-react";
 
 export default async function OnboardingPage() {
@@ -13,12 +15,21 @@ export default async function OnboardingPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  // Already a professional → their dashboard, not the create flow.
+  if (await getProfessionalForUser()) redirect("/pro-home");
+
   // Pending invites for this email (RLS: invitee can read their own).
   const { data: invites } = await supabase
     .from("baby_invites")
     .select("id, token, role, baby_id, babies(name)")
     .eq("status", "pending")
     .ilike("email", user.email ?? "");
+
+  // Default the chooser to "professional" if they arrived via that path.
+  const defaultRole =
+    (await cookies()).get("beanlo_role")?.value === "pro" ? "pro" : "parent";
+  const defaultName =
+    (user.user_metadata?.full_name as string | undefined) ?? undefined;
 
   return (
     <main className="mx-auto w-full max-w-md p-6 pt-14">
@@ -28,7 +39,8 @@ export default async function OnboardingPage() {
         </div>
         <h1 className="text-2xl font-bold tracking-tight">Welcome</h1>
         <p className="mt-1 text-sm text-muted">
-          Set up your baby, or join one you’ve been invited to.
+          Set up as a parent or a professional — or join a baby you’ve been
+          invited to.
         </p>
       </div>
 
@@ -63,8 +75,7 @@ export default async function OnboardingPage() {
       )}
 
       <Card className="p-6 animate-rise">
-        <h2 className="font-semibold mb-4">Create a baby</h2>
-        <CreateBabyForm />
+        <OnboardingChooser defaultRole={defaultRole} defaultName={defaultName} />
       </Card>
 
       <p className="mt-6 text-center text-xs text-faint">

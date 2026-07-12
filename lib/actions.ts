@@ -30,15 +30,16 @@ export async function createBaby(formData: FormData) {
   // Attribute the referral if the family arrived via a professional's link.
   const cookieStore = await cookies();
   const refId = cookieStore.get("beanlo_ref")?.value;
-  let referredByPro: string | null = null;
+  let referralPro: { id: string; user_id: string | null } | null = null;
   if (refId) {
     const { data: pro } = await supabase
       .from("professionals")
-      .select("id")
+      .select("id, user_id")
       .eq("id", refId)
       .maybeSingle();
-    referredByPro = pro?.id ?? null;
+    referralPro = pro ?? null;
   }
+  const referredByPro = referralPro?.id ?? null;
 
   // No .select() on this insert: the RETURNING row is checked against the
   // select policy (is_baby_member) before the owner-membership trigger has
@@ -56,6 +57,15 @@ export async function createBaby(formData: FormData) {
 
   if (error) throw new Error(error.message);
 
+  // Auto-connect the referring professional as a read-only viewer, so they
+  // can see this family's log. Service role: the parent can't insert a
+  // membership for someone else under RLS.
+  if (referralPro?.user_id && referralPro.user_id !== user.id) {
+    await createServiceClient()
+      .from("baby_members")
+      .insert({ baby_id: babyId, user_id: referralPro.user_id, role: "viewer" });
+  }
+
   if (refId) cookieStore.delete("beanlo_ref");
   cookieStore.set(ACTIVE_BABY_COOKIE, babyId, {
     path: "/",
@@ -63,6 +73,80 @@ export async function createBaby(formData: FormData) {
     sameSite: "lax",
   });
   redirect("/today");
+}
+
+/** Self-serve professional sign-up: create the caller's professional profile. */
+export async function createProfessional(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const name = String(formData.get("name") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+  const bio = String(formData.get("bio") ?? "").trim();
+  const location = String(formData.get("location") ?? "").trim();
+  let website = String(formData.get("website") ?? "").trim();
+  if (!name || !title) {
+    throw new Error("Please fill in your name and your title/role.");
+  }
+  if (website && !/^https?:\/\//i.test(website)) website = `https://${website}`;
+
+  // Already registered → straight to the dashboard.
+  const { data: existing } = await supabase
+    .from("professionals")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (existing) redirect("/pro-home");
+
+  const base =
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 40) || "pro";
+  let slug = base;
+  for (let i = 0; i < 25; i++) {
+    const { data } = await supabase
+      .from("professionals")
+      .select("id")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (!data) break;
+    slug = `${base}-${Math.floor(1000 + Math.random() * 9000)}`;
+  }
+
+  const gen = () =>
+    Array.from(
+      { length: 6 },
+      () => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 32)]
+    ).join("");
+  let code = gen();
+  for (let i = 0; i < 25; i++) {
+    const { data } = await supabase
+      .from("professionals")
+      .select("id")
+      .eq("invite_code", code)
+      .maybeSingle();
+    if (!data) break;
+    code = gen();
+  }
+
+  const { error } = await supabase.from("professionals").insert({
+    slug,
+    invite_code: code,
+    name,
+    title,
+    bio: bio || null,
+    location: location || null,
+    website: website || null,
+    user_id: user.id,
+    email: user.email ?? null,
+  });
+  if (error) throw new Error(error.message);
+  redirect("/pro-home");
 }
 
 /**

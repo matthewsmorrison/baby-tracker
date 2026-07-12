@@ -61,12 +61,20 @@ export default function Landing() {
           </span>
           <span className="text-lg font-bold tracking-tight">{APP_NAME}</span>
         </div>
-        <Link
-          href="/login"
-          className="rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium hover:border-ink"
-        >
-          Sign in
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/for-professionals"
+            className="hidden rounded-full px-3 py-2 text-sm font-medium text-muted hover:text-ink sm:inline"
+          >
+            For professionals
+          </Link>
+          <Link
+            href="/login"
+            className="rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium hover:border-ink"
+          >
+            Sign in
+          </Link>
+        </div>
       </header>
 
       <main className="flex-1">

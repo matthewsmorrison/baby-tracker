@@ -47,6 +47,8 @@ export interface Professional {
   bio: string | null;
   location: string | null;
   website: string | null;
+  user_id: string | null;
+  email: string | null;
   created_at: string;
 }
 
@@ -60,6 +62,7 @@ export interface Baby {
   feed_interval_min: number | null; // expected time between feeds; gates "Next feed due"
   tracked_types: EntryType[]; // categories this family tracks
   membership_tier: "free" | "advanced"; // AI features are Advanced-only
+  referred_by_pro: string | null; // professional who referred this family
   created_by: string;
   created_at: string;
 }

@@ -6,6 +6,7 @@ const PUBLIC_PATHS = [
   "/auth",
   "/invite",
   "/pro",
+  "/for-professionals",
   "/privacy",
   "/terms",
   "/cookies",
@@ -47,8 +48,11 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   // "/" is the public landing (exact match — startsWith "/" would match all).
+  // Match a prefix only at a path boundary so "/pro" doesn't also match
+  // "/profile" (which must stay private).
   const isPublic =
-    pathname === "/" || PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+    pathname === "/" ||
+    PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();

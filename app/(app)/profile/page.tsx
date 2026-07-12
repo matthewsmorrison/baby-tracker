@@ -48,6 +48,17 @@ export default async function ProfilePage() {
     invites = (data ?? []) as BabyInvite[];
   }
 
+  // The professional who referred this family, if any (for a small note).
+  let referredPro: { name: string; title: string } | null = null;
+  if (ctx.baby.referred_by_pro) {
+    const { data } = await supabase
+      .from("professionals")
+      .select("name, title")
+      .eq("id", ctx.baby.referred_by_pro)
+      .maybeSingle();
+    referredPro = data;
+  }
+
   const day = dayOfLife(ctx.baby.birth_at, new Date());
   const myMembership = (members ?? []).find((m) => m.user_id === ctx.userId);
 
@@ -79,6 +90,13 @@ export default async function ProfilePage() {
           />
         ))}
       </ul>
+      {referredPro && (
+        <p className="mt-3 rounded-2xl bg-accent-soft px-4 py-2.5 text-xs">
+          Referred by <span className="font-semibold">{referredPro.name}</span> (
+          {referredPro.title}). They can view this log unless you remove them
+          above.
+        </p>
+      )}
       {ctx.isOwner && <InviteSection babyId={ctx.baby.id} invites={invites} />}
     </Card>
   );
