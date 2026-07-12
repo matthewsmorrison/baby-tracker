@@ -38,6 +38,18 @@ export interface Profile {
 
 export type BabySex = "boy" | "girl";
 
+export interface Professional {
+  id: string;
+  slug: string;
+  invite_code: string;
+  name: string;
+  title: string;
+  bio: string | null;
+  location: string | null;
+  website: string | null;
+  created_at: string;
+}
+
 export interface Baby {
   id: string;
   name: string;

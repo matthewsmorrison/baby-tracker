@@ -27,6 +27,19 @@ export async function createBaby(formData: FormData) {
     throw new Error("Please choose boy or girl (for the growth charts).");
   }
 
+  // Attribute the referral if the family arrived via a professional's link.
+  const cookieStore = await cookies();
+  const refId = cookieStore.get("beanlo_ref")?.value;
+  let referredByPro: string | null = null;
+  if (refId) {
+    const { data: pro } = await supabase
+      .from("professionals")
+      .select("id")
+      .eq("id", refId)
+      .maybeSingle();
+    referredByPro = pro?.id ?? null;
+  }
+
   // No .select() on this insert: the RETURNING row is checked against the
   // select policy (is_baby_member) before the owner-membership trigger has
   // run, which fails RLS. Generate the id here instead.
@@ -37,12 +50,13 @@ export async function createBaby(formData: FormData) {
     birth_at: new Date(birthAt).toISOString(),
     birth_weight_g: weight,
     sex,
+    referred_by_pro: referredByPro,
     created_by: user.id,
   });
 
   if (error) throw new Error(error.message);
 
-  const cookieStore = await cookies();
+  if (refId) cookieStore.delete("beanlo_ref");
   cookieStore.set(ACTIVE_BABY_COOKIE, babyId, {
     path: "/",
     httpOnly: true,
