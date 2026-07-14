@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import exifr from "exifr";
 import { createClient } from "@/lib/supabase/client";
-import { blobToBase64, compressImage } from "@/lib/image";
+import { compressImage } from "@/lib/image";
 import { fromLocalInputValue, toLocalInputValue } from "@/lib/dates";
 import {
   NAPPY_WET_THRESHOLD_G,
@@ -15,14 +15,14 @@ import {
   nappyOutputG,
   summariseFeeds,
 } from "@/lib/clinical";
-import type { Entry, NappyAiPrefill, StoolColourKey } from "@/lib/types";
+import type { Entry, StoolColourKey } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Field";
 import { OccurredAtField } from "./OccurredAtField";
 import { CameraCapture } from "./CameraCapture";
 import { Portal } from "@/components/ui/Portal";
-import { Camera, Droplets, Image as ImageIcon, Sparkles, X } from "lucide-react";
+import { Camera, Droplets, Image as ImageIcon, X } from "lucide-react";
 
 const COLOUR_KEYS = Object.keys(STOOL_COLOURS) as StoolColourKey[];
 
@@ -33,7 +33,6 @@ export function NappyForm({
   initial,
   onSaved,
   nappyBaseWeightG,
-  advanced = false,
 }: {
   babyId: string;
   birthAt: string;
@@ -44,8 +43,6 @@ export function NappyForm({
   onSaved: (message: string) => void;
   /** Dry nappy weight from Profile — enables wetness inference. */
   nappyBaseWeightG?: number | null;
-  /** Advanced tier — enables Bea's photo pre-fill. */
-  advanced?: boolean;
 }) {
   const router = useRouter();
   const [occurredAt, setOccurredAt] = useState(() =>
@@ -78,11 +75,6 @@ export function NappyForm({
   const cameraRef = useRef<HTMLInputElement>(null);
   const libraryRef = useRef<HTMLInputElement>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
-  // Bea's read of the photo — applied as pre-fill AND stored on the entry, so
-  // the parent's corrections vs the suggestion become training data.
-  const [aiPrefill, setAiPrefill] = useState<NappyAiPrefill | null>(null);
-  const [aiState, setAiState] = useState<"idle" | "busy" | "done">("idle");
-  const aiSeq = useRef(0);
 
   // The colour to suggest for this occurred_at: day of life + feeding mix
   // over the 24h BEFORE the entry (backdating-correct).
@@ -103,52 +95,10 @@ export function NappyForm({
    * transcoding HEIC library picks), fall back to the file's lastModified,
    * which survives transcoding and is the capture time for library photos.
    */
-  /** Bea reads the photo and pre-fills wet/dirty/colour (Advanced only).
-   *  Her suggestion is kept in ai_prefill even when the parent corrects it. */
-  async function analysePhoto(file: File) {
-    if (!advanced) return;
-    const seq = ++aiSeq.current;
-    setAiState("busy");
-    setAiPrefill(null);
-    try {
-      const blob = await compressImage(file);
-      const image = await blobToBase64(blob);
-      const res = await fetch("/api/nappy-vision", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image, media_type: "image/jpeg" }),
-      });
-      if (seq !== aiSeq.current) return; // photo changed meanwhile
-      if (!res.ok) throw new Error();
-      const s = (await res.json()) as NappyAiPrefill;
-      setAiPrefill(s);
-      setAiState("done");
-      // Pre-fill only what the parent hasn't touched yet — never override.
-      if (!wet && !dirty) {
-        if (s.dirty) {
-          setDirty(true);
-          setWet(true); // poo nappy is assumed to have wee too
-          if (s.stool_colour) {
-            setColour(s.stool_colour);
-            setColourSource("auto");
-          }
-        } else if (s.wet) {
-          setWet(true);
-        }
-      }
-    } catch {
-      if (seq === aiSeq.current) setAiState("idle"); // silent — logging still works
-    }
-  }
-
   async function handlePhoto(file: File | null) {
     setPhoto(file);
     setTimeFromPhoto(null);
-    aiSeq.current += 1;
-    setAiState("idle");
-    setAiPrefill(null);
     if (!file) return;
-    analysePhoto(file);
 
     const plausible = (d: Date | null): d is Date =>
       !!d &&
@@ -253,7 +203,6 @@ export function NappyForm({
           const g = parseInt(nappyWeight, 10);
           return Number.isFinite(g) && g > 0 ? g : null;
         })(),
-        ai_prefill: aiPrefill,
         note: note.trim() || null,
       };
 
@@ -314,9 +263,6 @@ export function NappyForm({
     setPhoto(null);
     setTimeFromPhoto(null);
     setSavedId(null);
-    aiSeq.current += 1;
-    setAiPrefill(null);
-    setAiState("idle");
     setOccurredAt(toLocalInputValue(new Date()));
   }
 
@@ -486,29 +432,6 @@ export function NappyForm({
             </Button>
           </div>
         )}
-        {aiState === "busy" && (
-          <p className="mt-1.5 flex items-center gap-1.5 rounded-2xl bg-accent-soft px-3.5 py-2 text-xs font-medium">
-            <Sparkles className="h-3.5 w-3.5 shrink-0 text-accent" />
-            Bea is reading the photo…
-          </p>
-        )}
-        {aiState === "done" && aiPrefill && (
-          <p className="mt-1.5 flex items-center gap-1.5 rounded-2xl bg-accent-soft px-3.5 py-2 text-xs font-medium">
-            <Sparkles className="h-3.5 w-3.5 shrink-0 text-accent" />
-            Bea’s read:{" "}
-            {[
-              aiPrefill.dirty ? "dirty" : null,
-              aiPrefill.wet ? "wet" : null,
-              aiPrefill.stool_colour
-                ? `colour ${aiPrefill.stool_colour}`
-                : null,
-            ]
-              .filter(Boolean)
-              .join(", ") || "couldn’t tell"}{" "}
-            ({aiPrefill.confidence} confidence) — filled in below, tap to
-            correct.
-          </p>
-        )}
         <p className="mt-1 text-xs text-faint">
           Photos are kept with the entry for your records.
         </p>
@@ -548,7 +471,6 @@ export function NappyForm({
               setCameraOpen(false);
               setPhoto(file);
               setTimeFromPhoto(null);
-              analysePhoto(file);
             }}
             onCancel={() => setCameraOpen(false)}
             onUnavailable={() => {

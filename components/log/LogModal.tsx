@@ -249,7 +249,6 @@ export function LogModal({
                     {...formProps}
                     initial={editing ?? undefined}
                     nappyBaseWeightG={nappyBaseWeightG}
-                    advanced={advanced}
                   />
                 )}
                 {tab === "feed" && (

@@ -30,15 +30,6 @@ export type SleepLocation =
 export type SettleMethod = "self" | "fed" | "rocked" | "dummy" | "other";
 export type PostFeedMood = "settled" | "fussy" | "crying";
 export type MedSubject = "mother" | "baby";
-
-/** What the vision model suggested for a nappy photo — stored next to what
- *  the parent actually saved, so corrections become training/eval data. */
-export interface NappyAiPrefill {
-  wet: boolean | null;
-  dirty: boolean | null;
-  stool_colour: StoolColourKey | null;
-  confidence: "low" | "medium" | "high";
-}
 export type StoolColourKey =
   | "meconium"
   | "transitional"
@@ -168,8 +159,6 @@ export interface Entry {
 
   temp_c: number | null; // type = temperature
   milestone_label: string | null; // type = milestone
-
-  ai_prefill: NappyAiPrefill | null; // vision suggestion for a nappy
 
   note: string | null;
   photo_path: string | null;
