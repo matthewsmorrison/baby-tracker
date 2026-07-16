@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { BEA_MODEL } from "@/lib/aiContext";
 import { ACTIVE_BABY_COOKIE } from "@/lib/data";
+import { RATE_LIMITED, rateLimit } from "@/lib/rateLimit";
 import type { Baby } from "@/lib/types";
 
 // Natural-language quick-log: "fed 15 min left, wet nappy, down at 7:40" →
@@ -111,6 +112,9 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  if (!rateLimit(`quicklog:${user.id}`, 30, 10 * 60_000)) {
+    return NextResponse.json(RATE_LIMITED, { status: 429 });
+  }
 
   let body: { text?: string; tz?: string };
   try {

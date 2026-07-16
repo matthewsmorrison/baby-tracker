@@ -1,39 +1,74 @@
 # beanlo — newborn tracker
 
 A mobile-first tracker for the first days and weeks of life. Parents log
-nappies, feeds and weight; the app shows day-by-day expectations (feeding-mix
-aware stool colour, wet/dirty counts, expected weight band) and red flags to
-watch. A nappy photo can be checked by Claude against the baby's day of life
-and feeding pattern.
+nappies, feeds, sleep, weight and more; the app shows day-by-day expectations
+(feeding-mix-aware stool colour, wet/dirty counts, expected weight band from
+sex-specific WHO centiles) and red flags to watch — all grounded in NHS, NCT
+and WHO guidance. Multiple caregivers share one log, and a healthcare
+professional can be connected read-only.
 
-**Beanlo is a tracking aid, not medical advice or diagnosis.**
+**beanlo is a tracking aid, not medical advice or diagnosis.**
 
-Built with Next.js (App Router) + TypeScript + Tailwind, Supabase (Postgres,
-Auth, Storage, RLS), the Anthropic API (server-side only), recharts, and
-lucide-react. Full product spec in [`spec.md`](./spec.md).
+## Features
+
+- **Logging** — nappies (with photos), combined feeds (per-breast timers,
+  expressed, formula), sleep (location + how they settled), weight/length/head
+  circumference, pumping, temperature, milestones, carer sleep, and
+  medications (mother's or baby's) with push reminders.
+- **Today** — rolling 24-hour dashboard: nappy quota vs NCT guidance, KPIs,
+  expected stool colour for the day and feeding mix, weight vs the WHO band,
+  red flags.
+- **Prediction engines** (`lib/predict.ts`) — next-feed guess and a
+  Huckleberry-style nap "sweet spot" window, learned from the baby's own
+  rhythm with age-based defaults until there's history. Both self-grade
+  against what actually happened.
+- **Bea (AI, Anthropic API)** — a chat assistant that answers from the baby's
+  logged data with web search restricted to trusted health domains (NHS
+  first); natural-language quick logging ("fed 15 min left, wet nappy at
+  3am"); an evening digest push notification; drafted answers to saved
+  questions; and a one-page AI handover report for midwife/health-visitor
+  appointments. All server-side, gated to the `advanced` membership tier.
+- **Professionals** — public profile pages with referral links; referred
+  families are connected to the professional as a read-only viewer.
+- **Sharing & export** — email invites with roles (owner / caregiver /
+  viewer), CSV export, printable reports.
+- **PWA** — installable, with web-push notifications (feed due, low nappy
+  count, medication reminders, evening digest).
+
+## Stack
+
+Next.js (App Router) + TypeScript + Tailwind · Supabase (Postgres, Auth,
+Storage, **RLS for all authorization**) · Anthropic API (server-side only) ·
+recharts · web-push. Deployed on Vercel; scheduled work runs via GitHub
+Actions. Original product spec in [`spec.md`](./spec.md).
 
 ## Setup
 
 ### 1. Supabase
 
-1. In your Supabase project, open **SQL Editor** and run
-   [`supabase/migrations/20260707000001_init.sql`](./supabase/migrations/20260707000001_init.sql)
-   (or link the project and `supabase db push`). This creates the schema, RLS
-   policies, triggers, and the private `nappy-photos` storage bucket.
-2. **Authentication → Providers**: leave **Email** enabled (magic links). To
-   enable **Google**, add your OAuth client ID/secret from Google Cloud
-   Console.
-3. **Authentication → URL Configuration**: set the Site URL to your production
-   URL and add redirect URLs:
-   - `http://localhost:3000/auth/callback`
-   - `https://<your-domain>/auth/callback`
+1. Create a project at [supabase.com](https://supabase.com).
+2. Apply every file in [`supabase/migrations/`](./supabase/migrations/) in
+   filename order — either link the repo and `supabase db push`, or paste them
+   into the SQL Editor. This creates the schema, RLS policies, column
+   privileges, triggers, and the private `nappy-photos` storage bucket.
+3. **Authentication → Providers**: Email (magic links) works out of the box;
+   optionally add Google OAuth credentials.
+4. **Authentication → URL Configuration**: set the Site URL and add
+   `http://localhost:3000/auth/callback` plus
+   `https://<your-domain>/auth/callback` as redirect URLs.
 
 ### 2. Environment
 
-Copy `.env.example` to `.env.local` and fill in the values (Supabase Project
-Settings → API Keys for the URL, `sb_publishable_...` and `sb_secret_...`
-keys; Anthropic Console for the API key). `SUPABASE_SECRET_KEY` and
-`ANTHROPIC_API_KEY` are server-only — never prefix them with `NEXT_PUBLIC_`.
+```sh
+cp .env.example .env.local
+```
+
+Fill in the values — the file documents each one. You'll need: the Supabase
+URL + publishable key + secret key (Project Settings → API Keys), an Anthropic
+API key (console.anthropic.com — set a spend limit), VAPID keys for web push
+(`npx web-push generate-vapid-keys`), and a long random `CRON_SECRET`.
+`SUPABASE_SECRET_KEY`, `ANTHROPIC_API_KEY` and `VAPID_PRIVATE_KEY` are
+server-only — never prefix them with `NEXT_PUBLIC_`.
 
 ### 3. Run locally
 
@@ -42,32 +77,57 @@ npm install
 npm run dev
 ```
 
-### 4. Deploy to Vercel
+### 4. Deploy (Vercel)
 
-Add the same env vars to the Vercel project (Settings → Environment
-Variables), set `NEXT_PUBLIC_APP_URL` to the deployed URL, then deploy
-(`vercel --prod` or via git integration). Remember to add the production
-callback URL in Supabase Auth settings.
+Add the same env vars to the Vercel project, set `NEXT_PUBLIC_APP_URL` to the
+deployed URL, deploy via the git integration, and add the production callback
+URL in Supabase Auth settings.
+
+### 5. Scheduled notifications (optional)
+
+Push notifications (feed due, low nappies, medication reminders, the evening
+Bea digest) are sent by `POST /api/cron/notify`, triggered by
+[`.github/workflows/notify.yml`](./.github/workflows/notify.yml) every 15
+minutes. To enable: set two GitHub Actions **repository secrets** —
+`CRON_SECRET` (same value as the env var) and `APP_URL` (your deployed URL).
+`keepalive.yml` pings Supabase every two days so free-tier projects don't
+pause.
 
 ## Architecture notes
 
-- **Log is the only input surface.** Today / Weight / History are strictly
-  read-only output; account admin lives in Profile.
-- **Backdating**: every entry has an editable `occurred_at`; day-of-life,
-  norms and feeding mix always compute from `occurred_at`, never "now"
-  (`lib/clinical.ts` is the single source of truth, shared with the AI route).
-- **Roles**: `owner` / `caregiver` can write; `viewer` (healthcare
-  professional) is read-only, enforced by RLS — not just the UI.
-- **Photos** live in a private bucket, displayed via short-TTL signed URLs;
-  the secret key reads them only inside
-  `app/api/entries/[id]/analyze/route.ts`.
-- **AI safety**: the analyze route enforces a server-side floor on the
-  verdict — pale/chalky or blood can never come back with a reassuring
-  action, regardless of what the model says.
+- **Authorization is Postgres RLS, not app code.** Roles: `owner` /
+  `caregiver` write, `viewer` (healthcare professional) is read-only —
+  enforced by policies in the migrations, with column-level privileges for
+  fields users must not write (e.g. `babies.membership_tier`) or read (e.g.
+  `professionals.email`). `scripts/rls-test.mjs` exercises the policies.
+- **`lib/clinical.ts` is the single source of truth** for day-of-life norms,
+  feeding mix and weight bands, shared by the UI and every AI prompt. It must
+  stay conservative: general newborn norms only, no diagnostic thresholds.
+- **Backdating-correct**: every entry has an editable `occurred_at`; norms
+  always compute from it, never "now".
+- **AI**: `lib/aiContext.ts` serialises the (small) dataset into a
+  prompt-cached system block — no RAG needed at newborn scale. Bea's chat can
+  search the web, restricted to an allowlist of trusted health domains. All
+  AI routes are authenticated, tier-gated, and rate-limited
+  (`lib/rateLimit.ts`).
+- **Photos** live in a private bucket, scoped per baby by RLS, served via
+  short-TTL signed URLs.
+- **Predictions** are deliberately statistical (medians over the baby's own
+  gaps, day/night aware), not LLM calls — cheap, explainable, and self-graded
+  in the UI.
 
-## Invites
+## Security
 
-Owners invite carers or a read-only healthcare professional from Profile.
-Email delivery is not wired up yet — after creating an invite, copy the link
-and share it manually (marked as a stub in the UI). Acceptance is verified
-server-side against the invitee's signed-in email.
+See [SECURITY.md](./SECURITY.md) for the reporting policy and the threat-model
+notes. Please report vulnerabilities privately.
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) — especially the rules around
+clinical content.
+
+## License
+
+[AGPL-3.0](./LICENSE). You're welcome to self-host and modify; if you run a
+modified version as a service, you must share your changes under the same
+license. "beanlo" is the name of the maintainer's hosted instance.

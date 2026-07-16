@@ -6,7 +6,10 @@ export const runtime = "nodejs";
 
 function esc(v: string | number | null | undefined) {
   if (v === null || v === undefined) return "";
-  const s = String(v);
+  let s = String(v);
+  // Neutralise spreadsheet formula injection: a note like "=HYPERLINK(...)"
+  // must open in Excel/Sheets as text, not execute.
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 

@@ -546,7 +546,7 @@ export function FeedForm({
       {(parseInt(amounts.expressed, 10) > 0 ||
         parseInt(amounts.formula, 10) > 0) && (
         <p className="rounded-2xl bg-positive-bg px-4 py-3 text-sm text-positive">
-          Expressed breastmilk counts as breastfeeding for his poo — it’s the
+          Expressed breastmilk counts as breastfeeding for their poo — it’s the
           formula that changes colour and texture.
         </p>
       )}

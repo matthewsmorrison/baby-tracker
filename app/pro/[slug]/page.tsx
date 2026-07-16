@@ -32,13 +32,15 @@ export default async function ProPage({
 }) {
   const { slug } = await params;
   const supabase = await createClient();
+  // Explicit columns: email is not granted to anon/authenticated (PII), so a
+  // select("*") would fail under column privileges.
   const { data } = await supabase
     .from("professionals")
-    .select("*")
+    .select("id, slug, invite_code, name, title, bio, location, website, created_at")
     .eq("slug", slug)
     .maybeSingle();
   if (!data) notFound();
-  const pro = data as Professional;
+  const pro = data as unknown as Professional;
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -97,8 +99,10 @@ export default async function ProPage({
           </h2>
           <p className="mx-auto mt-1 max-w-xs text-sm text-muted">
             A free newborn tracker for nappies, feeds, weight and sleep — with
-            what’s normal for each day from NHS &amp; WHO guidance. Start below
-            and you can invite {pro.name.split(" ")[0]} to view your log.
+            what’s normal for each day from NHS &amp; WHO guidance. Starting
+            from this link connects {pro.name.split(" ")[0]} to your log with
+            read-only access, so they can support you — you can remove them any
+            time in Profile.
           </p>
           <Link
             href={`/pro/${pro.slug}/start`}

@@ -225,7 +225,7 @@ function Composer({
         onChange={(e) => setBody(e.target.value)}
         placeholder={
           kind === "question"
-            ? "e.g. Is his weight gain on track? Should we keep topping up with formula?"
+            ? "e.g. Is their weight gain on track? Should we keep topping up with formula?"
             : "e.g. Started tummy time today — seems to prefer turning left."
         }
         className="w-full rounded-2xl border border-line bg-surface-alt px-4 py-3 text-base placeholder:text-faint focus:border-ink focus:outline-none resize-none"

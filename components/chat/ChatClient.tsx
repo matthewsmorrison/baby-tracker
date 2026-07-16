@@ -34,7 +34,7 @@ interface Conversation {
 }
 
 const STARTERS = [
-  "Is his weight on track?",
+  "Is their weight on track?",
   "How does this week's formula compare to last week?",
   "What was the longest stretch between feeds last night?",
   "Summarise the last 24 hours",

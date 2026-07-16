@@ -11,7 +11,14 @@ import { Flame } from "lucide-react";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/today";
+  // Same-origin paths only: "//evil.com" and "/\evil.com" are protocol-
+  // relative URLs to the browser, so a bare startsWith("/") is an open
+  // redirect.
+  const rawNext = searchParams.get("next") ?? "/today";
+  const next =
+    rawNext.startsWith("/") && !rawNext.startsWith("//") && !rawNext.startsWith("/\\")
+      ? rawNext
+      : "/today";
   const [error, setError] = useState<string | null>(null);
   const oauthCode = searchParams.get("code");
 
@@ -28,7 +35,7 @@ function LoginForm() {
       if (error) {
         setError(error.message);
       } else {
-        router.replace(next.startsWith("/") ? next : "/today");
+        router.replace(next);
         router.refresh();
       }
     })();
