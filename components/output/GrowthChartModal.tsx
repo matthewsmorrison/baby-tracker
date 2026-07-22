@@ -101,13 +101,15 @@ export function GrowthChartModal({
     | null
   >(null);
 
-  // Lock body scroll while the chart is up (same pattern as LogModal).
+  // Lock body scroll while the chart is up, and start each viewing back on
+  // the 0–1 year page (view reset deferred so setState runs from a callback).
   useEffect(() => {
     if (!open) return;
-    setView(DEFAULT_VIEW);
+    const id = window.setTimeout(() => setView(DEFAULT_VIEW), 0);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
+      clearTimeout(id);
       document.body.style.overflow = prev;
     };
   }, [open]);
