@@ -42,9 +42,10 @@ export function WeightForm({
   const [error, setError] = useState<string | null>(null);
 
   async function save() {
-    const g = parseInt(grams, 10);
-    if (!(g >= 500 && g <= 10000)) {
-      setError("Enter a weight in grams (e.g. 3620).");
+    // Any subset is fine — clinic visits often measure just one thing.
+    const g = grams.trim() ? parseInt(grams, 10) : null;
+    if (g !== null && !(g >= 500 && g <= 10000)) {
+      setError("Enter the weight in grams (e.g. 3620).");
       return;
     }
     const toMm = (v: string, lo: number, hi: number): number | null | false => {
@@ -56,11 +57,15 @@ export function WeightForm({
     const lengthMm = toMm(lengthCm, 30, 100);
     const headMm = toMm(headCm, 25, 60);
     if (lengthMm === false) {
-      setError("Enter the length in cm (e.g. 52.5).");
+      setError("Enter the height/length in cm (e.g. 52.5).");
       return;
     }
     if (headMm === false) {
       setError("Enter the head circumference in cm (e.g. 36.5).");
+      return;
+    }
+    if (g === null && lengthMm === null && headMm === null) {
+      setError("Enter at least one measurement.");
       return;
     }
     setError(null);
@@ -99,7 +104,7 @@ export function WeightForm({
       setHeadCm("");
       setNote("");
       setOccurredAt(toLocalInputValue(new Date()));
-      onSaved(initial ? "Changes saved" : "Weight saved");
+      onSaved(initial ? "Changes saved" : "Measurements saved");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
@@ -110,7 +115,7 @@ export function WeightForm({
   return (
     <Card className="p-5 space-y-5">
       <div>
-        <Label htmlFor="weight_g">Weight (g)</Label>
+        <Label htmlFor="weight_g">Weight (optional, g)</Label>
         <Input
           id="weight_g"
           type="number"
@@ -128,7 +133,7 @@ export function WeightForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label htmlFor="length_cm">Length (optional, cm)</Label>
+          <Label htmlFor="length_cm">Height (optional, cm)</Label>
           <Input
             id="length_cm"
             type="number"
@@ -157,8 +162,8 @@ export function WeightForm({
         </div>
       </div>
       <p className="-mt-3 text-xs text-faint">
-        Usually measured together at clinic — add them here and they’ll appear
-        in the reports alongside the weight.
+        Log whichever were measured — each appears on its own WHO centile
+        chart and in the reports.
       </p>
 
       <NoteField note={note} setNote={setNote} />
@@ -169,7 +174,7 @@ export function WeightForm({
       )}
 
       <Button className="w-full" size="lg" onClick={save} disabled={busy}>
-        {busy ? "Saving…" : initial ? "Save changes" : "Save weight"}
+        {busy ? "Saving…" : initial ? "Save changes" : "Save measurements"}
       </Button>
     </Card>
   );

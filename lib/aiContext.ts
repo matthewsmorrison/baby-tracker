@@ -169,12 +169,15 @@ export function serialiseBaby(baby: Baby, entries: Entry[], tz: string): string 
       return `d${day} ${t} MILESTONE ${e.milestone_label ?? ""}${e.note ? ` note:"${e.note}"` : ""}`;
     }
     if (e.type === "weight") {
-      const band = expectedWeightBand(day, baby.birth_weight_g);
       const extra = [
         e.length_mm ? `length ${(e.length_mm / 10).toFixed(1)}cm` : null,
         e.head_circ_mm ? `head ${(e.head_circ_mm / 10).toFixed(1)}cm` : null,
       ].filter(Boolean);
-      return `d${day} ${t} WEIGHT ${e.weight_g}g (${weightStatus(e.weight_g!, baby.birth_weight_g).pct.toFixed(1)}% vs birth; expected ${band.low}–${band.high}g)${extra.length ? `; ${extra.join(", ")}` : ""}${e.note ? ` note:"${e.note}"` : ""}`;
+      if (!e.weight_g) {
+        return `d${day} ${t} MEASUREMENTS ${extra.join(", ")}${e.note ? ` note:"${e.note}"` : ""}`;
+      }
+      const band = expectedWeightBand(day, baby.birth_weight_g);
+      return `d${day} ${t} WEIGHT ${e.weight_g}g (${weightStatus(e.weight_g, baby.birth_weight_g).pct.toFixed(1)}% vs birth; expected ${band.low}–${band.high}g)${extra.length ? `; ${extra.join(", ")}` : ""}${e.note ? ` note:"${e.note}"` : ""}`;
     }
     return "";
   }).filter(Boolean);

@@ -79,7 +79,7 @@ export default async function TodayPage() {
       (!e.ended_at || new Date(e.ended_at) >= now)
   );
 
-  const latestWeight = entries.find((e) => e.type === "weight");
+  const latestWeight = entries.find((e) => e.type === "weight" && e.weight_g);
   const band = weightBand(day, ctx.baby.birth_weight_g, ctx.baby.sex);
   const ws = latestWeight
     ? weightStatus(latestWeight.weight_g!, ctx.baby.birth_weight_g)

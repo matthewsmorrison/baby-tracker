@@ -51,7 +51,7 @@ export function LogModal({
     nappy: "Nappy",
     feed: "Feed",
     sleep: "Sleep",
-    weight: "Weight",
+    weight: "Measurements",
     pump: "Pump",
     carer_sleep: "My sleep",
     temperature: "Temp",

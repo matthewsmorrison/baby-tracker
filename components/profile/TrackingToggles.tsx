@@ -20,7 +20,7 @@ const TYPES: Array<{ value: EntryType; label: string; icon: typeof Milk }> = [
   { value: "feed", label: "Feeds", icon: Milk },
   { value: "nappy", label: "Nappies", icon: Baby },
   { value: "sleep", label: "Baby Sleep", icon: Moon },
-  { value: "weight", label: "Weight", icon: Scale },
+  { value: "weight", label: "Measurements", icon: Scale },
   { value: "pump", label: "Pumping", icon: Droplet },
   { value: "carer_sleep", label: "Carer sleep", icon: BedDouble },
   { value: "temperature", label: "Temperature", icon: Thermometer },

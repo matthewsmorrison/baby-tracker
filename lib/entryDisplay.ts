@@ -103,9 +103,11 @@ export function entryLabel(e: Entry): string {
   }
   if (e.type === "temperature") return `Temperature · ${e.temp_c ?? "?"} °C`;
   if (e.type === "milestone") return `Milestone · ${e.milestone_label ?? ""}`;
-  const extras = [
+  // Measurements: any subset of weight / height / head circumference.
+  const parts = [
+    e.weight_g ? formatKg(e.weight_g) : null,
     e.length_mm ? `${(e.length_mm / 10).toFixed(1)} cm` : null,
     e.head_circ_mm ? `head ${(e.head_circ_mm / 10).toFixed(1)} cm` : null,
   ].filter(Boolean);
-  return `Weight · ${formatKg(e.weight_g ?? 0)}${extras.length ? ` · ${extras.join(" · ")}` : ""}`;
+  return parts.length ? `Measurements · ${parts.join(" · ")}` : "Measurements";
 }

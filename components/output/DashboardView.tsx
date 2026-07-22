@@ -228,6 +228,29 @@ export function DashboardView({
   }));
   const todayDol = dayOfLife(birthAt, new Date());
 
+  // All measurement entries (weight, length, head) for the growth charts,
+  // as age-in-days since birth. A measurement entry may hold any subset.
+  const measures = entries
+    .filter((e) => e.type === "weight")
+    .sort(
+      (a, b) =>
+        new Date(a.occurred_at).getTime() - new Date(b.occurred_at).getTime()
+    );
+  const ageOf = (iso: string) =>
+    Math.max(0, (new Date(iso).getTime() - birthMs) / DAY_MS);
+  const growthWeights = [
+    { age: 0, value: birthWeightG },
+    ...measures
+      .filter((e) => e.weight_g)
+      .map((e) => ({ age: ageOf(e.occurred_at), value: e.weight_g! })),
+  ];
+  const growthHeights = measures
+    .filter((e) => e.length_mm)
+    .map((e) => ({ age: ageOf(e.occurred_at), value: e.length_mm! / 10 }));
+  const growthHeads = measures
+    .filter((e) => e.head_circ_mm)
+    .map((e) => ({ age: ageOf(e.occurred_at), value: e.head_circ_mm! / 10 }));
+
   // Quick "last 24h" stats shown on each chart (time-dependent → memoised).
   const { f24, nappyCount24, sleepH24, carerSleepH24, pumpMl24, avgGapH24 } =
     useMemo(() => {
@@ -354,7 +377,7 @@ export function DashboardView({
       {track.has("weight") && (
       <Card className="p-5">
         <div className="flex items-baseline justify-between gap-2">
-          <CardTitle>Weight</CardTitle>
+          <CardTitle>Measurements</CardTitle>
           <span className="flex shrink-0 items-center gap-2">
             {latestWeightG && (
               <span className="text-xs font-medium text-muted">
@@ -365,7 +388,7 @@ export function DashboardView({
               <button
                 type="button"
                 onClick={() => setGrowthOpen(true)}
-                aria-label="Expand to the full WHO growth chart"
+                aria-label="Expand to the full WHO growth charts"
                 className="rounded-full border border-line bg-surface p-1.5 text-muted hover:border-ink hover:text-ink"
               >
                 <Maximize2 className="h-3.5 w-3.5" />
@@ -421,8 +444,9 @@ export function DashboardView({
         <GrowthChartModal
           open={growthOpen}
           onClose={() => setGrowthOpen(false)}
-          points={weightPoints}
-          birthWeightG={birthWeightG}
+          weightPoints={growthWeights}
+          heightPoints={growthHeights}
+          headPoints={growthHeads}
           birthAt={birthAt}
           sex={sex}
         />
