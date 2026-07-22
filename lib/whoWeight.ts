@@ -66,26 +66,75 @@ const GIRLS: LMS[] = [
   [24, -0.2941, 11.4775, 0.10618],
 ];
 
+// Weekly LMS values for the first 13 weeks, taken from the official WHO
+// daily weight-for-age table (weianthro, ages 0/7/14/…/91 days). The monthly
+// table above is too coarse here: linear interpolation between month rows
+// flattens the steep early curve the printed charts show.
+const BOYS_WEEKLY: LMS[] = [
+  [0, 0.3487, 3.3464, 0.14602],
+  [1, 0.2776, 3.4879, 0.14483],
+  [2, 0.2581, 3.7529, 0.14142],
+  [3, 0.2442, 4.0603, 0.13807],
+  [4, 0.2331, 4.3671, 0.13497],
+  [5, 0.2237, 4.659, 0.13215],
+  [6, 0.2155, 4.9303, 0.1296],
+  [7, 0.2081, 5.1817, 0.12729],
+  [8, 0.2014, 5.4149, 0.1252],
+  [9, 0.1952, 5.6319, 0.1233],
+  [10, 0.1894, 5.8346, 0.12157],
+  [11, 0.184, 6.0242, 0.12001],
+  [12, 0.1789, 6.2019, 0.1186],
+  [13, 0.174, 6.369, 0.11732],
+];
+
+const GIRLS_WEEKLY: LMS[] = [
+  [0, 0.3809, 3.2322, 0.14171],
+  [1, 0.2671, 3.3388, 0.146],
+  [2, 0.2304, 3.5693, 0.14339],
+  [3, 0.2024, 3.8352, 0.1406],
+  [4, 0.1789, 4.0987, 0.13805],
+  [5, 0.1582, 4.3476, 0.13583],
+  [6, 0.1395, 4.5793, 0.13392],
+  [7, 0.1224, 4.795, 0.13228],
+  [8, 0.1065, 4.9959, 0.13087],
+  [9, 0.0918, 5.1842, 0.12966],
+  [10, 0.0779, 5.3618, 0.12861],
+  [11, 0.0648, 5.5295, 0.1277],
+  [12, 0.0525, 5.6883, 0.12691],
+  [13, 0.0407, 5.8393, 0.12622],
+];
+
 // 2nd and 98th centiles (the UK-WHO practical "normal" outer lines).
 const Z_LOW = -2.0537;
 const Z_HIGH = 2.0537;
 const DAYS_PER_MONTH = 30.4375;
 
-function interpLMS(table: LMS[], months: number): { L: number; M: number; S: number } {
-  const m = Math.max(0, Math.min(24, months));
-  const hiIdx = table.findIndex((r) => r[0] >= m);
+/** Linear interpolation over an LMS table, clamped to its bounds. The first
+ *  column's unit (weeks or months) just has to match `x`. */
+function interpLMS(table: LMS[], x: number): { L: number; M: number; S: number } {
+  const clamped = Math.max(table[0][0], Math.min(table[table.length - 1][0], x));
+  const hiIdx = table.findIndex((r) => r[0] >= clamped);
   if (hiIdx <= 0) {
     const r = table[Math.max(0, hiIdx)];
     return { L: r[1], M: r[2], S: r[3] };
   }
   const lo = table[hiIdx - 1];
   const hi = table[hiIdx];
-  const t = (m - lo[0]) / (hi[0] - lo[0]);
+  const t = (clamped - lo[0]) / (hi[0] - lo[0]);
   return {
     L: lo[1] + t * (hi[1] - lo[1]),
     M: lo[2] + t * (hi[2] - lo[2]),
     S: lo[3] + t * (hi[3] - lo[3]),
   };
+}
+
+/** LMS parameters for sex + age: weekly resolution through 13 weeks (where
+ *  the curve is steepest), monthly through 24 months beyond. */
+function lmsFor(sex: BabySex, ageDays: number): { L: number; M: number; S: number } {
+  if (ageDays <= 91) {
+    return interpLMS(sex === "boy" ? BOYS_WEEKLY : GIRLS_WEEKLY, ageDays / 7);
+  }
+  return interpLMS(sex === "boy" ? BOYS : GIRLS, ageDays / DAYS_PER_MONTH);
 }
 
 /** Weight (kg) at a z-score using the LMS method. */
@@ -103,8 +152,7 @@ export function whoWeightBand(
   sex: BabySex,
   ageDays: number
 ): { low: number; mid: number; high: number } {
-  const months = ageDays / DAYS_PER_MONTH;
-  const { L, M, S } = interpLMS(sex === "boy" ? BOYS : GIRLS, months);
+  const { L, M, S } = lmsFor(sex, ageDays);
   return {
     low: Math.round(lmsWeight(L, M, S, Z_LOW) * 1000),
     mid: Math.round(M * 1000),
@@ -128,7 +176,7 @@ export const UK_WHO_CENTILES = [
 
 /** Weight (grams) at a given z-score for sex + age — one point on a centile curve. */
 export function whoWeightAtZ(sex: BabySex, ageDays: number, z: number): number {
-  const { L, M, S } = interpLMS(sex === "boy" ? BOYS : GIRLS, ageDays / DAYS_PER_MONTH);
+  const { L, M, S } = lmsFor(sex, ageDays);
   return Math.round(lmsWeight(L, M, S, z) * 1000);
 }
 
@@ -147,7 +195,7 @@ function normalCdf(z: number): number {
  * reference.
  */
 export function whoCentile(sex: BabySex, ageDays: number, weightG: number): number {
-  const { L, M, S } = interpLMS(sex === "boy" ? BOYS : GIRLS, ageDays / DAYS_PER_MONTH);
+  const { L, M, S } = lmsFor(sex, ageDays);
   const ratio = weightG / 1000 / M;
   const z = Math.abs(L) < 1e-7 ? Math.log(ratio) / S : (Math.pow(ratio, L) - 1) / (L * S);
   return normalCdf(z) * 100;

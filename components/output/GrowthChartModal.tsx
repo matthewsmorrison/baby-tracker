@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CartesianGrid,
   ComposedChart,
@@ -14,10 +14,13 @@ import { UK_WHO_CENTILES, whoCentile, whoWeightAtZ } from "@/lib/whoWeight";
 import { formatKg } from "@/lib/clinical";
 import type { BabySex } from "@/lib/types";
 import { Portal } from "@/components/ui/Portal";
+import { Segmented } from "@/components/ui/Segmented";
 import { X } from "lucide-react";
 import type { WeightPoint } from "./WeightChart";
 
 const DAYS_PER_MONTH = 30.4375;
+
+type ChartRange = "early" | "1y" | "2y";
 
 /** "46" → "46th", "91" → "91st" — for reading a centile aloud. */
 export function ordinal(n: number): string {
@@ -88,9 +91,17 @@ export function GrowthChartModal({
   const latest = baby[baby.length - 1];
   const latestPct = whoCentile(sex, latest.age, latest.weight);
 
+  // Default to the 0–1 year layout — the printed chart used through the
+  // first year — with a zoom for the early weeks and 0–2 y for later.
+  const [range, setRange] = useState<ChartRange>("1y");
+
   const { rows, maxAge, ticks, tickLabel, yMin, yMax } = useMemo(() => {
-    // Show the road ahead: at least 8 weeks, or 1.3× the current age.
-    const maxAge = Math.min(730, Math.max(56, Math.ceil(latest.age * 1.3)));
+    const maxAge =
+      range === "early"
+        ? Math.min(182, Math.max(56, Math.ceil(latest.age * 1.3)))
+        : range === "1y"
+          ? 365
+          : 730;
 
     const rows: Array<Record<string, number>> = [];
     const steps = 120;
@@ -119,9 +130,10 @@ export function GrowthChartModal({
     const tickLabel = (age: number) =>
       useWeeks ? `${Math.round(age / 7)}w` : `${Math.round(age / DAYS_PER_MONTH)}m`;
 
+    const inRange = baby.filter((b) => b.age <= maxAge);
     const lows = rows.map((r) => r.c0);
     const highs = rows.map((r) => r.c8);
-    const weights = baby.map((b) => b.weight);
+    const weights = inRange.map((b) => b.weight);
     const yMin = Math.max(
       0,
       Math.floor(Math.min(...lows, ...weights) / 250) * 250 - 250
@@ -129,14 +141,17 @@ export function GrowthChartModal({
     const yMax = Math.ceil(Math.max(...highs, ...weights) / 250) * 250 + 250;
 
     return { rows, maxAge, ticks, tickLabel, yMin, yMax };
-  }, [sex, baby, latest.age]);
+  }, [sex, baby, latest.age, range]);
 
   const data = useMemo(
     () =>
-      [...rows, ...baby.map((b) => ({ age: b.age, weight: b.weight }))].sort(
-        (a, b) => (a.age as number) - (b.age as number)
-      ),
-    [rows, baby]
+      [
+        ...rows,
+        ...baby
+          .filter((b) => b.age <= maxAge)
+          .map((b) => ({ age: b.age, weight: b.weight })),
+      ].sort((a, b) => (a.age as number) - (b.age as number)),
+    [rows, baby, maxAge]
   );
 
   if (!open) return null;
@@ -184,6 +199,18 @@ export function GrowthChartModal({
           >
             <X className="h-5 w-5" />
           </button>
+        </div>
+
+        <div className="px-4 pt-2">
+          <Segmented<ChartRange>
+            options={[
+              { value: "early", label: "First weeks" },
+              { value: "1y", label: "0–1 y" },
+              { value: "2y", label: "0–2 y" },
+            ]}
+            value={range}
+            onChange={setRange}
+          />
         </div>
 
         <div className="min-h-0 flex-1 px-1 py-2">
@@ -281,8 +308,10 @@ export function GrowthChartModal({
 
         <p className="border-t border-line px-4 py-2.5 text-center text-[11px] leading-snug text-faint">
           Curves: the nine UK-WHO centiles (WHO weight-for-age, {sex}s 0–24
-          months). A guide for parents — your red book chart, plotted by your
-          midwife or health visitor, remains the clinical reference.
+          months). Term babies (37–42 weeks) are plotted from birth with no
+          gestational correction — correction applies to preterm babies. A
+          guide for parents — your red book chart, plotted by your midwife or
+          health visitor, remains the clinical reference.
         </p>
       </div>
     </Portal>
