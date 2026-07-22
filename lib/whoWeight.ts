@@ -111,3 +111,44 @@ export function whoWeightBand(
     high: Math.round(lmsWeight(L, M, S, Z_HIGH) * 1000),
   };
 }
+
+// The nine centile lines printed on the UK-WHO (red book) growth charts,
+// with their exact z-scores.
+export const UK_WHO_CENTILES = [
+  { label: "0.4", z: -2.6521 },
+  { label: "2", z: -2.0537 },
+  { label: "9", z: -1.3408 },
+  { label: "25", z: -0.6745 },
+  { label: "50", z: 0 },
+  { label: "75", z: 0.6745 },
+  { label: "91", z: 1.3408 },
+  { label: "98", z: 2.0537 },
+  { label: "99.6", z: 2.6521 },
+] as const;
+
+/** Weight (grams) at a given z-score for sex + age — one point on a centile curve. */
+export function whoWeightAtZ(sex: BabySex, ageDays: number, z: number): number {
+  const { L, M, S } = interpLMS(sex === "boy" ? BOYS : GIRLS, ageDays / DAYS_PER_MONTH);
+  return Math.round(lmsWeight(L, M, S, z) * 1000);
+}
+
+/** Standard normal CDF (Zelen & Severo approximation, |error| < 7.5e-8). */
+function normalCdf(z: number): number {
+  const t = 1 / (1 + 0.2316419 * Math.abs(z));
+  const d = 0.3989423 * Math.exp((-z * z) / 2);
+  const p =
+    d * t * (0.3193815 + t * (-0.3565638 + t * (1.7814779 + t * (-1.821256 + t * 1.3302744))));
+  return z > 0 ? 1 - p : p;
+}
+
+/**
+ * The centile (0–100) a weight sits on for sex + age, via the inverse LMS
+ * transform. A guide for parents — the plotted red book remains the clinical
+ * reference.
+ */
+export function whoCentile(sex: BabySex, ageDays: number, weightG: number): number {
+  const { L, M, S } = interpLMS(sex === "boy" ? BOYS : GIRLS, ageDays / DAYS_PER_MONTH);
+  const ratio = weightG / 1000 / M;
+  const z = Math.abs(L) < 1e-7 ? Math.log(ratio) / S : (Math.pow(ratio, L) - 1) / (L * S);
+  return normalCdf(z) * 100;
+}

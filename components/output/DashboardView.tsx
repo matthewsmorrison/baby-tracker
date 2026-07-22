@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -21,7 +21,9 @@ import {
 import { feedAmounts, feedGaps, median } from "@/lib/entryDisplay";
 import type { BabySex, Entry, EntryType } from "@/lib/types";
 import { Card, CardTitle } from "@/components/ui/Card";
+import { Maximize2 } from "lucide-react";
 import { WeightChart } from "./WeightChart";
+import { GrowthChartModal } from "./GrowthChartModal";
 
 // Categorical chart colours (validated: lightness band, chroma floor,
 // CVD separation, contrast — see dataviz palette). Identity is fixed:
@@ -122,6 +124,7 @@ export function DashboardView({
   trackedTypes: EntryType[];
 }) {
   const track = new Set(trackedTypes);
+  const [growthOpen, setGrowthOpen] = useState(false);
   const days: DayRow[] = useMemo(() => {
     const byDay = new Map<string, DayRow>();
     const today = new Date();
@@ -350,7 +353,26 @@ export function DashboardView({
 
       {track.has("weight") && (
       <Card className="p-5">
-        <Head title="Weight" stat={latestWeightG ? `${formatKg(latestWeightG)} latest` : null} />
+        <div className="flex items-baseline justify-between gap-2">
+          <CardTitle>Weight</CardTitle>
+          <span className="flex shrink-0 items-center gap-2">
+            {latestWeightG && (
+              <span className="text-xs font-medium text-muted">
+                {formatKg(latestWeightG)} latest
+              </span>
+            )}
+            {sex && (
+              <button
+                type="button"
+                onClick={() => setGrowthOpen(true)}
+                aria-label="Expand to the full WHO growth chart"
+                className="rounded-full border border-line bg-surface p-1.5 text-muted hover:border-ink hover:text-ink"
+              >
+                <Maximize2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </span>
+        </div>
         <div className="mt-2 -ml-2">
           <WeightChart
             points={weightPoints}
@@ -393,6 +415,17 @@ export function DashboardView({
           </li>
         </ul>
       </Card>
+      )}
+
+      {track.has("weight") && sex && (
+        <GrowthChartModal
+          open={growthOpen}
+          onClose={() => setGrowthOpen(false)}
+          points={weightPoints}
+          birthWeightG={birthWeightG}
+          birthAt={birthAt}
+          sex={sex}
+        />
       )}
 
       {track.has("feed") && (
