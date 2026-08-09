@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { Sun, Clock, Settings, ChartColumn, Sparkles, NotebookPen, Users } from "lucide-react";
 import { ASSISTANT_NAME } from "@/lib/legal";
@@ -16,6 +16,38 @@ const items = [
   { href: "/chat", label: `Ask ${ASSISTANT_NAME}`, icon: Sparkles, sideOnly: true, ai: true },
   { href: "/profile", label: "Settings", icon: Settings },
 ];
+
+/** Inner content of a nav link. Lives inside the <Link> so useLinkStatus can
+ *  pulse the tapped tab while its navigation is pending — the first tap
+ *  always gives visible feedback, even mid-load. */
+function NavContent({
+  href,
+  label,
+  icon: Icon,
+  active,
+  orientation,
+}: {
+  href: string;
+  label: string;
+  icon: (typeof items)[number]["icon"];
+  active: boolean;
+  orientation: "side" | "bottom";
+}) {
+  const { pending } = useLinkStatus();
+  const pulse = pending && !active ? "animate-pulse" : "";
+  return (
+    <>
+      <span className={`relative ${pulse}`}>
+        <Icon
+          className={orientation === "side" ? "h-4 w-4" : "h-5 w-5"}
+          strokeWidth={orientation === "side" ? 2.2 : active ? 2.4 : 2}
+        />
+        {href === "/friends" && <UnreadBadge />}
+      </span>
+      <span className={pulse}>{label}</span>
+    </>
+  );
+}
 
 export function Nav({
   orientation,
@@ -34,7 +66,7 @@ export function Nav({
   if (orientation === "side") {
     return (
       <nav className="mt-8 flex flex-col gap-1">
-        {visible.map(({ href, label, icon: Icon }) => {
+        {visible.map(({ href, label, icon }) => {
           const active = pathname.startsWith(href);
           return (
             <Link
@@ -46,11 +78,13 @@ export function Nav({
                   : "text-muted hover:bg-surface-alt hover:text-ink"
               }`}
             >
-              <span className="relative">
-                <Icon className="h-4 w-4" strokeWidth={2.2} />
-                {href === "/friends" && <UnreadBadge />}
-              </span>
-              {label}
+              <NavContent
+                href={href}
+                label={label}
+                icon={icon}
+                active={active}
+                orientation="side"
+              />
             </Link>
           );
         })}
@@ -60,7 +94,7 @@ export function Nav({
 
   return (
     <nav className="flex items-stretch justify-around px-2 py-1.5">
-      {visible.map(({ href, label, icon: Icon }) => {
+      {visible.map(({ href, label, icon }) => {
         const active = pathname.startsWith(href);
         return (
           <Link
@@ -70,11 +104,13 @@ export function Nav({
               active ? "text-ink" : "text-faint hover:text-muted"
             }`}
           >
-            <span className="relative">
-              <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 2} />
-              {href === "/friends" && <UnreadBadge />}
-            </span>
-            {label}
+            <NavContent
+              href={href}
+              label={label}
+              icon={icon}
+              active={active}
+              orientation="bottom"
+            />
           </Link>
         );
       })}
