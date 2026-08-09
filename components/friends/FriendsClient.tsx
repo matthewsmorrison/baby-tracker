@@ -64,7 +64,8 @@ function StatusEditor({
         onChange={(e) => setText(e.target.value)}
         maxLength={80}
         placeholder="Set a status — e.g. “running on 3 hours of sleep”"
-        className="h-10 min-w-0 flex-1 rounded-full border border-line bg-surface px-4 text-sm outline-none transition focus:border-ink"
+        // text-base (16px) so iOS doesn't zoom in on focus.
+        className="h-10 min-w-0 flex-1 rounded-full border border-line bg-surface px-4 text-base outline-none transition focus:border-ink"
       />
       <Button type="submit" size="sm" variant="secondary" disabled={busy}>
         {saved ? <Check className="h-4 w-4 text-positive" /> : "Set"}

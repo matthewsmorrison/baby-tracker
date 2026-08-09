@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createClient } from "./supabase/server";
 import { createServiceClient } from "./supabase/service";
@@ -97,25 +98,31 @@ export async function sendDirectMessage(
     .single();
   if (error) return { error: error.message };
 
-  // Best-effort push. E2EE means the server only relays ciphertext, so the
-  // notification says who — never what. The tag collapses a burst of
-  // messages from the same sender into one notification.
-  try {
-    const { data: me } = await supabase
-      .from("profiles")
-      .select("full_name, email")
-      .eq("id", user.id)
-      .single();
-    const name = me?.full_name ?? me?.email ?? "A friend";
-    await sendToUsers([recipientId], {
-      title: kind === "wave" ? `${name} waved at you 👋` : `${name} messaged you`,
-      body: kind === "wave" ? "They're up too. Wave back?" : "Open beanlo to read it.",
-      url: `/friends/${user.id}`,
-      tag: `dm-${user.id}`,
-    });
-  } catch {
-    // The message is stored; a failed push shouldn't fail the send.
-  }
+  // Best-effort push, sent AFTER the response so it never delays the send
+  // (web-push round-trips were the "laggy return key"). E2EE means the
+  // server only relays ciphertext, so the notification says who — never
+  // what. The tag collapses a burst from the same sender into one alert.
+  const senderId = user.id;
+  after(async () => {
+    try {
+      const { data: me } = await createServiceClient()
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", senderId)
+        .single();
+      const name = me?.full_name ?? me?.email ?? "A friend";
+      await sendToUsers([recipientId], {
+        title:
+          kind === "wave" ? `${name} waved at you 👋` : `${name} messaged you`,
+        body:
+          kind === "wave" ? "They're up too. Wave back?" : "Open beanlo to read it.",
+        url: `/friends/${senderId}`,
+        tag: `dm-${senderId}`,
+      });
+    } catch {
+      // The message is stored; a failed push shouldn't fail anything.
+    }
+  });
   return { message: data as DirectMessage };
 }
 

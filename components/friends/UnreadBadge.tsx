@@ -41,8 +41,12 @@ export function UnreadBadge() {
       document.addEventListener("visibilitychange", onVisible);
 
       // New message in → count up instantly; read somewhere → count down.
+      // Channel name must be unique per mount: the badge renders in BOTH
+      // navs (desktop sidebar + mobile bottom bar), and supabase.channel()
+      // returns the same instance for the same name — the second mount then
+      // crashes trying to add callbacks to an already-subscribed channel.
       channel = supabase
-        .channel(`unread-${user.id}`)
+        .channel(`unread-${user.id}-${Math.random().toString(36).slice(2)}`)
         .on(
           "postgres_changes",
           {

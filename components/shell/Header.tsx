@@ -56,11 +56,15 @@ export function Header({
           <p className="text-sm font-semibold leading-tight">{babyName}</p>
           <p className="text-xs text-muted leading-tight">
             Day {day} ·{" "}
-            {new Date().toLocaleDateString(undefined, {
-              weekday: "short",
-              day: "numeric",
-              month: "short",
-            })}
+            {/* Server renders in UTC; near midnight the client's local date
+                can differ, so don't let that text break hydration. */}
+            <span suppressHydrationWarning>
+              {new Date().toLocaleDateString("en-GB", {
+                weekday: "short",
+                day: "numeric",
+                month: "short",
+              })}
+            </span>
             {role === "viewer" && (
               <span className="ml-1.5 inline-flex items-center gap-1 text-faint">
                 <Eye className="h-3 w-3" /> read-only

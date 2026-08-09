@@ -12,6 +12,7 @@ import {
   decryptMessage,
 } from "@/lib/e2ee";
 import { effectivePresence, PRESENCE_LABEL } from "@/lib/presence";
+import { formatTime } from "@/lib/dates";
 import type { DirectMessage, PresenceStatus, Profile } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { blockFriend } from "@/lib/friendActions";
@@ -125,7 +126,11 @@ export function ChatThread({
     setNow(Date.now());
     if (p) setFriend(p as Profile);
     if (msgs) {
-      setMessages(msgs as DirectMessage[]);
+      // Keep any optimistic temp bubbles a concurrent send has in flight.
+      setMessages((prev) => [
+        ...(msgs as DirectMessage[]),
+        ...prev.filter((m) => m.id.startsWith("temp-")),
+      ]);
       const unread = (msgs as DirectMessage[]).some(
         (m) => m.recipient === me && !m.read_at
       );
@@ -271,6 +276,22 @@ export function ChatThread({
     if (!text || !sharedKey || sending) return;
     setSending(true);
     setSendFailed(false);
+    // Optimistic: the bubble appears and the box clears instantly; the
+    // server round-trip swaps the temp row for the real one.
+    const tempId = `temp-${crypto.randomUUID()}`;
+    const temp: DirectMessage = {
+      id: tempId,
+      sender: me,
+      recipient: friend.id,
+      body: "",
+      kind,
+      created_at: new Date().toISOString(),
+      read_at: null,
+      receipt_suppressed: false,
+    };
+    setPlain((prev) => new Map(prev).set(tempId, text));
+    setMessages((prev) => [...prev, temp]);
+    if (kind === "text") setDraft("");
     try {
       const body = await encryptMessage(sharedKey, text);
       // Server action rather than a direct insert so the recipient gets a
@@ -279,10 +300,12 @@ export function ChatThread({
       if (res.error || !res.message) throw new Error(res.error);
       const row = res.message;
       setPlain((prev) => new Map(prev).set(row.id, text));
-      setMessages((prev) => [...prev, row]);
-      if (kind === "text") setDraft("");
+      setMessages((prev) => prev.map((m) => (m.id === tempId ? row : m)));
     } catch {
-      setSendFailed(true); // draft is kept — they can retry
+      // Roll back: drop the bubble, restore the draft for a retry.
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      if (kind === "text") setDraft(text);
+      setSendFailed(true);
     } finally {
       setSending(false);
     }
@@ -405,10 +428,7 @@ export function ChatThread({
                       own ? "text-on-ink/60" : "text-faint"
                     }`}
                   >
-                    {new Date(m.created_at).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {formatTime(m.created_at)}
                   </p>
                 </div>
               </div>
@@ -453,7 +473,9 @@ export function ChatThread({
             }}
             placeholder={`Message ${name.split(" ")[0]}…`}
             maxLength={2000}
-            className="h-11 min-w-0 flex-1 rounded-full border border-line bg-surface px-4 text-sm outline-none transition focus:border-ink"
+            // text-base (16px): anything smaller makes iOS zoom the whole
+            // page in when the input is focused.
+            className="h-11 min-w-0 flex-1 rounded-full border border-line bg-surface px-4 text-base outline-none transition focus:border-ink"
           />
           <Button
             type="submit"

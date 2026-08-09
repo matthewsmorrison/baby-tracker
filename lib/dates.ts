@@ -1,5 +1,10 @@
 // Local-time helpers for the datetime-local inputs used for backdating.
 
+// Pinned locale: the server (Vercel, en-US) and clients (typically en-GB)
+// otherwise format dates differently, which broke hydration on every page
+// (React #418 → full client re-render → slow loads).
+const LOCALE = "en-GB";
+
 /** Date → value for <input type="datetime-local"> in the user's local time. */
 export function toLocalInputValue(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -14,14 +19,14 @@ export function fromLocalInputValue(v: string): string {
 }
 
 export function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString(undefined, {
+  return new Date(iso).toLocaleTimeString(LOCALE, {
     hour: "2-digit",
     minute: "2-digit",
   });
 }
 
 export function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
+  return new Date(iso).toLocaleString(LOCALE, {
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -31,7 +36,7 @@ export function formatDateTime(iso: string): string {
 }
 
 export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
+  return new Date(iso).toLocaleDateString(LOCALE, {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -52,7 +57,7 @@ export function dayOfLifeDate(birthAt: string | Date, day: number): Date {
 
 /** "Day 5 · Sat 5 Jul" — a day of life is always shown with its real date. */
 export function dayWithDate(birthAt: string | Date, day: number): string {
-  return `Day ${day} · ${dayOfLifeDate(birthAt, day).toLocaleDateString(undefined, {
+  return `Day ${day} · ${dayOfLifeDate(birthAt, day).toLocaleDateString(LOCALE, {
     weekday: "short",
     day: "numeric",
     month: "short",

@@ -108,6 +108,10 @@ export default async function TodayPage() {
     }
   }
   const doseRows = [...doseGroups.values()];
+  const babyDoseRows = doseRows.filter((d) => d.last.med_subject !== "mother");
+  const motherDoseRows = doseRows.filter((d) => d.last.med_subject === "mother");
+  const babyCourses = activeMeds.filter((m) => m.med_subject === "baby");
+  const motherCourses = activeMeds.filter((m) => m.med_subject !== "baby");
 
   const agoLabel = (iso: string) => {
     const mins = Math.max(0, Math.round((now.getTime() - Date.parse(iso)) / 60000));
@@ -305,87 +309,92 @@ export default async function TodayPage() {
         </Card>
       )}
 
-      {/* Medicines: recent one-off doses + active courses */}
-      {(activeMeds.length > 0 || doseRows.length > 0) && (
-        <Card className="p-5">
-          <div className="flex items-center gap-2">
-            <Pill className="h-4 w-4 text-muted" />
-            <CardTitle>
-              {doseRows.length > 0 ||
-              activeMeds.some((m) => m.med_subject === "baby")
-                ? "Medicines"
-                : "Mother’s medication"}
-            </CardTitle>
-          </div>
-          {doseRows.length > 0 && (
-            <ul className="mt-3 space-y-2">
-              {doseRows.map(({ name, last, in24h }) => (
-                <li key={last.id} className="text-sm">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className="font-medium">
-                      {name}
-                      {last.med_subject === "mother" && (
-                        <span className="ml-1.5 font-normal text-muted">
-                          (mother)
+      {/* Medicines — baby's and mother's split into their own cards */}
+      {([
+        {
+          key: "baby",
+          title: `${ctx.baby.name}\u2019s medicines`,
+          doses: babyDoseRows,
+          courses: babyCourses,
+          footnote: null as string | null,
+        },
+        {
+          key: "mother",
+          title: "Mother\u2019s medicines",
+          doses: motherDoseRows,
+          courses: motherCourses,
+          footnote:
+            "Some medication passes into breastmilk and can shift stool colour \u2014 e.g. iron often makes it darker or greener.",
+        },
+      ] as const).map(
+        ({ key, title, doses, courses, footnote }) =>
+          (doses.length > 0 || courses.length > 0) && (
+            <Card key={key} className="p-5">
+              <div className="flex items-center gap-2">
+                <Pill className="h-4 w-4 text-muted" />
+                <CardTitle>{title}</CardTitle>
+              </div>
+              {doses.length > 0 && (
+                <ul className="mt-3 space-y-2">
+                  {doses.map(({ name, last, in24h }) => (
+                    <li key={last.id} className="text-sm">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="font-medium">
+                          {name}
+                          {last.med_dose && (
+                            <span className="ml-1.5 font-normal text-muted">
+                              {last.med_dose}
+                            </span>
+                          )}
                         </span>
-                      )}
-                      {last.med_dose && (
-                        <span className="ml-1.5 font-normal text-muted">
-                          {last.med_dose}
+                        <span className="shrink-0 text-xs text-muted">
+                          last given {agoLabel(last.occurred_at)}
                         </span>
+                      </div>
+                      {in24h > 1 && (
+                        <p className="mt-0.5 text-xs text-faint">
+                          {in24h} doses in the last 24 h
+                        </p>
                       )}
-                    </span>
-                    <span className="shrink-0 text-xs text-muted">
-                      last given {agoLabel(last.occurred_at)}
-                    </span>
-                  </div>
-                  {in24h > 1 && (
-                    <p className="mt-0.5 text-xs text-faint">
-                      {in24h} doses in the last 24 h
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-          <ul className="mt-3 space-y-2">
-            {activeMeds.map((m) => (
-              <li key={m.id} className="text-sm">
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="font-medium">
-                    {m.med_name}
-                    {m.med_subject === "baby" && (
-                      <span className="ml-1.5 font-normal text-muted">
-                        (baby)
-                      </span>
-                    )}
-                    {m.med_dose && (
-                      <span className="ml-1.5 font-normal text-muted">
-                        {m.med_dose}
-                      </span>
-                    )}
-                  </span>
-                  <span className="shrink-0 text-xs text-muted">
-                    since{" "}
-                    {new Date(m.occurred_at).toLocaleDateString(undefined, {
-                      day: "numeric",
-                      month: "short",
-                    })}
-                  </span>
-                </div>
-                {m.reminder_times && m.reminder_times.length > 0 && (
-                  <p className="mt-0.5 text-xs text-faint">
-                    Reminders at {m.reminder_times.join(", ")}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-3 text-xs text-faint">
-            Some medication passes into breastmilk and can shift stool colour —
-            e.g. iron often makes it darker or greener.
-          </p>
-        </Card>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {courses.length > 0 && (
+                <ul className="mt-3 space-y-2">
+                  {courses.map((m) => (
+                    <li key={m.id} className="text-sm">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="font-medium">
+                          {m.med_name}
+                          {m.med_dose && (
+                            <span className="ml-1.5 font-normal text-muted">
+                              {m.med_dose}
+                            </span>
+                          )}
+                        </span>
+                        <span className="shrink-0 text-xs text-muted">
+                          since{" "}
+                          {new Date(m.occurred_at).toLocaleDateString("en-GB", {
+                            day: "numeric",
+                            month: "short",
+                          })}
+                        </span>
+                      </div>
+                      {m.reminder_times && m.reminder_times.length > 0 && (
+                        <p className="mt-0.5 text-xs text-faint">
+                          Reminders at {m.reminder_times.join(", ")}
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {footnote && (
+                <p className="mt-3 text-xs text-faint">{footnote}</p>
+              )}
+            </Card>
+          )
       )}
 
       {/* Red flags */}

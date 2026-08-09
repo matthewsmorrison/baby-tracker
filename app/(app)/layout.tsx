@@ -1,4 +1,6 @@
+import { after } from "next/server";
 import { getBabyContext, getEntries } from "@/lib/data";
+import { touchPresence } from "@/lib/presenceServer";
 import { dayOfLife } from "@/lib/clinical";
 import { Nav } from "@/components/shell/Nav";
 import { BottomBar } from "@/components/shell/BottomBar";
@@ -14,6 +16,12 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const ctx = await getBabyContext();
+
+  // Server-side presence touch, after the response: any page load counts as
+  // "has the app open". The client heartbeat keeps it alive while idling on
+  // one screen, but this path works even where client JS misbehaves (PWAs).
+  after(() => touchPresence(ctx.userId));
+
   const day = dayOfLife(ctx.baby.birth_at, new Date());
   const aiEnabled = ctx.baby.membership_tier === "advanced";
   const entries = ctx.canEdit ? await getEntries(ctx.baby.id) : [];
