@@ -49,13 +49,14 @@ export interface Profile {
   presence_status: PresenceStatus;
   presence_at: string | null; // heartbeat; stale ⇒ shown as offline
   public_key: string | null; // ECDH public key (JWK) for E2EE messaging
+  status_text: string | null; // MSN-style status line, shown to friends
 }
 
 /** "feeding" is broadcast automatically while a feed timer runs; "online" is
  *  the manual Go-online toggle. */
 export type PresenceStatus = "offline" | "online" | "feeding";
 
-export type FriendshipStatus = "pending" | "accepted";
+export type FriendshipStatus = "pending" | "accepted" | "blocked";
 
 export interface Friendship {
   id: string;
@@ -64,6 +65,7 @@ export interface Friendship {
   status: FriendshipStatus;
   created_at: string;
   accepted_at: string | null;
+  blocked_by: string | null;
 }
 
 /** A direct message between two friends (parent-to-parent chat). The body
@@ -73,8 +75,10 @@ export interface DirectMessage {
   sender: string;
   recipient: string;
   body: string;
+  kind: "text" | "wave";
   created_at: string;
   read_at: string | null;
+  receipt_suppressed: boolean; // reader had read-receipts off
 }
 
 export type BabySex = "boy" | "girl";

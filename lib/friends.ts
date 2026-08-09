@@ -5,6 +5,8 @@ export interface FriendsData {
   friends: Array<{ friendship: Friendship; profile: Profile; unread: number }>;
   incoming: Array<{ friendship: Friendship; profile: Profile }>;
   outgoing: Array<{ friendship: Friendship; profile: Profile }>;
+  /** People this user has blocked (the other side never sees these rows). */
+  blocked: Array<{ friendship: Friendship; profile: Profile }>;
 }
 
 /** Everything the Friends page needs: accepted friends (with unread message
@@ -42,12 +44,16 @@ export async function getFriendsData(userId: string): Promise<FriendsData> {
     unread.set(m.sender, (unread.get(m.sender) ?? 0) + 1);
   }
 
-  const out: FriendsData = { friends: [], incoming: [], outgoing: [] };
+  const out: FriendsData = { friends: [], incoming: [], outgoing: [], blocked: [] };
   for (const f of friendships) {
     const otherId = f.requester === userId ? f.addressee : f.requester;
     const profile = profileMap.get(otherId);
     if (!profile) continue;
-    if (f.status === "accepted") {
+    if (f.status === "blocked") {
+      // Only the blocker sees the row surfaced (to unblock); if someone
+      // blocked *you*, the connection silently disappears.
+      if (f.blocked_by === userId) out.blocked.push({ friendship: f, profile });
+    } else if (f.status === "accepted") {
       out.friends.push({
         friendship: f,
         profile,

@@ -29,17 +29,23 @@ export default async function FriendChatPage({
     .maybeSingle();
   if (!friendship) redirect("/friends");
 
-  const [{ data: profile }, { data: messages }] = await Promise.all([
-    supabase.from("profiles").select("*").eq("id", id).single(),
-    supabase
-      .from("messages")
-      .select("*")
-      .or(
-        `and(sender.eq.${ctx.userId},recipient.eq.${id}),and(sender.eq.${id},recipient.eq.${ctx.userId})`
-      )
-      .order("created_at", { ascending: true })
-      .limit(500),
-  ]);
+  const [{ data: profile }, { data: messages }, { data: settings }] =
+    await Promise.all([
+      supabase.from("profiles").select("*").eq("id", id).single(),
+      supabase
+        .from("messages")
+        .select("*")
+        .or(
+          `and(sender.eq.${ctx.userId},recipient.eq.${id}),and(sender.eq.${id},recipient.eq.${ctx.userId})`
+        )
+        .order("created_at", { ascending: true })
+        .limit(500),
+      supabase
+        .from("user_settings")
+        .select("read_receipts")
+        .eq("user_id", ctx.userId)
+        .maybeSingle(),
+    ]);
   if (!profile) redirect("/friends");
 
   return (
@@ -47,6 +53,8 @@ export default async function FriendChatPage({
       me={ctx.userId}
       friend={profile as Profile}
       initialMessages={(messages ?? []) as DirectMessage[]}
+      friendshipId={friendship.id}
+      myReceiptsOn={settings?.read_receipts !== false}
     />
   );
 }

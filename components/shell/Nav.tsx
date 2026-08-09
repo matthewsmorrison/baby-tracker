@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Sun, Clock, Settings, ChartColumn, Sparkles, NotebookPen, Users } from "lucide-react";
 import { ASSISTANT_NAME } from "@/lib/legal";
+import { UnreadBadge } from "@/components/friends/UnreadBadge";
 
 const items = [
   { href: "/today", label: "Today", icon: Sun },
@@ -45,7 +46,10 @@ export function Nav({
                   : "text-muted hover:bg-surface-alt hover:text-ink"
               }`}
             >
-              <Icon className="h-4 w-4" strokeWidth={2.2} />
+              <span className="relative">
+                <Icon className="h-4 w-4" strokeWidth={2.2} />
+                {href === "/friends" && <UnreadBadge />}
+              </span>
               {label}
             </Link>
           );
@@ -66,7 +70,10 @@ export function Nav({
               active ? "text-ink" : "text-faint hover:text-muted"
             }`}
           >
-            <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 2} />
+            <span className="relative">
+              <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 2} />
+              {href === "/friends" && <UnreadBadge />}
+            </span>
             {label}
           </Link>
         );

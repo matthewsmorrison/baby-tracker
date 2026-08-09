@@ -8,6 +8,7 @@ import { Chip } from "@/components/ui/Chip";
 import { PushToggle } from "@/components/notifications/PushToggle";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import { PresenceToggle } from "@/components/profile/PresenceToggle";
+import { ReadReceiptsToggle } from "@/components/profile/ReadReceiptsToggle";
 import { ExportCard } from "@/components/export/ExportButtons";
 import { TrackingToggles } from "@/components/profile/TrackingToggles";
 import { ThemeToggle } from "@/components/profile/ThemeToggle";
@@ -56,7 +57,7 @@ export default async function ProfilePage() {
 
   const { data: mySettings } = await supabase
     .from("user_settings")
-    .select("appear_offline")
+    .select("appear_offline, read_receipts")
     .eq("user_id", ctx.userId)
     .maybeSingle();
 
@@ -167,6 +168,10 @@ export default async function ProfilePage() {
           <PresenceToggle
             userId={ctx.userId}
             initialAppearOffline={mySettings?.appear_offline === true}
+          />
+          <ReadReceiptsToggle
+            userId={ctx.userId}
+            initialOn={mySettings?.read_receipts !== false}
           />
           <ConnectedAccounts />
           <ThemeToggle />

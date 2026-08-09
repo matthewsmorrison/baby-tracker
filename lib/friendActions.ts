@@ -79,7 +79,8 @@ export async function acceptFriendRequest(
  *  the insert unless the two users are accepted friends. */
 export async function sendDirectMessage(
   recipientId: string,
-  ciphertext: string
+  ciphertext: string,
+  kind: "text" | "wave" = "text"
 ): Promise<{ message?: DirectMessage; error?: string }> {
   const supabase = await createClient();
   const {
@@ -87,10 +88,11 @@ export async function sendDirectMessage(
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   if (!ciphertext?.trim()) return { error: "Empty message." };
+  if (kind !== "text" && kind !== "wave") return { error: "Unknown message kind." };
 
   const { data, error } = await supabase
     .from("messages")
-    .insert({ sender: user.id, recipient: recipientId, body: ciphertext })
+    .insert({ sender: user.id, recipient: recipientId, body: ciphertext, kind })
     .select()
     .single();
   if (error) return { error: error.message };
@@ -104,9 +106,10 @@ export async function sendDirectMessage(
       .select("full_name, email")
       .eq("id", user.id)
       .single();
+    const name = me?.full_name ?? me?.email ?? "A friend";
     await sendToUsers([recipientId], {
-      title: `${me?.full_name ?? me?.email ?? "A friend"} messaged you`,
-      body: "Open beanlo to read it.",
+      title: kind === "wave" ? `${name} waved at you 👋` : `${name} messaged you`,
+      body: kind === "wave" ? "They're up too. Wave back?" : "Open beanlo to read it.",
       url: `/friends/${user.id}`,
       tag: `dm-${user.id}`,
     });
@@ -114,6 +117,36 @@ export async function sendDirectMessage(
     // The message is stored; a failed push shouldn't fail the send.
   }
   return { message: data as DirectMessage };
+}
+
+/** Block: flips the friendship row so they can't message or re-request, and
+ *  clears their unread so no ghost badge lingers. Unblock = removeFriendship
+ *  (the delete policy only lets the blocker delete a blocked row). */
+export async function blockFriend(
+  friendshipId: string,
+  otherUserId: string
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { error } = await supabase
+    .from("friendships")
+    .update({ status: "blocked", blocked_by: user.id })
+    .eq("id", friendshipId);
+  if (error) return { error: error.message };
+
+  await supabase
+    .from("messages")
+    .update({ read_at: new Date().toISOString(), receipt_suppressed: true })
+    .eq("sender", otherUserId)
+    .eq("recipient", user.id)
+    .is("read_at", null);
+
+  revalidatePath("/friends");
+  return {};
 }
 
 /** Decline an incoming request, cancel an outgoing one, or unfriend. */
