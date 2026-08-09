@@ -162,6 +162,7 @@ export interface Entry {
   med_name: string | null; // medication (type = medication)
   med_dose: string | null; // e.g. "200 mg"
   med_subject: MedSubject | null; // whose medication (null = mother, legacy)
+  med_kind: "course" | "dose" | null; // course (default) or one-off dose given
   reminder_times: string[] | null; // local "HH:MM" times to be reminded
   reminder_tz: string | null; // IANA tz the reminder times are in
   reminder_user_ids: string[] | null; // carers who get the reminder push

@@ -211,7 +211,9 @@ export function serialiseBaby(baby: Baby, entries: Entry[], tz: string): string 
 
   // Medications, as courses. The mother's may pass into breastmilk and can
   // shift stool colour/texture (e.g. iron → darker/greener), so surface them.
-  const meds = asc.filter((e) => e.type === "medication");
+  const meds = asc.filter(
+    (e) => e.type === "medication" && e.med_kind !== "dose"
+  );
   const medsBlock = meds.length
     ? "\n\n## Medications (mother's unless marked baby — the mother's may affect breastfed stool, e.g. iron can darken/green it)\n" +
       meds
@@ -222,6 +224,32 @@ export function serialiseBaby(baby: Baby, entries: Entry[], tz: string): string 
             : "ongoing";
           const who = m.med_subject === "baby" ? " (baby)" : "";
           return `${m.med_name ?? "medication"}${who}: ${from} → ${to}${m.note ? ` (${m.note})` : ""}`;
+        })
+        .join("\n")
+    : "";
+
+  // One-off doses from the last 14 days (e.g. Calpol), newest first, so Bea
+  // can answer "when did she last have Calpol?".
+  const doses = asc
+    .filter(
+      (e) =>
+        e.type === "medication" &&
+        e.med_kind === "dose" &&
+        nowMs - new Date(e.occurred_at).getTime() <= 14 * 24 * 3_600_000
+    )
+    .reverse();
+  const dosesBlock = doses.length
+    ? "\n\n## One-off medicine doses (last 14 days, newest first — baby's unless marked mother)\n" +
+      doses
+        .map((m) => {
+          const who = m.med_subject === "mother" ? " (mother)" : "";
+          const when = fmt(m.occurred_at, tz, {
+            day: "numeric",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          return `${m.med_name ?? "medicine"}${who}${m.med_dose ? ` ${m.med_dose}` : ""}: ${when}${m.note ? ` (${m.note})` : ""}`;
         })
         .join("\n")
     : "";
@@ -237,7 +265,7 @@ export function serialiseBaby(baby: Baby, entries: Entry[], tz: string): string 
 ${dayLines.join("\n")}
 
 ## Raw entries
-${lines.join("\n")}${medsBlock}`;
+${lines.join("\n")}${medsBlock}${dosesBlock}`;
 }
 
 /** The parent's notes & questions as a prompt block ("" when there are none). */

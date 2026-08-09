@@ -99,6 +99,9 @@ export function entryLabel(e: Entry): string {
   if (e.type === "medication") {
     const name = e.med_name || "Medication";
     const who = e.med_subject === "baby" ? " (baby)" : "";
+    if (e.med_kind === "dose") {
+      return `${name}${who}${e.med_dose ? ` ${e.med_dose}` : ""} · given`;
+    }
     return e.ended_at ? `${name}${who} · stopped` : `${name}${who} · ongoing`;
   }
   if (e.type === "temperature") return `Temperature · ${e.temp_c ?? "?"} °C`;

@@ -13,11 +13,14 @@ import { OccurredAtField } from "./OccurredAtField";
 import { NoteField } from "./NappyForm";
 import { Bell, Plus, X } from "lucide-react";
 
+type MedKind = "dose" | "course";
+
 /**
- * Log a medication the mother is taking, as a course: what it is, when it
- * started, and (optionally) when it stopped. Leaving "stopped" empty means
- * still taking it. Recorded so trends can be spotted — e.g. iron often makes
- * stool darker or greener.
+ * Two shapes of medication logging:
+ * - "Dose given": a one-off dose (e.g. Calpol at 3am) — every carer sees
+ *   when it was last given on the Today screen.
+ * - "Ongoing course": what it is, when it started, and (optionally) when it
+ *   stopped, with reminders. Leaving "stopped" empty means still taking it.
  */
 export function MedicationForm({
   babyId,
@@ -32,8 +35,11 @@ export function MedicationForm({
   onSaved: (message: string) => void;
 }) {
   const router = useRouter();
+  const [kind, setKind] = useState<MedKind>(
+    initial ? (initial.med_kind === "dose" ? "dose" : "course") : "dose"
+  );
   const [subject, setSubject] = useState<MedSubject>(
-    initial?.med_subject ?? "mother"
+    initial?.med_subject ?? "baby"
   );
   const [name, setName] = useState(initial?.med_name ?? "");
   const [dose, setDose] = useState(initial?.med_dose ?? "");
@@ -92,7 +98,7 @@ export function MedicationForm({
 
   const startMs = new Date(fromLocalInputValue(startAt)).getTime();
   const endMs = endAt ? new Date(fromLocalInputValue(endAt)).getTime() : null;
-  const rangeOk = endMs === null || endMs >= startMs;
+  const rangeOk = kind === "dose" || endMs === null || endMs >= startMs;
 
   async function save() {
     if (!name.trim()) {
@@ -107,15 +113,16 @@ export function MedicationForm({
     setBusy(true);
     const supabase = createClient();
 
-    const times = reminders.filter(Boolean).sort();
+    const times = kind === "course" ? reminders.filter(Boolean).sort() : [];
     const row = {
       baby_id: babyId,
       type: "medication" as const,
+      med_kind: kind,
       med_subject: subject,
       med_name: name.trim(),
       med_dose: dose.trim() || null,
       occurred_at: fromLocalInputValue(startAt),
-      ended_at: endAt ? fromLocalInputValue(endAt) : null,
+      ended_at: kind === "course" && endAt ? fromLocalInputValue(endAt) : null,
       reminder_times: times.length ? times : null,
       reminder_tz: times.length
         ? Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -153,18 +160,28 @@ export function MedicationForm({
 
   return (
     <Card className="p-5 space-y-5">
+      <Segmented<MedKind>
+        options={[
+          { value: "dose", label: "Dose given" },
+          { value: "course", label: "Ongoing course" },
+        ]}
+        value={kind}
+        onChange={setKind}
+      />
       <Segmented<MedSubject>
         options={[
-          { value: "mother", label: "Mother’s" },
           { value: "baby", label: "Baby’s" },
+          { value: "mother", label: "Mother’s" },
         ]}
         value={subject}
         onChange={setSubject}
       />
       <p className="text-xs text-faint">
-        {subject === "mother"
-          ? "Some of the mother’s medication can affect the baby via breastmilk — e.g. iron often makes stool darker or greener — so logging it helps make sense of changes."
-          : "Track the baby’s own medicines and supplements (e.g. vitamin D drops) as a course, with reminders if you want them."}
+        {kind === "dose"
+          ? "One-off dose — e.g. Calpol at 3am. Everyone caring for the baby sees when it was last given on the Today screen."
+          : subject === "mother"
+            ? "Some of the mother’s medication can affect the baby via breastmilk — e.g. iron often makes stool darker or greener — so logging it helps make sense of changes."
+            : "Track the baby’s own medicines and supplements (e.g. vitamin D drops) as a course, with reminders if you want them."}
       </p>
 
       <div>
@@ -172,7 +189,7 @@ export function MedicationForm({
         <Input
           id="med_name"
           type="text"
-          placeholder="e.g. Iron (ferrous sulfate)"
+          placeholder={kind === "dose" ? "e.g. Calpol" : "e.g. Iron (ferrous sulfate)"}
           value={name}
           onChange={(e) => setName(e.target.value)}
           autoFocus
@@ -184,12 +201,20 @@ export function MedicationForm({
         <Input
           id="med_dose"
           type="text"
-          placeholder="e.g. 200 mg, one tablet"
+          placeholder={kind === "dose" ? "e.g. 2.5 ml" : "e.g. 200 mg, one tablet"}
           value={dose}
           onChange={(e) => setDose(e.target.value)}
         />
       </div>
 
+      {kind === "dose" && (
+        <div>
+          <Label>Given</Label>
+          <OccurredAtField value={startAt} onChange={setStartAt} />
+        </div>
+      )}
+
+      {kind === "course" && (
       <div>
         <Label>Reminders (optional)</Label>
         <div className="space-y-2">
@@ -233,8 +258,9 @@ export function MedicationForm({
           </p>
         )}
       </div>
+      )}
 
-      {reminders.length > 0 && members.length > 0 && (
+      {kind === "course" && reminders.length > 0 && members.length > 0 && (
         <div>
           <Label>Send reminders to</Label>
           <div className="flex flex-wrap gap-2">
@@ -269,21 +295,25 @@ export function MedicationForm({
         </div>
       )}
 
-      <div>
-        <Label>Started</Label>
-        <OccurredAtField value={startAt} onChange={setStartAt} />
-      </div>
+      {kind === "course" && (
+        <>
+          <div>
+            <Label>Started</Label>
+            <OccurredAtField value={startAt} onChange={setStartAt} />
+          </div>
 
-      <div>
-        <Label htmlFor="med_end">Stopped (leave empty if still taking)</Label>
-        <Input
-          id="med_end"
-          type="datetime-local"
-          value={endAt}
-          min={startAt}
-          onChange={(e) => setEndAt(e.target.value)}
-        />
-      </div>
+          <div>
+            <Label htmlFor="med_end">Stopped (leave empty if still taking)</Label>
+            <Input
+              id="med_end"
+              type="datetime-local"
+              value={endAt}
+              min={startAt}
+              onChange={(e) => setEndAt(e.target.value)}
+            />
+          </div>
+        </>
+      )}
 
       <NoteField note={note} setNote={setNote} />
 
@@ -292,7 +322,13 @@ export function MedicationForm({
       )}
 
       <Button className="w-full" size="lg" onClick={save} disabled={busy}>
-        {busy ? "Saving…" : initial ? "Save changes" : "Save medication"}
+        {busy
+          ? "Saving…"
+          : initial
+            ? "Save changes"
+            : kind === "dose"
+              ? "Save dose"
+              : "Save medication"}
       </Button>
     </Card>
   );

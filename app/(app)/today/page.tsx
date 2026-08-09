@@ -70,14 +70,52 @@ export default async function TodayPage() {
     }, 0);
   const carerSleepHrs = Math.round((carerSleepMs / 3_600_000) * 10) / 10;
 
-  // Mother's medications currently being taken (started, not yet stopped).
+  // Medications currently being taken as a course (started, not yet stopped).
   // Managed in Profile now, so always shown when present (no track toggle).
   const activeMeds = entries.filter(
     (e) =>
       e.type === "medication" &&
+      e.med_kind !== "dose" &&
       new Date(e.occurred_at) <= now &&
       (!e.ended_at || new Date(e.ended_at) >= now)
   );
+
+  // One-off doses from the last 7 days, grouped per medicine, so any carer
+  // can see at a glance when e.g. Calpol was last given (and how many doses
+  // landed in the last 24h) — no asking the other parent.
+  const doseWindowMs = 7 * DAY_MS;
+  const recentDoses = entries.filter(
+    (e) =>
+      e.type === "medication" &&
+      e.med_kind === "dose" &&
+      now.getTime() - new Date(e.occurred_at).getTime() <= doseWindowMs &&
+      new Date(e.occurred_at) <= now
+  );
+  const doseGroups = new Map<
+    string,
+    { name: string; last: (typeof entries)[number]; in24h: number }
+  >();
+  for (const d of recentDoses) {
+    const key = `${(d.med_name ?? "").toLowerCase()}|${d.med_subject ?? "baby"}`;
+    const g = doseGroups.get(key);
+    const in24h =
+      now.getTime() - new Date(d.occurred_at).getTime() <= DAY_MS ? 1 : 0;
+    if (!g) {
+      doseGroups.set(key, { name: d.med_name ?? "Medicine", last: d, in24h });
+    } else {
+      g.in24h += in24h;
+      // entries arrive newest-first, so the first one seen is the latest
+    }
+  }
+  const doseRows = [...doseGroups.values()];
+
+  const agoLabel = (iso: string) => {
+    const mins = Math.max(0, Math.round((now.getTime() - Date.parse(iso)) / 60000));
+    if (mins < 60) return `${mins} min ago`;
+    const h = Math.floor(mins / 60);
+    if (h < 48) return `${h} h ${mins % 60 ? `${mins % 60} min ` : ""}ago`;
+    return `${Math.floor(h / 24)} days ago`;
+  };
 
   const latestWeight = entries.find((e) => e.type === "weight" && e.weight_g);
   const band = weightBand(day, ctx.baby.birth_weight_g, ctx.baby.sex);
@@ -267,17 +305,49 @@ export default async function TodayPage() {
         </Card>
       )}
 
-      {/* Mother's medication (active courses) */}
-      {activeMeds.length > 0 && (
+      {/* Medicines: recent one-off doses + active courses */}
+      {(activeMeds.length > 0 || doseRows.length > 0) && (
         <Card className="p-5">
           <div className="flex items-center gap-2">
             <Pill className="h-4 w-4 text-muted" />
             <CardTitle>
-              {activeMeds.some((m) => m.med_subject === "baby")
-                ? "Medication"
+              {doseRows.length > 0 ||
+              activeMeds.some((m) => m.med_subject === "baby")
+                ? "Medicines"
                 : "Mother’s medication"}
             </CardTitle>
           </div>
+          {doseRows.length > 0 && (
+            <ul className="mt-3 space-y-2">
+              {doseRows.map(({ name, last, in24h }) => (
+                <li key={last.id} className="text-sm">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="font-medium">
+                      {name}
+                      {last.med_subject === "mother" && (
+                        <span className="ml-1.5 font-normal text-muted">
+                          (mother)
+                        </span>
+                      )}
+                      {last.med_dose && (
+                        <span className="ml-1.5 font-normal text-muted">
+                          {last.med_dose}
+                        </span>
+                      )}
+                    </span>
+                    <span className="shrink-0 text-xs text-muted">
+                      last given {agoLabel(last.occurred_at)}
+                    </span>
+                  </div>
+                  {in24h > 1 && (
+                    <p className="mt-0.5 text-xs text-faint">
+                      {in24h} doses in the last 24 h
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
           <ul className="mt-3 space-y-2">
             {activeMeds.map((m) => (
               <li key={m.id} className="text-sm">

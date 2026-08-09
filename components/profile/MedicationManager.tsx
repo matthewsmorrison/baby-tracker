@@ -40,6 +40,8 @@ export function MedicationManager({
       .select("*")
       .eq("baby_id", babyId)
       .eq("type", "medication")
+      // Courses only — one-off doses live in the log and on Today.
+      .eq("med_kind", "course")
       .order("occurred_at", { ascending: false });
     setMeds((data as Entry[]) ?? []);
   }, [supabase, babyId]);
