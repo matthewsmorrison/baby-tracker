@@ -33,12 +33,13 @@ export function RefreshOnResume() {
       // Restored from the back/forward cache — the data is definitely old.
       if (e.persisted) refresh(true);
     };
+    // visibilitychange only — window "focus" also fires on keyboard close
+    // and sheet dismissal, and a refresh kicked off there can race (and
+    // swallow) a nav tap made moments later.
     document.addEventListener("visibilitychange", onVisible);
-    window.addEventListener("focus", onVisible);
     window.addEventListener("pageshow", onPageShow);
     return () => {
       document.removeEventListener("visibilitychange", onVisible);
-      window.removeEventListener("focus", onVisible);
       window.removeEventListener("pageshow", onPageShow);
     };
   }, [router]);
