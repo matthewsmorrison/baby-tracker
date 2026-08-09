@@ -20,6 +20,7 @@ import { NappyQuota } from "@/components/output/NappyQuota";
 import { NextFeedCard } from "@/components/output/NextFeedCard";
 import { NextNapCard } from "@/components/output/NextNapCard";
 import { SkyArc } from "@/components/output/SkyArc";
+import { OpenLogButton } from "@/components/log/OpenLogButton";
 import { AlertTriangle, Pill } from "lucide-react";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -333,6 +334,14 @@ export default async function TodayPage() {
               <div className="flex items-center gap-2">
                 <Pill className="h-4 w-4 text-muted" />
                 <CardTitle>{title}</CardTitle>
+                {ctx.canEdit && (
+                  <OpenLogButton
+                    tab="medication"
+                    className="ml-auto rounded-full border border-line px-3 py-1 text-xs font-medium text-muted transition hover:border-ink hover:text-ink"
+                  >
+                    Log dose
+                  </OpenLogButton>
+                )}
               </div>
               {doses.length > 0 && (
                 <ul className="mt-3 space-y-2">

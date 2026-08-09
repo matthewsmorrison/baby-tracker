@@ -11,6 +11,7 @@ import {
   Droplet,
   Milk,
   Moon,
+  Pill,
   Scale,
   Star,
   Thermometer,
@@ -25,6 +26,7 @@ const TYPES: Array<{ value: EntryType; label: string; icon: typeof Milk }> = [
   { value: "carer_sleep", label: "Carer sleep", icon: BedDouble },
   { value: "temperature", label: "Temperature", icon: Thermometer },
   { value: "milestone", label: "Milestones", icon: Star },
+  { value: "medication", label: "Medicines", icon: Pill },
 ];
 
 export function TrackingToggles({

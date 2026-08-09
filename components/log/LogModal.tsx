@@ -12,6 +12,7 @@ import { SleepForm } from "./SleepForm";
 import { PumpForm } from "./PumpForm";
 import { TemperatureForm } from "./TemperatureForm";
 import { MilestoneForm } from "./MilestoneForm";
+import { MedicationForm } from "./MedicationForm";
 import { QuickLog } from "./QuickLog";
 import { Check, Plus, X } from "lucide-react";
 
@@ -56,7 +57,7 @@ export function LogModal({
     carer_sleep: "My sleep",
     temperature: "Temp",
     milestone: "Milestone",
-    medication: "Meds", // managed in Profile, never shown as a log tab
+    medication: "Meds",
   };
   const order: EntryType[] = [
     "nappy",
@@ -67,6 +68,7 @@ export function LogModal({
     "carer_sleep",
     "temperature",
     "milestone",
+    "medication",
   ];
   const options = order
     .filter((t) => trackedTypes.includes(t))
@@ -297,6 +299,13 @@ export function LogModal({
                 {tab === "milestone" && (
                   <MilestoneForm
                     key={editing?.id ?? "new-milestone"}
+                    {...formProps}
+                    initial={editing ?? undefined}
+                  />
+                )}
+                {tab === "medication" && (
+                  <MedicationForm
+                    key={editing?.id ?? "new-medication"}
                     {...formProps}
                     initial={editing ?? undefined}
                   />

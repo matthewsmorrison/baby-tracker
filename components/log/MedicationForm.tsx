@@ -26,6 +26,7 @@ export function MedicationForm({
   babyId,
   initial,
   onSaved,
+  defaultKind = "dose",
 }: {
   babyId: string;
   birthAt?: string;
@@ -33,10 +34,11 @@ export function MedicationForm({
   initial?: Entry;
   onDone?: () => void;
   onSaved: (message: string) => void;
+  defaultKind?: MedKind;
 }) {
   const router = useRouter();
   const [kind, setKind] = useState<MedKind>(
-    initial ? (initial.med_kind === "dose" ? "dose" : "course") : "dose"
+    initial ? (initial.med_kind === "dose" ? "dose" : "course") : defaultKind
   );
   const [subject, setSubject] = useState<MedSubject>(
     initial?.med_subject ?? "baby"

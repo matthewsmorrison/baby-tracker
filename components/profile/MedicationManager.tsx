@@ -106,6 +106,9 @@ export function MedicationManager({
             babyId={babyId}
             initial={mode === "new" ? undefined : mode.edit}
             onSaved={onSaved}
+            // This manager is about ongoing courses; one-off doses are
+            // logged from the + button and shown on Today.
+            defaultKind="course"
           />
           <Button
             variant="ghost"
