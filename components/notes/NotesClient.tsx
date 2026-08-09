@@ -193,10 +193,15 @@ function Composer({
     setBusy(true);
     setError(null);
     try {
-      const id = await createNote(babyId, body, tagged, kind);
+      const created = await createNote(babyId, body, tagged, kind);
+      if (created.error || !created.id) {
+        setError(created.error ?? "Could not save");
+        return;
+      }
       if (photos.length) {
-        const paths = await uploadNotePhotos(babyId, id, photos);
-        await setNotePhotos(id, paths);
+        const paths = await uploadNotePhotos(babyId, created.id, photos);
+        const res = await setNotePhotos(created.id, paths);
+        if (res?.error) setError(res.error);
       }
       setBody("");
       setTagged([]);
@@ -316,7 +321,8 @@ function NoteCard({
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   async function saveEdit() {
-    await editNote(note.id, body, tagged);
+    const res = await editNote(note.id, body, tagged);
+    if (res?.error) return; // keep the editor open; nothing was saved
     const original = note.photo_paths ?? [];
     const removed = original.filter((p) => !keptPaths.includes(p));
     let paths = keptPaths;
@@ -428,7 +434,7 @@ function NoteCard({
               <button
                 type="button"
                 disabled={pending}
-                onClick={() => startTransition(() => deleteNote(note.id))}
+                onClick={() => startTransition(async () => void (await deleteNote(note.id)))}
                 className="rounded-full bg-alert-bg px-3 py-1.5 text-xs font-semibold text-alert"
               >
                 {pending ? "…" : "Delete?"}
@@ -471,7 +477,7 @@ function NoteCard({
               </button>
               <button
                 type="button"
-                onClick={() => startTransition(() => setNoteAnswer(note.id, ""))}
+                onClick={() => startTransition(async () => void (await setNoteAnswer(note.id, "")))}
                 className="inline-flex items-center gap-1 text-muted hover:text-ink"
               >
                 <RotateCcw className="h-3 w-3" /> Reopen

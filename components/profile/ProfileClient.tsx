@@ -72,12 +72,9 @@ function SettingRow({ babyId, spec, canEdit }: {
         action={(fd) =>
           startTransition(async () => {
             setError(null);
-            try {
-              await updateBabySetting(fd);
-              setEditing(false);
-            } catch (e) {
-              setError(e instanceof Error ? e.message : "Could not save");
-            }
+            const res = await updateBabySetting(fd);
+            if (res?.error) setError(res.error);
+            else setEditing(false);
           })
         }
         className="space-y-2"
@@ -134,16 +131,13 @@ function SexRow({
   function choose(v: "boy" | "girl") {
     startTransition(async () => {
       setError(null);
-      try {
-        const fd = new FormData();
-        fd.set("baby_id", babyId);
-        fd.set("field", "sex");
-        fd.set("value", v);
-        await updateBabySetting(fd);
-        setEditing(false);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Could not save");
-      }
+      const fd = new FormData();
+      fd.set("baby_id", babyId);
+      fd.set("field", "sex");
+      fd.set("value", v);
+      const res = await updateBabySetting(fd);
+      if (res?.error) setError(res.error);
+      else setEditing(false);
     });
   }
 
@@ -378,11 +372,8 @@ export function InviteSection({
         action={(fd) =>
           startTransition(async () => {
             setError(null);
-            try {
-              await createInvite(fd);
-            } catch (e) {
-              setError(e instanceof Error ? e.message : "Could not invite");
-            }
+            const res = await createInvite(fd);
+            if (res?.error) setError(res.error);
           })
         }
         className="space-y-2"
@@ -453,7 +444,7 @@ export function InviteSection({
               </button>
               <button
                 type="button"
-                onClick={() => startTransition(() => revokeInvite(inv.id))}
+                onClick={() => startTransition(async () => void (await revokeInvite(inv.id)))}
                 className="rounded-full p-1.5 text-faint hover:bg-alert-bg hover:text-alert"
                 aria-label="Revoke invite"
               >
@@ -544,11 +535,8 @@ export function DangerZone({
                 onClick={() =>
                   startTransition(async () => {
                     setError(null);
-                    try {
-                      await deleteBaby(babyId);
-                    } catch (e) {
-                      setError(e instanceof Error ? e.message : "Could not delete");
-                    }
+                    const res = await deleteBaby(babyId);
+                    if (res?.error) setError(res.error);
                   })
                 }
               >
@@ -586,11 +574,8 @@ export function DangerZone({
               onClick={() =>
                 startTransition(async () => {
                   setError(null);
-                  try {
-                    await deleteAccount();
-                  } catch (e) {
-                    setError(e instanceof Error ? e.message : "Could not delete");
-                  }
+                  const res = await deleteAccount();
+                  if (res?.error) setError(res.error);
                 })
               }
             >

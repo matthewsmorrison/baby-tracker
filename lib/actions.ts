@@ -8,7 +8,14 @@ import { createServiceClient } from "./supabase/service";
 import { ACTIVE_BABY_COOKIE } from "./data";
 import type { MemberRole } from "./types";
 
-export async function createBaby(formData: FormData) {
+/** Server actions RETURN failures instead of throwing: Next.js redacts
+ *  thrown server-action error messages in production, so a thrown
+ *  validation message reaches the user as a generic digest error. */
+export interface ActionResult {
+  error?: string;
+}
+
+export async function createBaby(formData: FormData): Promise<ActionResult> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -21,10 +28,10 @@ export async function createBaby(formData: FormData) {
   const sex = String(formData.get("sex") ?? "");
 
   if (!name || !birthAt || !Number.isFinite(weight) || weight <= 0) {
-    throw new Error("Please fill in name, birth date/time and birth weight.");
+    return { error: "Please fill in name, birth date/time and birth weight." };
   }
   if (sex !== "boy" && sex !== "girl") {
-    throw new Error("Please choose boy or girl (for the growth charts).");
+    return { error: "Please choose boy or girl (for the growth charts)." };
   }
 
   // No .select() on this insert: the RETURNING row is checked against the
@@ -40,7 +47,7 @@ export async function createBaby(formData: FormData) {
     created_by: user.id,
   });
 
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
 
   const cookieStore = await cookies();
   cookieStore.set(ACTIVE_BABY_COOKIE, babyId, {
@@ -55,7 +62,7 @@ export async function createBaby(formData: FormData) {
  * Accept an invite by token. Uses the service role: the invitee cannot insert
  * their own membership under RLS, so we verify token + email server-side.
  */
-export async function acceptInvite(token: string) {
+export async function acceptInvite(token: string): Promise<ActionResult> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -70,12 +77,12 @@ export async function acceptInvite(token: string) {
     .single();
 
   if (!invite || invite.status !== "pending") {
-    throw new Error("This invite is no longer valid.");
+    return { error: "This invite is no longer valid." };
   }
   if (invite.email.toLowerCase() !== (user.email ?? "").toLowerCase()) {
-    throw new Error(
-      `This invite was sent to ${invite.email}. Sign in with that email to accept it.`
-    );
+    return {
+      error: `This invite was sent to ${invite.email}. Sign in with that email to accept it.`,
+    };
   }
 
   const { error: memberError } = await service
@@ -84,7 +91,7 @@ export async function acceptInvite(token: string) {
       { baby_id: invite.baby_id, user_id: user.id, role: invite.role },
       { onConflict: "baby_id,user_id", ignoreDuplicates: true }
     );
-  if (memberError) throw new Error(memberError.message);
+  if (memberError) return { error: memberError.message };
 
   await service
     .from("baby_invites")
@@ -118,7 +125,7 @@ export async function signOut() {
 
 // --- Profile/admin actions ------------------------------------------------
 
-export async function createInvite(formData: FormData) {
+export async function createInvite(formData: FormData): Promise<ActionResult> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -130,52 +137,55 @@ export async function createInvite(formData: FormData) {
   const role = String(formData.get("role")) as MemberRole;
 
   if (!email || !["caregiver", "viewer"].includes(role)) {
-    throw new Error("Enter an email and pick a role.");
+    return { error: "Enter an email and pick a role." };
   }
 
   // RLS: only the baby's owner can insert invites.
   const { error } = await supabase
     .from("baby_invites")
     .insert({ baby_id: babyId, email, role, invited_by: user.id });
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
 
   revalidatePath("/profile");
+  return {};
 }
 
-export async function revokeInvite(inviteId: string) {
+export async function revokeInvite(inviteId: string): Promise<ActionResult> {
   const supabase = await createClient();
   const { error } = await supabase
     .from("baby_invites")
     .update({ status: "revoked" })
     .eq("id", inviteId);
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
   revalidatePath("/profile");
+  return {};
 }
 
-export async function removeMember(memberId: string) {
+export async function removeMember(memberId: string): Promise<ActionResult> {
   const supabase = await createClient();
   const { error } = await supabase
     .from("baby_members")
     .delete()
     .eq("id", memberId);
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
   revalidatePath("/profile");
+  return {};
 }
 
-export async function leaveBaby(memberId: string) {
+export async function leaveBaby(memberId: string): Promise<ActionResult> {
   const supabase = await createClient();
   const { error } = await supabase
     .from("baby_members")
     .delete()
     .eq("id", memberId);
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
   const cookieStore = await cookies();
   cookieStore.delete(ACTIVE_BABY_COOKIE);
   redirect("/onboarding");
 }
 
 /** Update a single baby setting from its own row in Profile. */
-export async function updateBabySetting(formData: FormData) {
+export async function updateBabySetting(formData: FormData): Promise<ActionResult> {
   const supabase = await createClient();
   const babyId = String(formData.get("baby_id"));
   const field = String(formData.get("field"));
@@ -184,23 +194,23 @@ export async function updateBabySetting(formData: FormData) {
   const updates: Record<string, unknown> = {};
   switch (field) {
     case "name":
-      if (!raw) throw new Error("The name can’t be empty.");
+      if (!raw) return { error: "The name can’t be empty." };
       updates.name = raw;
       break;
     case "birth_at":
-      if (!raw) throw new Error("Pick the date and time of birth.");
+      if (!raw) return { error: "Pick the date and time of birth." };
       updates.birth_at = new Date(raw).toISOString();
       break;
     case "birth_weight_g": {
       const v = parseInt(raw, 10);
       if (!(v >= 500 && v <= 7000))
-        throw new Error("Enter the birth weight in grams (e.g. 3800).");
+        return { error: "Enter the birth weight in grams (e.g. 3800)." };
       updates.birth_weight_g = v;
       break;
     }
     case "sex": {
       if (raw !== "boy" && raw !== "girl")
-        throw new Error("Choose boy or girl.");
+        return { error: "Choose boy or girl." };
       updates.sex = raw;
       break;
     }
@@ -211,7 +221,7 @@ export async function updateBabySetting(formData: FormData) {
       }
       const v = parseInt(raw, 10);
       if (!(v > 0 && v <= 200))
-        throw new Error("Enter the dry nappy weight in grams (e.g. 28).");
+        return { error: "Enter the dry nappy weight in grams (e.g. 28)." };
       updates.nappy_base_weight_g = v;
       break;
     }
@@ -222,19 +232,20 @@ export async function updateBabySetting(formData: FormData) {
       }
       const v = parseFloat(raw);
       if (!(v > 0 && v <= 12))
-        throw new Error("Enter the interval in hours (e.g. 3 or 2.5).");
+        return { error: "Enter the interval in hours (e.g. 3 or 2.5)." };
       updates.feed_interval_min = Math.round(v * 60);
       break;
     }
     default:
-      throw new Error("Unknown setting.");
+      return { error: "Unknown setting." };
   }
 
   // RLS: only the owner can update the baby.
   const { error } = await supabase.from("babies").update(updates).eq("id", babyId);
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
 
   revalidatePath("/", "layout");
+  return {};
 }
 
 // --- Consultation notes ---------------------------------------------------
@@ -244,14 +255,14 @@ export async function createNote(
   body: string,
   taggedUserIds: string[],
   kind: "question" | "note" = "question"
-) {
+): Promise<{ id?: string; error?: string }> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   const text = body.trim();
-  if (!text) throw new Error("Write a question or note first.");
+  if (!text) return { error: "Write a question or note first." };
   const { data, error } = await supabase
     .from("baby_notes")
     .insert({
@@ -263,40 +274,48 @@ export async function createNote(
     })
     .select("id")
     .single();
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
   revalidatePath("/notes");
-  return data.id as string;
+  return { id: data.id as string };
 }
 
 /** Persist the photo paths attached to a note (uploaded client-side). */
-export async function setNotePhotos(noteId: string, paths: string[]) {
+export async function setNotePhotos(
+  noteId: string,
+  paths: string[]
+): Promise<ActionResult> {
   const supabase = await createClient();
   const { error } = await supabase
     .from("baby_notes")
     .update({ photo_paths: paths.length ? paths : null })
     .eq("id", noteId);
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
   revalidatePath("/notes");
+  return {};
 }
 
 export async function editNote(
   noteId: string,
   body: string,
   taggedUserIds: string[]
-) {
+): Promise<ActionResult> {
   const supabase = await createClient();
   const text = body.trim();
-  if (!text) throw new Error("The note can’t be empty.");
+  if (!text) return { error: "The note can’t be empty." };
   const { error } = await supabase
     .from("baby_notes")
     .update({ body: text, tagged_user_ids: taggedUserIds ?? [] })
     .eq("id", noteId);
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
   revalidatePath("/notes");
+  return {};
 }
 
 /** Record (or, with empty text, clear) the answer to a note. */
-export async function setNoteAnswer(noteId: string, answer: string) {
+export async function setNoteAnswer(
+  noteId: string,
+  answer: string
+): Promise<ActionResult> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -315,11 +334,12 @@ export async function setNoteAnswer(noteId: string, answer: string) {
         : { answer: null, answered_at: null, answered_by: null }
     )
     .eq("id", noteId);
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
   revalidatePath("/notes");
+  return {};
 }
 
-export async function deleteNote(noteId: string) {
+export async function deleteNote(noteId: string): Promise<ActionResult> {
   const supabase = await createClient();
   // Remove any attached photos from storage first (RLS lets editors delete).
   const { data: note } = await supabase
@@ -332,8 +352,9 @@ export async function deleteNote(noteId: string) {
     await supabase.storage.from("nappy-photos").remove(paths);
   }
   const { error } = await supabase.from("baby_notes").delete().eq("id", noteId);
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
   revalidatePath("/notes");
+  return {};
 }
 
 // --- Deletion (GDPR) ------------------------------------------------------
@@ -355,7 +376,7 @@ async function removeBabyPhotos(
 
 /** Delete a baby and all its data. Owner only (RLS enforces the row delete);
  *  storage objects are cleaned up with the service role. */
-export async function deleteBaby(babyId: string) {
+export async function deleteBaby(babyId: string): Promise<ActionResult> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -364,13 +385,13 @@ export async function deleteBaby(babyId: string) {
 
   // Confirm ownership before touching storage.
   const { data: owner } = await supabase.rpc("is_baby_owner", { bid: babyId });
-  if (!owner) throw new Error("Only the owner can delete this baby.");
+  if (!owner) return { error: "Only the owner can delete this baby." };
 
   await removeBabyPhotos(createServiceClient(), babyId);
 
   // Cascades entries, members, invites, notes, alert log via FKs.
   const { error } = await supabase.from("babies").delete().eq("id", babyId);
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
 
   const cookieStore = await cookies();
   cookieStore.delete(ACTIVE_BABY_COOKIE);
@@ -379,7 +400,7 @@ export async function deleteBaby(babyId: string) {
 
 /** Delete the signed-in user's account: any babies they own (with photos),
  *  their memberships, subscriptions, profile, and the auth user itself. */
-export async function deleteAccount() {
+export async function deleteAccount(): Promise<ActionResult> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -402,7 +423,7 @@ export async function deleteAccount() {
   // Deleting the auth user cascades their remaining memberships, push
   // subscriptions and profile row.
   const { error } = await service.auth.admin.deleteUser(user.id);
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
 
   await supabase.auth.signOut();
   const cookieStore = await cookies();
@@ -424,18 +445,22 @@ const TRACK_TYPES = [
 ] as const;
 
 /** Set which categories a baby tracks (owner only via RLS). At least one. */
-export async function updateTrackedTypes(babyId: string, types: string[]) {
+export async function updateTrackedTypes(
+  babyId: string,
+  types: string[]
+): Promise<ActionResult> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   const valid = TRACK_TYPES.filter((t) => types.includes(t));
-  if (valid.length === 0) throw new Error("Keep at least one category on.");
+  if (valid.length === 0) return { error: "Keep at least one category on." };
   const { error } = await supabase
     .from("babies")
     .update({ tracked_types: valid })
     .eq("id", babyId);
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
   revalidatePath("/", "layout");
+  return {};
 }

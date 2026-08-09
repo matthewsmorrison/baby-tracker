@@ -20,14 +20,11 @@ export function CreateBabyForm() {
       action={async (fd) => {
         setBusy(true);
         setError(null);
-        try {
-          await createBaby(fd);
-        } catch (e) {
+        // On success the action redirects to /today and never returns.
+        const res = await createBaby(fd);
+        if (res?.error) {
           setBusy(false);
-          const msg = e instanceof Error ? e.message : "Something went wrong";
-          // Next.js redirect() throws — let it through.
-          if (msg.includes("NEXT_REDIRECT")) throw e;
-          setError(msg);
+          setError(res.error);
         }
       }}
       className="space-y-4"

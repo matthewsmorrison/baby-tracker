@@ -49,11 +49,10 @@ export function TrackingToggles({
     setError(null);
     setSelected(next);
     startTransition(async () => {
-      try {
-        await updateTrackedTypes(babyId, next);
-      } catch (e) {
+      const res = await updateTrackedTypes(babyId, next);
+      if (res?.error) {
         setSelected(selected); // revert
-        setError(e instanceof Error ? e.message : "Could not save");
+        setError(res.error);
       }
     });
   }

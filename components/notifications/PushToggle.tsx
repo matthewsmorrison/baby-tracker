@@ -72,7 +72,15 @@ export function PushToggle() {
       if (!res.ok) throw new Error("Could not save subscription");
       setState("on");
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Could not enable notifications");
+      // Brave ships with Google's push service off, which fails subscribe()
+      // with "Registration failed - push service error" — tell them the fix.
+      if ("brave" in navigator) {
+        setMsg(
+          "Brave blocks web push by default. In brave://settings/privacy turn on “Use Google services for push messaging”, relaunch Brave, then try again."
+        );
+      } else {
+        setMsg(e instanceof Error ? e.message : "Could not enable notifications");
+      }
     } finally {
       setBusy(false);
     }

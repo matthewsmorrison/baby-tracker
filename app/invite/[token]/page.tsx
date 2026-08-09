@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { acceptInvite } from "@/lib/actions";
+import { AcceptInviteButton } from "@/components/invite/AcceptInviteButton";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Flame } from "lucide-react";
@@ -60,23 +60,15 @@ export default async function InvitePage({
               </p>
 
               {user ? (
-                <form
-                  action={async () => {
-                    "use server";
-                    await acceptInvite(token);
-                  }}
-                  className="mt-5"
-                >
-                  <Button type="submit" className="w-full">
-                    Accept invite
-                  </Button>
+                <div className="mt-5">
+                  <AcceptInviteButton token={token} fullWidth />
                   {user.email?.toLowerCase() !== invite.email.toLowerCase() && (
                     <p className="mt-3 text-xs text-alert">
                       You’re signed in as {user.email} — this invite is for{" "}
                       {invite.email}.
                     </p>
                   )}
-                </form>
+                </div>
               ) : (
                 <Link
                   href={`/login?next=${encodeURIComponent(`/invite/${token}`)}`}

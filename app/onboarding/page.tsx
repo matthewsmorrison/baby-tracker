@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { acceptInvite } from "@/lib/actions";
 import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { CreateBabyForm } from "./CreateBabyForm";
+import { AcceptInviteButton } from "@/components/invite/AcceptInviteButton";
 import { Flame } from "lucide-react";
 
 export default async function OnboardingPage() {
@@ -37,12 +36,8 @@ export default async function OnboardingPage() {
           <h2 className="font-semibold mb-3">You’ve been invited</h2>
           <div className="space-y-3">
             {invites!.map((inv) => (
-              <form
+              <div
                 key={inv.id}
-                action={async () => {
-                  "use server";
-                  await acceptInvite(inv.token);
-                }}
                 className="flex items-center justify-between gap-3"
               >
                 <div>
@@ -53,10 +48,8 @@ export default async function OnboardingPage() {
                     as {inv.role === "viewer" ? "healthcare professional (read-only)" : inv.role}
                   </p>
                 </div>
-                <Button size="sm" type="submit">
-                  Join
-                </Button>
-              </form>
+                <AcceptInviteButton token={inv.token} label="Join" size="sm" />
+              </div>
             ))}
           </div>
         </Card>
