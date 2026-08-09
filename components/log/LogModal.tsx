@@ -174,10 +174,15 @@ export function LogModal({
     onSaved: notify,
   };
 
+  // Chat screens (Bea and friend threads) keep their input row clear of
+  // floating buttons — nothing may overlay the conversation.
+  const inChat =
+    pathname.startsWith("/chat") || /^\/friends\/[^/]+/.test(pathname);
+
   return (
     <>
-      {/* Floating action button — every screen */}
-      {!open && (
+      {/* Floating action button — every screen except chats */}
+      {!open && !inChat && (
         <button
           type="button"
           onClick={openNew}

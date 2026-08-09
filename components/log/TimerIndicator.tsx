@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { OPEN_LOG_EVENT } from "./LogModal";
 
 /**
@@ -9,6 +10,7 @@ import { OPEN_LOG_EVENT } from "./LogModal";
  * one-tap way back.
  */
 export function TimerIndicator({ babyId }: { babyId: string }) {
+  const pathname = usePathname();
   const [elapsed, setElapsed] = useState<number | null>(null);
 
   useEffect(() => {
@@ -39,6 +41,11 @@ export function TimerIndicator({ babyId }: { babyId: string }) {
   }, [babyId]);
 
   if (elapsed === null) return null;
+  // Chat screens stay free of overlays — the timer keeps running in
+  // localStorage and the pill reappears on any other tab.
+  if (pathname.startsWith("/chat") || /^\/friends\/[^/]+/.test(pathname)) {
+    return null;
+  }
 
   const sec = Math.floor(elapsed / 1000);
   const mmss = `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;

@@ -16,11 +16,13 @@ import { Bell, Plus, X } from "lucide-react";
 type MedKind = "dose" | "course";
 
 /**
- * Two shapes of medication logging:
- * - "Dose given": a one-off dose (e.g. Calpol at 3am) — every carer sees
- *   when it was last given on the Today screen.
- * - "Ongoing course": what it is, when it started, and (optionally) when it
- *   stopped, with reminders. Leaving "stopped" empty means still taking it.
+ * Two shapes of medication logging, each with its own home:
+ * - "dose" (the + log button): a one-off dose given (e.g. Calpol at 3am) —
+ *   every carer sees when it was last given on the Today screen.
+ * - "course" (Profile's medication manager): what's being taken and its
+ *   reminders — started, (optionally) stopped, reminder times.
+ * The kind is fixed by where the form is opened (or by the entry being
+ * edited) — there's no switch, so each place stays simple.
  */
 export function MedicationForm({
   babyId,
@@ -37,9 +39,11 @@ export function MedicationForm({
   defaultKind?: MedKind;
 }) {
   const router = useRouter();
-  const [kind, setKind] = useState<MedKind>(
-    initial ? (initial.med_kind === "dose" ? "dose" : "course") : defaultKind
-  );
+  const kind: MedKind = initial
+    ? initial.med_kind === "dose"
+      ? "dose"
+      : "course"
+    : defaultKind;
   const [subject, setSubject] = useState<MedSubject>(
     initial?.med_subject ?? "baby"
   );
@@ -162,14 +166,6 @@ export function MedicationForm({
 
   return (
     <Card className="p-5 space-y-5">
-      <Segmented<MedKind>
-        options={[
-          { value: "dose", label: "Dose given" },
-          { value: "course", label: "Ongoing course" },
-        ]}
-        value={kind}
-        onChange={setKind}
-      />
       <Segmented<MedSubject>
         options={[
           { value: "baby", label: "Baby’s" },
