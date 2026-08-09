@@ -214,10 +214,10 @@ export function ChatThread({
         </div>
         <span
           className="hidden items-center gap-1 text-[10px] text-faint sm:flex"
-          title="Messages are encrypted on your device — the server only stores ciphertext"
+          title={`Messages are private — we can't read them. Only you and ${name} can.`}
         >
           <LockKeyhole className="h-3 w-3" />
-          end-to-end encrypted
+          private — we can’t read these
         </span>
         {confirmBlock ? (
           <div className="flex shrink-0 items-center gap-1">
@@ -282,7 +282,7 @@ export function ChatThread({
                       <span
                         className={`text-sm ${own ? "text-on-ink/70" : "text-faint"}`}
                       >
-                        🔒 Can’t decrypt on this device
+                        🔒 Only readable on the device it was sent to
                       </span>
                     ) : (
                       (text ?? "…")
@@ -350,8 +350,8 @@ export function ChatThread({
         </form>
       ) : (
         <p className="border-t border-line pt-3 text-center text-xs text-muted">
-          Waiting for {name.split(" ")[0]} to open beanlo once so your devices
-          can exchange encryption keys.
+          You’ll be able to message {name.split(" ")[0]} once they’ve opened
+          beanlo.
         </p>
       )}
     </div>
