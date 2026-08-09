@@ -150,7 +150,9 @@ export function ChatThread({
       const body = await encryptMessage(sharedKey, text);
       // Server action rather than a direct insert so the recipient gets a
       // push notification (contents stay encrypted — the push only names you).
-      const row = await sendDirectMessage(friend.id, body);
+      const res = await sendDirectMessage(friend.id, body);
+      if (res.error || !res.message) throw new Error(res.error);
+      const row = res.message;
       setPlain((prev) => new Map(prev).set(row.id, text));
       setMessages((prev) => [...prev, row]);
       setDraft("");

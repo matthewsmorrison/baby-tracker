@@ -99,12 +99,22 @@ export function FriendsClient({ data }: { data: FriendsData }) {
                   <p className="truncate font-medium">{displayName(profile)}</p>
                   <p className="truncate text-xs text-muted">{profile.email}</p>
                 </div>
-                <form action={() => acceptFriendRequest(friendship.id)}>
+                <form
+                  action={async () => {
+                    const res = await acceptFriendRequest(friendship.id);
+                    if (res?.error) setError(res.error);
+                  }}
+                >
                   <Button size="sm" type="submit">
                     Accept
                   </Button>
                 </form>
-                <form action={() => removeFriendship(friendship.id)}>
+                <form
+                  action={async () => {
+                    const res = await removeFriendship(friendship.id);
+                    if (res?.error) setError(res.error);
+                  }}
+                >
                   <Button size="sm" variant="ghost" type="submit">
                     Decline
                   </Button>
@@ -166,17 +176,10 @@ export function FriendsClient({ data }: { data: FriendsData }) {
             setBusy(true);
             setError(null);
             setSent(false);
-            try {
-              await sendFriendRequest(fd);
-              setSent(true);
-            } catch (e) {
-              const msg = e instanceof Error ? e.message : "Something went wrong";
-              // Next.js redirect() throws — let it through.
-              if (msg.includes("NEXT_REDIRECT")) throw e;
-              setError(msg);
-            } finally {
-              setBusy(false);
-            }
+            const res = await sendFriendRequest(fd);
+            setBusy(false);
+            if (res?.error) setError(res.error);
+            else setSent(true);
           }}
           className="flex items-end gap-2"
         >
@@ -218,7 +221,12 @@ export function FriendsClient({ data }: { data: FriendsData }) {
                   <p className="truncate font-medium">{displayName(profile)}</p>
                   <p className="text-xs text-muted">waiting for them to accept</p>
                 </div>
-                <form action={() => removeFriendship(friendship.id)}>
+                <form
+                  action={async () => {
+                    const res = await removeFriendship(friendship.id);
+                    if (res?.error) setError(res.error);
+                  }}
+                >
                   <Button size="sm" variant="ghost" type="submit">
                     Cancel
                   </Button>
