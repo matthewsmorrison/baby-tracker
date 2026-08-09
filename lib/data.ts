@@ -2,7 +2,6 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient } from "./supabase/server";
-import { getProfessionalForUser } from "./pro";
 import type { Baby, Entry, MemberRole } from "./types";
 
 export interface BabyContext {
@@ -40,12 +39,7 @@ export const getBabyContext = cache(async (): Promise<BabyContext> => {
       role: m.role as MemberRole,
     }));
 
-  if (babies.length === 0) {
-    // A professional with no connected families lands on their dashboard,
-    // not the "create a baby" onboarding.
-    const pro = await getProfessionalForUser();
-    redirect(pro ? "/pro-home" : "/onboarding");
-  }
+  if (babies.length === 0) redirect("/onboarding");
 
   const cookieStore = await cookies();
   const activeId = cookieStore.get(ACTIVE_BABY_COOKIE)?.value;

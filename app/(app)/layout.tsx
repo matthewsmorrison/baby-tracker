@@ -5,6 +5,7 @@ import { BottomBar } from "@/components/shell/BottomBar";
 import { Header } from "@/components/shell/Header";
 import { TimerIndicator } from "@/components/log/TimerIndicator";
 import { LogModal } from "@/components/log/LogModal";
+import { PresencePublisher } from "@/components/friends/PresencePublisher";
 
 export default async function AppLayout({
   children,
@@ -59,6 +60,7 @@ export default async function AppLayout({
       {/* Mobile bottom bar (portaled to body so it stays viewport-fixed) */}
       <BottomBar canEdit={ctx.canEdit} aiEnabled={aiEnabled} />
 
+      <PresencePublisher userId={ctx.userId} babyId={ctx.baby.id} />
       {ctx.canEdit && <TimerIndicator babyId={ctx.baby.id} />}
       {ctx.canEdit && (
         <LogModal

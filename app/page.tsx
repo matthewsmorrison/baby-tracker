@@ -63,10 +63,10 @@ export default function Landing() {
         </div>
         <div className="flex items-center gap-2">
           <Link
-            href="/for-professionals"
+            href="/guides"
             className="hidden rounded-full px-3 py-2 text-sm font-medium text-muted hover:text-ink sm:inline"
           >
-            For professionals
+            Guides
           </Link>
           <Link
             href="/login"

@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Input, Label } from "@/components/ui/Field";
 import { Chip } from "@/components/ui/Chip";
+import { Avatar } from "@/components/ui/Avatar";
 import { Check, Copy, LogOut, Pencil, X } from "lucide-react";
 
 interface SettingSpec {
@@ -302,9 +303,7 @@ export function MemberRow({
 
   return (
     <li className="flex items-center gap-3 py-3">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-sm font-semibold">
-        {name.charAt(0).toUpperCase()}
-      </span>
+      <Avatar name={name} src={profile?.avatar_url} size="sm" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">
           {name}

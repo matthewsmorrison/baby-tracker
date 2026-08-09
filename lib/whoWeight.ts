@@ -5,9 +5,9 @@ import type { BabySex } from "./types";
 // (L = Box-Cox power, M = median kg, S = coefficient of variation), by age in
 // completed months, 0–24. Centiles are derived with the LMS method.
 //
-// ⚠️ Entered from the WHO Child Growth Standards tables. Sanity-check against
-// the official WHO data / the printed charts before clinical reliance — this
-// is a guide, not a substitute for the red book.
+// Every row below is checked against the official WHO tables vendored in
+// data/who/ by scripts/verify-who-tables.mjs — run it after any edit here.
+// Still a guide for parents, not a substitute for the plotted red book.
 type LMS = [month: number, L: number, M: number, S: number];
 
 const BOYS: LMS[] = [
@@ -41,35 +41,35 @@ const BOYS: LMS[] = [
 const GIRLS: LMS[] = [
   [0, 0.3809, 3.2322, 0.14171],
   [1, 0.1714, 4.1873, 0.13724],
-  [2, 0.0962, 5.1282, 0.12619],
-  [3, 0.0402, 5.8458, 0.1194],
-  [4, -0.005, 6.4237, 0.1153],
-  [5, -0.043, 6.8985, 0.11259],
-  [6, -0.0756, 7.297, 0.1108],
-  [7, -0.1039, 7.6422, 0.10958],
-  [8, -0.1288, 7.9487, 0.10871],
-  [9, -0.1507, 8.2254, 0.10811],
-  [10, -0.17, 8.48, 0.10764],
-  [11, -0.1872, 8.7192, 0.10727],
-  [12, -0.2024, 8.9481, 0.10697],
-  [13, -0.2158, 9.1699, 0.10674],
-  [14, -0.2278, 9.387, 0.10656],
-  [15, -0.2384, 9.6008, 0.10643],
-  [16, -0.2478, 9.8124, 0.10634],
-  [17, -0.2562, 10.0226, 0.10628],
-  [18, -0.2637, 10.2315, 0.10625],
-  [19, -0.2703, 10.4393, 0.10623],
-  [20, -0.2762, 10.6464, 0.10622],
-  [21, -0.2815, 10.8534, 0.10622],
-  [22, -0.2862, 11.0608, 0.10621],
-  [23, -0.2903, 11.2688, 0.1062],
-  [24, -0.2941, 11.4775, 0.10618],
+  [2, 0.0962, 5.1282, 0.13],
+  [3, 0.0402, 5.8458, 0.12619],
+  [4, -0.005, 6.4237, 0.12402],
+  [5, -0.043, 6.8985, 0.12274],
+  [6, -0.0756, 7.297, 0.12204],
+  [7, -0.1039, 7.6422, 0.12178],
+  [8, -0.1288, 7.9487, 0.12181],
+  [9, -0.1507, 8.2254, 0.12199],
+  [10, -0.17, 8.48, 0.12223],
+  [11, -0.1872, 8.7192, 0.12247],
+  [12, -0.2024, 8.9481, 0.12268],
+  [13, -0.2158, 9.1699, 0.12283],
+  [14, -0.2278, 9.387, 0.12294],
+  [15, -0.2384, 9.6008, 0.12299],
+  [16, -0.2478, 9.8124, 0.12303],
+  [17, -0.2562, 10.0226, 0.12306],
+  [18, -0.2637, 10.2315, 0.12309],
+  [19, -0.2703, 10.4393, 0.12315],
+  [20, -0.2762, 10.6464, 0.12323],
+  [21, -0.2815, 10.8534, 0.12335],
+  [22, -0.2862, 11.0608, 0.1235],
+  [23, -0.2903, 11.2688, 0.12369],
+  [24, -0.2941, 11.4775, 0.1239],
 ];
 
-// Weekly LMS values for the first 13 weeks, taken from the official WHO
-// daily weight-for-age table (weianthro, ages 0/7/14/…/91 days). The monthly
-// table above is too coarse here: linear interpolation between month rows
-// flattens the steep early curve the printed charts show.
+// Weekly LMS values for the first 13 weeks, from WHO's own 0-to-13-weeks
+// weight-for-age table. The monthly table above is too coarse here: linear
+// interpolation between month rows flattens the steep early curve the printed
+// charts show.
 const BOYS_WEEKLY: LMS[] = [
   [0, 0.3487, 3.3464, 0.14602],
   [1, 0.2776, 3.4879, 0.14483],

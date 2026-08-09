@@ -197,6 +197,13 @@ input[type="datetime-local"] {
 }
 
 /* Legal / long-form document typography */
+.legal.guide h1 {
+  font-weight: 800;
+  font-size: 1.9rem;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.35em;
+}
 .legal h2 {
   font-weight: 700;
   font-size: 1.15rem;

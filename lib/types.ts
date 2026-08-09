@@ -46,23 +46,38 @@ export interface Profile {
   avatar_url: string | null;
   email: string | null;
   created_at: string;
+  presence_status: PresenceStatus;
+  presence_at: string | null; // heartbeat; stale ⇒ shown as offline
+  public_key: string | null; // ECDH public key (JWK) for E2EE messaging
+}
+
+/** "feeding" is broadcast automatically while a feed timer runs; "online" is
+ *  the manual Go-online toggle. */
+export type PresenceStatus = "offline" | "online" | "feeding";
+
+export type FriendshipStatus = "pending" | "accepted";
+
+export interface Friendship {
+  id: string;
+  requester: string;
+  addressee: string;
+  status: FriendshipStatus;
+  created_at: string;
+  accepted_at: string | null;
+}
+
+/** A direct message between two friends (parent-to-parent chat). The body
+ *  is an E2EE envelope (see lib/e2ee.ts) — plaintext never leaves the client. */
+export interface DirectMessage {
+  id: string;
+  sender: string;
+  recipient: string;
+  body: string;
+  created_at: string;
+  read_at: string | null;
 }
 
 export type BabySex = "boy" | "girl";
-
-export interface Professional {
-  id: string;
-  slug: string;
-  invite_code: string;
-  name: string;
-  title: string;
-  bio: string | null;
-  location: string | null;
-  website: string | null;
-  user_id: string | null;
-  email: string | null;
-  created_at: string;
-}
 
 export interface Baby {
   id: string;
@@ -74,7 +89,6 @@ export interface Baby {
   feed_interval_min: number | null; // expected time between feeds; gates "Next feed due"
   tracked_types: EntryType[]; // categories this family tracks
   membership_tier: "free" | "advanced"; // AI features are Advanced-only
-  referred_by_pro: string | null; // professional who referred this family
   created_by: string;
   created_at: string;
 }

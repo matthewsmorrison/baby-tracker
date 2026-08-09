@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "verify:who": "node --experimental-strip-types --no-warnings scripts/verify-who-tables.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.110.0",

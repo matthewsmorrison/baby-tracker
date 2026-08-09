@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Schibsted_Grotesk } from "next/font/google";
 import { cookies } from "next/headers";
 import { Analytics } from "@vercel/analytics/next";
+import { WEBSITE } from "@/lib/legal";
 import "./globals.css";
 
 const schibsted = Schibsted_Grotesk({
@@ -11,6 +12,7 @@ const schibsted = Schibsted_Grotesk({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(`https://${WEBSITE}`),
   title: "Beanlo — newborn tracker",
   description:
     "Track nappies, feeds and weight in the first days and weeks. A tracking aid, not medical advice.",

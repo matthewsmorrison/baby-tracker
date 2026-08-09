@@ -145,8 +145,9 @@ export function PushToggle() {
             </p>
           ) : (
             <p className="mt-1 text-sm text-muted">
-              Gentle nudges when a feed is due and a heads-up if wet nappies are
-              running low. A guide, not a schedule.
+              Gentle nudges when a feed is due, a heads-up if wet nappies are
+              running low, and a ping when a friend messages you. A guide, not
+              a schedule.
             </p>
           )}
 

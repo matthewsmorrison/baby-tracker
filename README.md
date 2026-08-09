@@ -28,8 +28,11 @@ professional can be connected read-only.
   3am"); an evening digest push notification; drafted answers to saved
   questions; and a one-page AI handover report for midwife/health-visitor
   appointments. All server-side, gated to the `advanced` membership tier.
-- **Professionals** — public profile pages with referral links; referred
-  families are connected to the professional as a read-only viewer.
+- **Friends** — add other beanlo parents by email, see an MSN-style presence
+  dot (green whenever they have the app open, pulsing while a feed timer
+  runs — company for the 3am shift), and message them. Messages are
+  end-to-end encrypted in the browser (ECDH + AES-GCM); the database only
+  stores ciphertext.
 - **Sharing & export** — email invites with roles (owner / caregiver /
   viewer), CSV export, printable reports.
 - **PWA** — installable, with web-push notifications (feed due, low nappy
@@ -98,8 +101,8 @@ pause.
 - **Authorization is Postgres RLS, not app code.** Roles: `owner` /
   `caregiver` write, `viewer` (healthcare professional) is read-only —
   enforced by policies in the migrations, with column-level privileges for
-  fields users must not write (e.g. `babies.membership_tier`) or read (e.g.
-  `professionals.email`). `scripts/rls-test.mjs` exercises the policies.
+  fields users must not write (e.g. `babies.membership_tier`).
+  `scripts/rls-test.mjs` exercises the policies.
 - **`lib/clinical.ts` is the single source of truth** for day-of-life norms,
   feeding mix and weight bands, shared by the UI and every AI prompt. It must
   stay conservative: general newborn norms only, no diagnostic thresholds.

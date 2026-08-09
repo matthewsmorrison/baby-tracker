@@ -2,6 +2,7 @@ import Link from "next/link";
 import { APP_NAME, LAST_UPDATED } from "@/lib/legal";
 
 const LINKS = [
+  { href: "/guides", label: "Guides" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
   { href: "/cookies", label: "Cookies" },

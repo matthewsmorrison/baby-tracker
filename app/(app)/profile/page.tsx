@@ -6,6 +6,8 @@ import type { BabyInvite, BabyMember, Profile } from "@/lib/types";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
 import { PushToggle } from "@/components/notifications/PushToggle";
+import { AvatarUpload } from "@/components/profile/AvatarUpload";
+import { PresenceToggle } from "@/components/profile/PresenceToggle";
 import { ExportCard } from "@/components/export/ExportButtons";
 import { TrackingToggles } from "@/components/profile/TrackingToggles";
 import { ThemeToggle } from "@/components/profile/ThemeToggle";
@@ -48,19 +50,15 @@ export default async function ProfilePage() {
     invites = (data ?? []) as BabyInvite[];
   }
 
-  // The professional who referred this family, if any (for a small note).
-  let referredPro: { name: string; title: string } | null = null;
-  if (ctx.baby.referred_by_pro) {
-    const { data } = await supabase
-      .from("professionals")
-      .select("name, title")
-      .eq("id", ctx.baby.referred_by_pro)
-      .maybeSingle();
-    referredPro = data;
-  }
-
   const day = dayOfLife(ctx.baby.birth_at, new Date());
   const myMembership = (members ?? []).find((m) => m.user_id === ctx.userId);
+  const myProfile = profileMap.get(ctx.userId) ?? null;
+
+  const { data: mySettings } = await supabase
+    .from("user_settings")
+    .select("appear_offline")
+    .eq("user_id", ctx.userId)
+    .maybeSingle();
 
   const babyCard = (
     <Card className="p-5">
@@ -90,13 +88,6 @@ export default async function ProfilePage() {
           />
         ))}
       </ul>
-      {referredPro && (
-        <p className="mt-3 rounded-2xl bg-accent-soft px-4 py-2.5 text-xs">
-          Referred by <span className="font-semibold">{referredPro.name}</span> (
-          {referredPro.title}). They can view this log unless you remove them
-          above.
-        </p>
-      )}
       {ctx.isOwner && <InviteSection babyId={ctx.baby.id} invites={invites} />}
     </Card>
   );
@@ -160,19 +151,23 @@ export default async function ProfilePage() {
     {
       id: "notifications",
       label: "Alerts",
-      content: ctx.canEdit ? (
-        <PushToggle />
-      ) : (
-        <Card className="p-5 text-sm text-muted">
-          Notifications are available to carers who can edit.
-        </Card>
-      ),
+      // Everyone gets these now — message pings matter to viewers too.
+      content: <PushToggle />,
     },
     {
       id: "account",
       label: "Account",
       content: (
         <>
+          <AvatarUpload
+            userId={ctx.userId}
+            name={myProfile?.full_name ?? myProfile?.email ?? "You"}
+            avatarUrl={myProfile?.avatar_url ?? null}
+          />
+          <PresenceToggle
+            userId={ctx.userId}
+            initialAppearOffline={mySettings?.appear_offline === true}
+          />
           <ConnectedAccounts />
           <ThemeToggle />
           {membershipCard}

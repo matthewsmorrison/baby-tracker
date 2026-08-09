@@ -5,8 +5,7 @@ const PUBLIC_PATHS = [
   "/login",
   "/auth",
   "/invite",
-  "/pro",
-  "/for-professionals",
+  "/guides",
   "/privacy",
   "/terms",
   "/cookies",
@@ -48,8 +47,8 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   // "/" is the public landing (exact match — startsWith "/" would match all).
-  // Match a prefix only at a path boundary so "/pro" doesn't also match
-  // "/profile" (which must stay private).
+  // Match a prefix only at a path boundary so a public prefix can't also
+  // match a longer private path.
   const isPublic =
     pathname === "/" ||
     PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
