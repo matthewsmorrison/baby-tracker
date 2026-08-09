@@ -4,10 +4,11 @@ import { HistoryClient } from "@/components/output/HistoryClient";
 
 export default async function HistoryPage() {
   const ctx = await getBabyContext();
-  // Medications are an ongoing state managed in Profile, not discrete log
-  // events — keep them out of the chronological feed.
+  // Medication courses are an ongoing state managed in Profile, not discrete
+  // log events — but one-off DOSES ("Calpol 2.5 ml · given") are exactly the
+  // kind of moment the chronological feed is for.
   const entries = (await getEntries(ctx.baby.id)).filter(
-    (e) => e.type !== "medication"
+    (e) => e.type !== "medication" || e.med_kind === "dose"
   ); // newest first
 
   // Short-TTL signed URLs for photo thumbnails (private bucket).

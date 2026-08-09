@@ -55,6 +55,8 @@ export default async function FriendChatPage({
       initialMessages={(messages ?? []) as DirectMessage[]}
       friendshipId={friendship.id}
       myReceiptsOn={settings?.read_receipts !== false}
+      canLog={ctx.canEdit}
+      babyId={ctx.baby.id}
     />
   );
 }

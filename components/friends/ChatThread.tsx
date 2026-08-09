@@ -19,7 +19,15 @@ import { blockFriend } from "@/lib/friendActions";
 import { PresenceDot } from "./PresenceDot";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
-import { ArrowLeft, Ban, Hand, LockKeyhole, SendHorizonal } from "lucide-react";
+import { OPEN_LOG_EVENT } from "@/components/log/LogModal";
+import {
+  ArrowLeft,
+  Ban,
+  Hand,
+  LockKeyhole,
+  Plus,
+  SendHorizonal,
+} from "lucide-react";
 
 // Realtime delivers messages instantly; the poll is a slow safety net that
 // also refreshes presence/status and the friend's key.
@@ -51,12 +59,16 @@ export function ChatThread({
   initialMessages,
   friendshipId,
   myReceiptsOn,
+  canLog,
+  babyId,
 }: {
   me: string;
   friend: Profile;
   initialMessages: DirectMessage[];
   friendshipId: string;
   myReceiptsOn: boolean;
+  canLog: boolean;
+  babyId: string;
 }) {
   const supabase = useState(() => createClient())[0];
   const [friend, setFriend] = useState(initialFriend);
@@ -70,6 +82,7 @@ export function ChatThread({
   const [confirmBlock, setConfirmBlock] = useState(false);
   const [blocking, startBlock] = useTransition();
   const [friendTyping, setFriendTyping] = useState(false);
+  const [timerRunning, setTimerRunning] = useState(false);
   const typingChannelRef = useRef<RealtimeChannel | null>(null);
   const typingHideRef = useRef<number | undefined>(undefined);
   const typingSentAtRef = useRef(0);
@@ -233,6 +246,31 @@ export function ChatThread({
     };
   }, [supabase, me, friend.id]);
 
+  // Watch the feed timer so the header's log button can show its pulse and
+  // jump straight to the running feed (the floating pill is hidden in chat).
+  useEffect(() => {
+    if (!canLog) return;
+    const key = `hearth-feed-timer-${babyId}`;
+    const read = () => {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return setTimerRunning(false);
+        const t = JSON.parse(raw) as { side: string | null; startTs: number | null };
+        setTimerRunning(Boolean(t.side && t.startTs));
+      } catch {
+        setTimerRunning(false);
+      }
+    };
+    const first = window.setTimeout(read, 0);
+    const i = setInterval(read, 5_000);
+    window.addEventListener("storage", read);
+    return () => {
+      clearTimeout(first);
+      clearInterval(i);
+      window.removeEventListener("storage", read);
+    };
+  }, [babyId, canLog]);
+
   const notifyTyping = () => {
     const nowMs = Date.now();
     if (nowMs - typingSentAtRef.current < TYPING_SEND_MS) return;
@@ -354,6 +392,33 @@ export function ChatThread({
           <LockKeyhole className="h-3 w-3" />
           private — we can’t read these
         </span>
+        {canLog && (
+          <button
+            type="button"
+            onClick={() =>
+              window.dispatchEvent(
+                new CustomEvent(OPEN_LOG_EVENT, {
+                  detail: timerRunning ? { tab: "feed" } : {},
+                })
+              )
+            }
+            aria-label="Log an entry"
+            title={
+              timerRunning
+                ? "Feed timer running — tap to return to it"
+                : "Log an entry"
+            }
+            className="relative shrink-0 rounded-full p-2 text-faint transition hover:bg-surface-alt hover:text-ink"
+          >
+            <Plus className="h-4 w-4" strokeWidth={2.2} />
+            {timerRunning && (
+              <span className="absolute right-1 top-1 flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+              </span>
+            )}
+          </button>
+        )}
         {confirmBlock ? (
           <div className="flex shrink-0 items-center gap-1">
             <button
