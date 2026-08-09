@@ -2,40 +2,78 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
-const POLL_MS = 30_000;
+const POLL_MS = 60_000;
 
-/** Unread-message count bubble for the Friends nav item. Polls quietly;
- *  renders nothing when there's nothing to read. */
+/** Unread-message count bubble for the Friends nav item. Realtime bumps it
+ *  the moment a message arrives or gets read; a slow poll backstops missed
+ *  events. Renders nothing when there's nothing to read. */
 export function UnreadBadge() {
   const supabase = useState(() => createClient())[0];
   const [count, setCount] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
-    const poll = async () => {
+    let channel: RealtimeChannel | null = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    const setup = async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user || cancelled) return;
-      const { count: n } = await supabase
-        .from("messages")
-        .select("id", { count: "exact", head: true })
-        .eq("recipient", user.id)
-        .is("read_at", null);
-      if (!cancelled) setCount(n ?? 0);
+
+      const poll = async () => {
+        const { count: n } = await supabase
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .eq("recipient", user.id)
+          .is("read_at", null);
+        if (!cancelled) setCount(n ?? 0);
+      };
+
+      void poll();
+      interval = setInterval(poll, POLL_MS);
+      const onVisible = () => {
+        if (document.visibilityState === "visible") void poll();
+      };
+      document.addEventListener("visibilitychange", onVisible);
+
+      // New message in → count up instantly; read somewhere → count down.
+      channel = supabase
+        .channel(`unread-${user.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "messages",
+            filter: `recipient=eq.${user.id}`,
+          },
+          () => void poll()
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "messages",
+            filter: `recipient=eq.${user.id}`,
+          },
+          () => void poll()
+        )
+        .subscribe();
+
+      return () => document.removeEventListener("visibilitychange", onVisible);
     };
-    const first = window.setTimeout(() => void poll(), 0);
-    const i = setInterval(poll, POLL_MS);
-    const onVisible = () => {
-      if (document.visibilityState === "visible") void poll();
-    };
-    document.addEventListener("visibilitychange", onVisible);
+
+    const cleanupPromise = setup();
     return () => {
       cancelled = true;
-      clearTimeout(first);
-      clearInterval(i);
-      document.removeEventListener("visibilitychange", onVisible);
+      if (interval) clearInterval(interval);
+      if (channel) void supabase.removeChannel(channel);
+      void cleanupPromise.then((fn) => fn?.());
     };
   }, [supabase]);
 

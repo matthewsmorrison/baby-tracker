@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { sendDirectMessage } from "@/lib/friendActions";
 import {
   getOrCreateKeyPair,
@@ -19,7 +20,29 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { ArrowLeft, Ban, Hand, LockKeyhole, SendHorizonal } from "lucide-react";
 
-const POLL_MS = 4_000;
+// Realtime delivers messages instantly; the poll is a slow safety net that
+// also refreshes presence/status and the friend's key.
+const POLL_MS = 15_000;
+// How long the three-dots bubble lingers after the last typing event.
+const TYPING_LINGER_MS = 3_000;
+// Throttle for outgoing typing broadcasts.
+const TYPING_SEND_MS = 1_500;
+
+function TypingDots() {
+  return (
+    <div className="flex justify-start">
+      <div className="flex items-center gap-1 rounded-3xl rounded-bl-lg bg-surface-alt px-4 py-3">
+        {[0, 150, 300].map((delay) => (
+          <span
+            key={delay}
+            className="h-1.5 w-1.5 animate-bounce rounded-full bg-faint"
+            style={{ animationDelay: `${delay}ms` }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function ChatThread({
   me,
@@ -45,6 +68,10 @@ export function ChatThread({
   const [sendFailed, setSendFailed] = useState(false);
   const [confirmBlock, setConfirmBlock] = useState(false);
   const [blocking, startBlock] = useTransition();
+  const [friendTyping, setFriendTyping] = useState(false);
+  const typingChannelRef = useRef<RealtimeChannel | null>(null);
+  const typingHideRef = useRef<number | undefined>(undefined);
+  const typingSentAtRef = useRef(0);
   const [now, setNow] = useState(() => Date.now());
   const bottomRef = useRef<HTMLDivElement>(null);
   const derivedFromRef = useRef<string | null>(null);
@@ -127,6 +154,91 @@ export function ChatThread({
     };
   }, [poll]);
 
+  // Realtime: incoming messages appear instantly; updates to my own messages
+  // (read receipts) stream back live. RLS filters what we can receive.
+  useEffect(() => {
+    const channel = supabase
+      .channel(`dm-${me}-${friend.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `recipient=eq.${me}`,
+        },
+        (payload) => {
+          const row = payload.new as DirectMessage;
+          if (row.sender !== friend.id) return;
+          setFriendTyping(false);
+          setMessages((prev) =>
+            prev.some((m) => m.id === row.id) ? prev : [...prev, row]
+          );
+          void supabase
+            .from("messages")
+            .update({
+              read_at: new Date().toISOString(),
+              receipt_suppressed: !myReceiptsOn,
+            })
+            .eq("id", row.id);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "messages",
+          filter: `sender=eq.${me}`,
+        },
+        (payload) => {
+          const row = payload.new as DirectMessage;
+          setMessages((prev) =>
+            prev.map((m) => (m.id === row.id ? row : m))
+          );
+        }
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [supabase, me, friend.id, myReceiptsOn]);
+
+  // Typing indicator: an ephemeral broadcast channel scoped to this pair —
+  // nothing is stored, events just fade after a few seconds.
+  useEffect(() => {
+    const pairKey = [me, friend.id].sort().join(":");
+    const channel = supabase
+      .channel(`typing:${pairKey}`)
+      .on("broadcast", { event: "typing" }, ({ payload }) => {
+        if ((payload as { user?: string })?.user !== friend.id) return;
+        setFriendTyping(true);
+        window.clearTimeout(typingHideRef.current);
+        typingHideRef.current = window.setTimeout(
+          () => setFriendTyping(false),
+          TYPING_LINGER_MS
+        );
+      })
+      .subscribe();
+    typingChannelRef.current = channel;
+    return () => {
+      window.clearTimeout(typingHideRef.current);
+      typingChannelRef.current = null;
+      void supabase.removeChannel(channel);
+    };
+  }, [supabase, me, friend.id]);
+
+  const notifyTyping = () => {
+    const nowMs = Date.now();
+    if (nowMs - typingSentAtRef.current < TYPING_SEND_MS) return;
+    typingSentAtRef.current = nowMs;
+    void typingChannelRef.current?.send({
+      type: "broadcast",
+      event: "typing",
+      payload: { user: me },
+    });
+  };
+
   // Decrypt anything we haven't decrypted yet.
   useEffect(() => {
     if (!sharedKey) return;
@@ -153,7 +265,7 @@ export function ChatThread({
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "end" });
-  }, [messages.length]);
+  }, [messages.length, friendTyping]);
 
   const send = async (text: string, kind: "text" | "wave" = "text") => {
     if (!text || !sharedKey || sending) return;
@@ -306,6 +418,7 @@ export function ChatThread({
             </div>
           );
         })}
+        {friendTyping && <TypingDots />}
         <div ref={bottomRef} />
       </div>
 
@@ -334,7 +447,10 @@ export function ChatThread({
           </button>
           <input
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              if (e.target.value) notifyTyping();
+            }}
             placeholder={`Message ${name.split(" ")[0]}…`}
             maxLength={2000}
             className="h-11 min-w-0 flex-1 rounded-full border border-line bg-surface px-4 text-sm outline-none transition focus:border-ink"
