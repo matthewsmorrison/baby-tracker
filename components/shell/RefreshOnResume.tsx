@@ -15,9 +15,12 @@ const MIN_AGE_MS = 30_000;
  */
 export function RefreshOnResume() {
   const router = useRouter();
-  const lastRefreshRef = useRef(Date.now());
+  const lastRefreshRef = useRef(0);
 
   useEffect(() => {
+    // Baseline: the page has just rendered fresh, so an immediate focus
+    // event (fired by some browsers on load) shouldn't trigger a refresh.
+    lastRefreshRef.current = Date.now();
     const refresh = (force = false) => {
       if (!force && Date.now() - lastRefreshRef.current < MIN_AGE_MS) return;
       lastRefreshRef.current = Date.now();
