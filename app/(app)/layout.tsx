@@ -1,5 +1,5 @@
 import { after } from "next/server";
-import { getBabyContext, getEntries } from "@/lib/data";
+import { getBabyContext, getRecentEntries } from "@/lib/data";
 import { touchPresence } from "@/lib/presenceServer";
 import { dayOfLife } from "@/lib/clinical";
 import { Nav } from "@/components/shell/Nav";
@@ -24,7 +24,11 @@ export default async function AppLayout({
 
   const day = dayOfLife(ctx.baby.birth_at, new Date());
   const aiEnabled = ctx.baby.membership_tier === "advanced";
-  const entries = ctx.canEdit ? await getEntries(ctx.baby.id) : [];
+  // Recent entries only: the forms' defaults and the ?edit= deep link rarely
+  // reach further back, and this array is serialised into every page's
+  // payload — the full history here is what made cold loads crawl. LogModal
+  // fetches older edit targets by id itself.
+  const entries = ctx.canEdit ? await getRecentEntries(ctx.baby.id) : [];
 
   return (
     <div className="flex min-h-dvh w-full">

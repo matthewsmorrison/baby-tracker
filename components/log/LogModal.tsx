@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import type { Entry, EntryType } from "@/lib/types";
 import { Segmented } from "@/components/ui/Segmented";
 import { Portal } from "@/components/ui/Portal";
@@ -80,17 +81,36 @@ export function LogModal({
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Deep link: ?edit=<id> opens the modal on that entry.
+  // Deep link: ?edit=<id> opens the modal on that entry. The layout only
+  // ships recent entries, so anything older (e.g. opened from a back page of
+  // History) is fetched by id — RLS scopes the read to this user's babies.
   useEffect(() => {
     if (!editParam) return;
     const entry = entries.find((e) => e.id === editParam);
-    if (!entry) return;
-    const id = window.setTimeout(() => {
-      setEditing(entry);
-      setTab(entry.type);
-      setOpen(true);
-    }, 0);
-    return () => clearTimeout(id);
+    if (entry) {
+      const id = window.setTimeout(() => {
+        setEditing(entry);
+        setTab(entry.type);
+        setOpen(true);
+      }, 0);
+      return () => clearTimeout(id);
+    }
+    let cancelled = false;
+    createClient()
+      .from("entries")
+      .select("*")
+      .eq("id", editParam)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        const fetched = data as Entry;
+        setEditing(fetched);
+        setTab(fetched.type);
+        setOpen(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [editParam, entries]);
 
   // Deep link: ?log=<type> opens a fresh entry on that tab (e.g. the feed

@@ -1,4 +1,9 @@
-import { getBabyContext, getEntries } from "@/lib/data";
+import {
+  getActiveMedCourses,
+  getBabyContext,
+  getLatestWeight,
+  getRecentEntries,
+} from "@/lib/data";
 import {
   DISCLAIMER,
   EXPECTED_FEEDS,
@@ -27,7 +32,14 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 export default async function TodayPage() {
   const ctx = await getBabyContext();
-  const entries = await getEntries(ctx.baby.id);
+  // Everything below works on the last 7 days (the dose card's window is the
+  // longest lookback). The two things that can predate it — the latest weight
+  // and any still-running medication course — get their own small queries.
+  const [entries, latestWeight, medCourses] = await Promise.all([
+    getRecentEntries(ctx.baby.id),
+    getLatestWeight(ctx.baby.id),
+    getActiveMedCourses(ctx.baby.id),
+  ]);
 
   const now = new Date();
   const day = dayOfLife(ctx.baby.birth_at, now);
@@ -73,13 +85,8 @@ export default async function TodayPage() {
 
   // Medications currently being taken as a course (started, not yet stopped).
   // Managed in Profile now, so always shown when present (no track toggle).
-  const activeMeds = entries.filter(
-    (e) =>
-      e.type === "medication" &&
-      e.med_kind !== "dose" &&
-      new Date(e.occurred_at) <= now &&
-      (!e.ended_at || new Date(e.ended_at) >= now)
-  );
+  // Queried separately — a course can start well before the recent window.
+  const activeMeds = medCourses;
 
   // One-off doses from the last 7 days, grouped per medicine, so any carer
   // can see at a glance when e.g. Calpol was last given (and how many doses
@@ -122,7 +129,6 @@ export default async function TodayPage() {
     return `${Math.floor(h / 24)} days ago`;
   };
 
-  const latestWeight = entries.find((e) => e.type === "weight" && e.weight_g);
   const band = weightBand(day, ctx.baby.birth_weight_g, ctx.baby.sex);
   const ws = latestWeight
     ? weightStatus(latestWeight.weight_g!, ctx.baby.birth_weight_g)

@@ -19,6 +19,7 @@ export function CalendarGrid({
   canEdit,
   onPhotoClick,
   nappyBaseWeightG,
+  onMonthChange,
 }: {
   entries: Entry[];
   birthAt: string;
@@ -27,6 +28,8 @@ export function CalendarGrid({
   canEdit: boolean;
   onPhotoClick: (url: string) => void;
   nappyBaseWeightG?: number | null;
+  /** Fired on month navigation — History uses it to load older windows. */
+  onMonthChange?: (monthStart: Date) => void;
 }) {
   const [month, setMonth] = useState(() => {
     const now = new Date();
@@ -78,7 +81,11 @@ export function CalendarGrid({
           <button
             type="button"
             aria-label="Previous month"
-            onClick={() => setMonth(new Date(year, mon - 1, 1))}
+            onClick={() => {
+              const m = new Date(year, mon - 1, 1);
+              setMonth(m);
+              onMonthChange?.(m);
+            }}
             className="rounded-full p-2 text-muted hover:bg-surface-alt hover:text-ink"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -92,7 +99,11 @@ export function CalendarGrid({
           <button
             type="button"
             aria-label="Next month"
-            onClick={() => setMonth(new Date(year, mon + 1, 1))}
+            onClick={() => {
+              const m = new Date(year, mon + 1, 1);
+              setMonth(m);
+              onMonthChange?.(m);
+            }}
             className="rounded-full p-2 text-muted hover:bg-surface-alt hover:text-ink"
           >
             <ChevronRight className="h-4 w-4" />

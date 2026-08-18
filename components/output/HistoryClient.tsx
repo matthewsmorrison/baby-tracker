@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { DISCLAIMER, dayOfLife } from "@/lib/clinical";
 import { dayWithDate } from "@/lib/dates";
+import { loadHistoryBefore } from "@/lib/actions";
 import type { Entry } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { Segmented } from "@/components/ui/Segmented";
@@ -66,24 +67,82 @@ function Timeline({
 }
 
 export function HistoryClient({
-  entries,
+  babyId,
+  entries: initialEntries,
   birthAt,
   birthWeightG,
-  photoUrls,
+  photoUrls: initialPhotoUrls,
   canEdit,
   nappyBaseWeightG,
+  initialSince,
+  initialHasMore,
 }: {
+  babyId: string;
   entries: Entry[];
   birthAt: string;
   birthWeightG: number;
   photoUrls: Record<string, string>;
   canEdit: boolean;
   nappyBaseWeightG?: number | null;
+  /** Start of the window the server shipped; older windows load on demand. */
+  initialSince: string;
+  initialHasMore: boolean;
 }) {
   const [view, setView] = useState<"calendar" | "timeline">("calendar");
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [entries, setEntries] = useState(initialEntries);
+  const [photoUrls, setPhotoUrls] = useState(initialPhotoUrls);
+  const [since, setSince] = useState(initialSince);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  // Guards against overlapping loads across the async awaits below.
+  const loadingRef = useRef(false);
 
-  if (entries.length === 0) {
+  async function loadWindow(cursor: string) {
+    const page = await loadHistoryBefore(babyId, cursor);
+    setEntries((prev) => {
+      const seen = new Set(prev.map((e) => e.id));
+      return [...prev, ...page.entries.filter((e) => !seen.has(e.id))];
+    });
+    setPhotoUrls((prev) => ({ ...prev, ...page.photoUrls }));
+    setSince(page.since);
+    setHasMore(page.hasMore);
+    return page;
+  }
+
+  async function loadOlder() {
+    if (loadingRef.current || !hasMore) return;
+    loadingRef.current = true;
+    setLoadingOlder(true);
+    try {
+      await loadWindow(since);
+    } finally {
+      loadingRef.current = false;
+      setLoadingOlder(false);
+    }
+  }
+
+  // Calendar month nav: keep pulling older windows until the viewed month is
+  // covered, so its day counts don't show as misleadingly empty.
+  async function ensureMonthLoaded(monthStart: Date) {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+    setLoadingOlder(true);
+    try {
+      let cursor = since;
+      let more = hasMore;
+      while (more && new Date(cursor) > monthStart) {
+        const page = await loadWindow(cursor);
+        cursor = page.since;
+        more = page.hasMore;
+      }
+    } finally {
+      loadingRef.current = false;
+      setLoadingOlder(false);
+    }
+  }
+
+  if (entries.length === 0 && !hasMore) {
     return (
       <Card className="p-6 text-center animate-rise">
         <p className="font-semibold">Nothing logged yet</p>
@@ -107,25 +166,43 @@ export function HistoryClient({
       />
 
       {view === "calendar" ? (
-        <CalendarGrid
-          entries={entries}
-          birthAt={birthAt}
-          birthWeightG={birthWeightG}
-          photoUrls={photoUrls}
-          canEdit={canEdit}
-          onPhotoClick={setLightbox}
-          nappyBaseWeightG={nappyBaseWeightG}
-        />
+        <>
+          <CalendarGrid
+            entries={entries}
+            birthAt={birthAt}
+            birthWeightG={birthWeightG}
+            photoUrls={photoUrls}
+            canEdit={canEdit}
+            onPhotoClick={setLightbox}
+            nappyBaseWeightG={nappyBaseWeightG}
+            onMonthChange={ensureMonthLoaded}
+          />
+          {loadingOlder && (
+            <p className="text-center text-xs text-faint">Loading older entries…</p>
+          )}
+        </>
       ) : (
-        <Timeline
-          entries={entries}
-          birthAt={birthAt}
-          birthWeightG={birthWeightG}
-          photoUrls={photoUrls}
-          canEdit={canEdit}
-          onPhotoClick={setLightbox}
-          nappyBaseWeightG={nappyBaseWeightG}
-        />
+        <>
+          <Timeline
+            entries={entries}
+            birthAt={birthAt}
+            birthWeightG={birthWeightG}
+            photoUrls={photoUrls}
+            canEdit={canEdit}
+            onPhotoClick={setLightbox}
+            nappyBaseWeightG={nappyBaseWeightG}
+          />
+          {hasMore && (
+            <button
+              type="button"
+              onClick={loadOlder}
+              disabled={loadingOlder}
+              className="w-full rounded-2xl border border-line py-3 text-sm font-medium text-muted transition hover:border-ink hover:text-ink disabled:opacity-60"
+            >
+              {loadingOlder ? "Loading…" : "Load older entries"}
+            </button>
+          )}
+        </>
       )}
 
       <p className="px-2 pb-2 text-center text-xs text-faint">{DISCLAIMER}</p>

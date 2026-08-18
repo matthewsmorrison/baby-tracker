@@ -5,8 +5,14 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { createClient } from "./supabase/server";
 import { createServiceClient } from "./supabase/service";
-import { ACTIVE_BABY_COOKIE } from "./data";
-import type { MemberRole } from "./types";
+import {
+  ACTIVE_BABY_COOKIE,
+  HISTORY_WINDOW_DAYS,
+  getEntriesRange,
+  hasEntriesBefore,
+  signPhotoUrls,
+} from "./data";
+import type { Entry, MemberRole } from "./types";
 
 /** Server actions RETURN failures instead of throwing: Next.js redacts
  *  thrown server-action error messages in production, so a thrown
@@ -463,4 +469,39 @@ export async function updateTrackedTypes(
   if (error) return { error: error.message };
   revalidatePath("/", "layout");
   return {};
+}
+
+export interface HistoryPage {
+  entries: Entry[];
+  photoUrls: Record<string, string>;
+  /** Start of the loaded window — pass back as `beforeISO` to keep going. */
+  since: string;
+  hasMore: boolean;
+}
+
+/**
+ * The next older History window: the {@link HISTORY_WINDOW_DAYS} days before
+ * `beforeISO`. Reads go through the user-scoped client, so RLS keeps them to
+ * the caller's own babies. Medication courses are filtered out the same way
+ * the History page does — only one-off doses belong in the chronological feed.
+ */
+export async function loadHistoryBefore(
+  babyId: string,
+  beforeISO: string
+): Promise<HistoryPage> {
+  const before = new Date(beforeISO);
+  if (Number.isNaN(before.getTime())) {
+    return { entries: [], photoUrls: {}, since: beforeISO, hasMore: false };
+  }
+  const since = new Date(
+    before.getTime() - HISTORY_WINDOW_DAYS * 24 * 60 * 60 * 1000
+  ).toISOString();
+  const entries = (
+    await getEntriesRange(babyId, { since, before: before.toISOString() })
+  ).filter((e) => e.type !== "medication" || e.med_kind === "dose");
+  const [photoUrls, hasMore] = await Promise.all([
+    signPhotoUrls(entries),
+    hasEntriesBefore(babyId, since),
+  ]);
+  return { entries, photoUrls, since, hasMore };
 }
