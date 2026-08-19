@@ -10,6 +10,7 @@ import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import { PresenceToggle } from "@/components/profile/PresenceToggle";
 import { ReadReceiptsToggle } from "@/components/profile/ReadReceiptsToggle";
 import { ExportCard } from "@/components/export/ExportButtons";
+import { ImportCard } from "@/components/profile/ImportCard";
 import { TrackingToggles } from "@/components/profile/TrackingToggles";
 import { ThemeToggle } from "@/components/profile/ThemeToggle";
 import { ConnectedAccounts } from "@/components/profile/ConnectedAccounts";
@@ -190,6 +191,7 @@ export default async function ProfilePage() {
       content: (
         <>
           <ExportCard />
+          {ctx.canEdit && <ImportCard babyId={ctx.baby.id} />}
           <DangerZone
             babyId={ctx.baby.id}
             babyName={ctx.baby.name}

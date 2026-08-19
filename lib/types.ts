@@ -194,6 +194,8 @@ export interface Entry {
 
   note: string | null;
   photo_path: string | null;
+  /** Bulk-import provenance (e.g. "huckleberry"); null for hand-logged. */
+  source: string | null;
 }
 
 /** A stored AI handover summary (markdown) for healthcare professionals. */
