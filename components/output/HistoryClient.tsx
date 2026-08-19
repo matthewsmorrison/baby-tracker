@@ -2,8 +2,8 @@
 import { useRef, useState } from "react";
 import { DISCLAIMER, dayOfLife } from "@/lib/clinical";
 import { dayWithDate } from "@/lib/dates";
-import { loadHistoryBefore } from "@/lib/actions";
-import type { Entry } from "@/lib/types";
+import { loadHistoryBefore, toggleDayTag } from "@/lib/actions";
+import type { DayTag, DayTagKind, Entry } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { Segmented } from "@/components/ui/Segmented";
 import { DayTotals, EntryRow, PhotoLightbox } from "./entryList";
@@ -76,6 +76,7 @@ export function HistoryClient({
   nappyBaseWeightG,
   initialSince,
   initialHasMore,
+  initialDayTags,
 }: {
   babyId: string;
   entries: Entry[];
@@ -87,6 +88,7 @@ export function HistoryClient({
   /** Start of the window the server shipped; older windows load on demand. */
   initialSince: string;
   initialHasMore: boolean;
+  initialDayTags: DayTag[];
 }) {
   const [view, setView] = useState<"calendar" | "timeline">("calendar");
   const [lightbox, setLightbox] = useState<string | null>(null);
@@ -97,6 +99,27 @@ export function HistoryClient({
   const [loadingOlder, setLoadingOlder] = useState(false);
   // Guards against overlapping loads across the async awaits below.
   const loadingRef = useRef(false);
+  // day ("YYYY-MM-DD") -> tags on that day, kept as a map for the calendar.
+  const [dayTags, setDayTags] = useState<Record<string, DayTagKind[]>>(() => {
+    const m: Record<string, DayTagKind[]> = {};
+    for (const t of initialDayTags) (m[t.day] ??= []).push(t.tag);
+    return m;
+  });
+
+  // Optimistic toggle; reverts if the server action fails.
+  async function onToggleTag(day: string, tag: DayTagKind) {
+    const flip = () =>
+      setDayTags((prev) => {
+        const cur = prev[day] ?? [];
+        const next = cur.includes(tag)
+          ? cur.filter((t) => t !== tag)
+          : [...cur, tag];
+        return { ...prev, [day]: next };
+      });
+    flip();
+    const res = await toggleDayTag(babyId, day, tag);
+    if (res.error) flip();
+  }
 
   async function loadWindow(cursor: string) {
     const page = await loadHistoryBefore(babyId, cursor);
@@ -176,6 +199,8 @@ export function HistoryClient({
             onPhotoClick={setLightbox}
             nappyBaseWeightG={nappyBaseWeightG}
             onMonthChange={ensureMonthLoaded}
+            dayTags={dayTags}
+            onToggleTag={canEdit ? onToggleTag : undefined}
           />
           {loadingOlder && (
             <p className="text-center text-xs text-faint">Loading older entries…</p>

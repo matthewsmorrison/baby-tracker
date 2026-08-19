@@ -471,6 +471,55 @@ export async function updateTrackedTypes(
   return {};
 }
 
+const DAY_TAGS = ["no_poo", "teething"] as const;
+
+/**
+ * Toggle a whole-day tag ("no poo" / "teething") for a local calendar date.
+ * Insert-or-delete against the (baby, day, tag) unique row; RLS restricts
+ * writes to the baby's owner/caregivers. Returns the resulting state.
+ */
+export async function toggleDayTag(
+  babyId: string,
+  day: string,
+  tag: string
+): Promise<ActionResult & { active?: boolean }> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return { error: "Invalid date." };
+  if (!(DAY_TAGS as readonly string[]).includes(tag))
+    return { error: "Unknown tag." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: existing } = await supabase
+    .from("baby_day_tags")
+    .select("id")
+    .eq("baby_id", babyId)
+    .eq("day", day)
+    .eq("tag", tag)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase
+      .from("baby_day_tags")
+      .delete()
+      .eq("id", existing.id);
+    if (error) return { error: error.message };
+    revalidatePath("/", "layout");
+    return { active: false };
+  }
+  const { error } = await supabase.from("baby_day_tags").insert({
+    baby_id: babyId,
+    day,
+    tag,
+    created_by: user.id,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/", "layout");
+  return { active: true };
+}
+
 export interface HistoryPage {
   entries: Entry[];
   photoUrls: Record<string, string>;

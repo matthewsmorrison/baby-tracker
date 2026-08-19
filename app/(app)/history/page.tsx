@@ -1,6 +1,7 @@
 import {
   HISTORY_WINDOW_DAYS,
   getBabyContext,
+  getDayTags,
   getEntriesRange,
   hasEntriesBefore,
   signPhotoUrls,
@@ -22,9 +23,10 @@ export default async function HistoryPage() {
     (e) => e.type !== "medication" || e.med_kind === "dose"
   ); // newest first
 
-  const [photoUrls, hasMore] = await Promise.all([
+  const [photoUrls, hasMore, dayTags] = await Promise.all([
     signPhotoUrls(entries),
     hasEntriesBefore(ctx.baby.id, since),
+    getDayTags(ctx.baby.id),
   ]);
 
   return (
@@ -38,6 +40,7 @@ export default async function HistoryPage() {
       nappyBaseWeightG={ctx.baby.nappy_base_weight_g}
       initialSince={since}
       initialHasMore={hasMore}
+      initialDayTags={dayTags}
     />
   );
 }

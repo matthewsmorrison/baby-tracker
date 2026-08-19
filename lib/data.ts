@@ -2,7 +2,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient } from "./supabase/server";
-import type { Baby, Entry, MemberRole } from "./types";
+import type { Baby, DayTag, Entry, MemberRole } from "./types";
 
 export interface BabyContext {
   baby: Baby;
@@ -140,6 +140,19 @@ export async function getEntriesRange(
   const { data } = await query.order("occurred_at", { ascending: false });
   return (data ?? []) as Entry[];
 }
+
+/** All of a baby's day tags, newest first. Unbounded on purpose: tags are
+ *  rare (a handful a month at most), so the whole set stays tiny and the
+ *  calendar never has to page them. */
+export const getDayTags = cache(async (babyId: string): Promise<DayTag[]> => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("baby_day_tags")
+    .select("*")
+    .eq("baby_id", babyId)
+    .order("day", { ascending: false });
+  return (data ?? []) as DayTag[];
+});
 
 /** History loads this many days per window (initial page and each "older"). */
 export const HISTORY_WINDOW_DAYS = 30;

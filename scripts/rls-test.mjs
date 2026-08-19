@@ -60,6 +60,7 @@ async function signIn(email) {
 const ids = {};
 let babyId = null;
 let entryId = null;
+let dayTagId = null;
 const photoPath = () => `${babyId}/test-photo.jpg`;
 
 try {
@@ -116,6 +117,19 @@ try {
     });
     check("A can upload a photo to the baby's folder", !error, error?.message);
   }
+  {
+    const { data, error } = await A.from("baby_day_tags")
+      .insert({
+        baby_id: babyId,
+        day: new Date().toISOString().slice(0, 10),
+        tag: "no_poo",
+        created_by: ids.A,
+      })
+      .select("id")
+      .single();
+    check("A can tag a day", !error && !!data, error?.message);
+    dayTagId = data?.id;
+  }
 
   // --- Outsider B: total isolation ------------------------------------------
   console.log("\n[B] outsider (no membership) — everything must be blocked");
@@ -156,6 +170,19 @@ try {
       .from("nappy-photos")
       .createSignedUrl(photoPath(), 60);
     check("B cannot create a signed URL for the photo", !!error, "signing was ALLOWED");
+  }
+  {
+    const { data } = await B.from("baby_day_tags").select("*").eq("baby_id", babyId);
+    check("B cannot read day tags", (data ?? []).length === 0);
+  }
+  {
+    const { error } = await B.from("baby_day_tags").insert({
+      baby_id: babyId,
+      day: new Date().toISOString().slice(0, 10),
+      tag: "teething",
+      created_by: ids.B,
+    });
+    check("B cannot tag a day (RLS error expected)", !!error, "insert was ALLOWED");
   }
   {
     const { data } = await B.from("baby_members").select("*").eq("baby_id", babyId);
@@ -215,6 +242,23 @@ try {
   {
     const { data } = await V.from("entries").delete().eq("id", entryId).select();
     check("V cannot delete entries", (data ?? []).length === 0);
+  }
+  {
+    const { data } = await V.from("baby_day_tags").select("*").eq("baby_id", babyId);
+    check("V can read day tags", (data ?? []).length >= 1);
+  }
+  {
+    const { error } = await V.from("baby_day_tags").insert({
+      baby_id: babyId,
+      day: new Date().toISOString().slice(0, 10),
+      tag: "teething",
+      created_by: ids.V,
+    });
+    check("V cannot tag a day", !!error, "insert was ALLOWED");
+  }
+  {
+    const { data } = await V.from("baby_day_tags").delete().eq("id", dayTagId).select();
+    check("V cannot delete day tags", (data ?? []).length === 0);
   }
   {
     const blob = new Blob([new Uint8Array([1])], { type: "image/jpeg" });

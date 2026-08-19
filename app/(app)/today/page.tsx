@@ -1,6 +1,7 @@
 import {
   getActiveMedCourses,
   getBabyContext,
+  getDayTags,
   getLatestWeight,
   getRecentEntries,
 } from "@/lib/data";
@@ -26,6 +27,7 @@ import { NextFeedCard } from "@/components/output/NextFeedCard";
 import { NextNapCard } from "@/components/output/NextNapCard";
 import { SkyArc } from "@/components/output/SkyArc";
 import { OpenLogButton } from "@/components/log/OpenLogButton";
+import { DayTagCard } from "@/components/log/DayTagCard";
 import { AlertTriangle, Pill } from "lucide-react";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -35,10 +37,11 @@ export default async function TodayPage() {
   // Everything below works on the last 7 days (the dose card's window is the
   // longest lookback). The two things that can predate it — the latest weight
   // and any still-running medication course — get their own small queries.
-  const [entries, latestWeight, medCourses] = await Promise.all([
+  const [entries, latestWeight, medCourses, dayTags] = await Promise.all([
     getRecentEntries(ctx.baby.id),
     getLatestWeight(ctx.baby.id),
     getActiveMedCourses(ctx.baby.id),
+    getDayTags(ctx.baby.id),
   ]);
 
   const now = new Date();
@@ -185,6 +188,18 @@ export default async function TodayPage() {
       {/* Nappy quota */}
       {track.has("nappy") && (
         <NappyQuota day={day} dirtyCount={dirtyCount} wetCount={wetCount} />
+      )}
+
+      {/* Whole-day tags — "no poo" / "teething", toggled with one tap. The
+          card only needs tags near today; local-date matching happens
+          client-side. */}
+      {ctx.canEdit && (
+        <DayTagCard
+          babyId={ctx.baby.id}
+          recentTags={dayTags.filter(
+            (t) => now.getTime() - new Date(t.day).getTime() <= 2 * DAY_MS
+          )}
+        />
       )}
 
       {/* KPIs */}

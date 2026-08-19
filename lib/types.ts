@@ -134,6 +134,19 @@ export interface BabyNote {
   updated_at: string;
 }
 
+/** Whole-day observations (no timestamp): tagged on the History calendar or
+ *  Today. `day` is a local calendar date, "YYYY-MM-DD". */
+export type DayTagKind = "no_poo" | "teething";
+
+export interface DayTag {
+  id: string;
+  baby_id: string;
+  day: string;
+  tag: DayTagKind;
+  created_by: string;
+  created_at: string;
+}
+
 export interface Entry {
   id: string;
   baby_id: string;

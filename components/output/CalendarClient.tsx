@@ -1,7 +1,8 @@
 "use client";
 import { useMemo, useState } from "react";
 import { DISCLAIMER, dayOfLife } from "@/lib/clinical";
-import type { Entry } from "@/lib/types";
+import { DAY_TAG_LABELS } from "@/components/log/DayTagCard";
+import type { DayTagKind, Entry } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import {
   DayTotals,
@@ -20,6 +21,8 @@ export function CalendarGrid({
   onPhotoClick,
   nappyBaseWeightG,
   onMonthChange,
+  dayTags,
+  onToggleTag,
 }: {
   entries: Entry[];
   birthAt: string;
@@ -30,6 +33,10 @@ export function CalendarGrid({
   nappyBaseWeightG?: number | null;
   /** Fired on month navigation — History uses it to load older windows. */
   onMonthChange?: (monthStart: Date) => void;
+  /** Whole-day tags by local date key ("YYYY-MM-DD"). */
+  dayTags?: Record<string, DayTagKind[]>;
+  /** When set, the selected-day panel offers tag toggles (carers only). */
+  onToggleTag?: (day: string, tag: DayTagKind) => void;
 }) {
   const [month, setMonth] = useState(() => {
     const now = new Date();
@@ -126,6 +133,16 @@ export function CalendarGrid({
             const feeds = dayEntries.filter((e) => e.type === "feed").length;
             const nappies = dayEntries.filter((e) => e.type === "nappy").length;
             const hasWeight = dayEntries.some((e) => e.type === "weight");
+            const dirtyCount = dayEntries.filter(
+              (e) => e.type === "nappy" && e.dirty
+            ).length;
+            const tags = dayTags?.[k] ?? [];
+            // "No poo" also derives itself on past days where nappies were
+            // logged but none dirty — no tagging needed while tracking.
+            const noPoo =
+              tags.includes("no_poo") ||
+              (k < todayKey && nappies > 0 && dirtyCount === 0);
+            const teething = tags.includes("teething");
             const isSelected = selectedKey === k;
             const isToday = todayKey === k;
             const beforeBirth =
@@ -189,6 +206,24 @@ export function CalendarGrid({
                     )}
                   </span>
                 )}
+                {(noPoo || teething) && (
+                  <span className="mt-0.5 flex items-center gap-0.5">
+                    {noPoo && (
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          isSelected ? "bg-on-ink/80" : "bg-muted"
+                        }`}
+                      />
+                    )}
+                    {teething && (
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          isSelected ? "bg-on-ink/80" : "bg-watch"
+                        }`}
+                      />
+                    )}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -203,6 +238,12 @@ export function CalendarGrid({
           </span>
           <span className="flex items-center gap-1">
             <Scale className="h-3 w-3 text-positive" /> weight logged
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-muted" /> no poo
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-watch" /> teething
           </span>
         </p>
       </Card>
@@ -222,6 +263,43 @@ export function CalendarGrid({
             </h2>
             {selected.length > 0 && <DayTotals entries={selected} />}
           </div>
+
+          {/* Whole-day tags for the selected day — toggles for carers on
+              past/today dates after birth, read-only chips otherwise. */}
+          {selectedKey &&
+            (() => {
+              const activeTags = dayTags?.[selectedKey] ?? [];
+              const taggable =
+                !!onToggleTag &&
+                selectedKey <= todayKey &&
+                selectedKey >= dayKey(birthDate);
+              if (!taggable && activeTags.length === 0) return null;
+              return (
+                <div className="mb-2 flex flex-wrap gap-2 px-2">
+                  {(Object.keys(DAY_TAG_LABELS) as DayTagKind[]).map((tag) => {
+                    const isActive = activeTags.includes(tag);
+                    if (!taggable && !isActive) return null;
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        aria-pressed={isActive}
+                        disabled={!taggable}
+                        onClick={() => onToggleTag?.(selectedKey, tag)}
+                        className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                          isActive
+                            ? "border-ink bg-ink text-on-ink"
+                            : "border-line bg-surface-alt text-muted hover:text-ink"
+                        }`}
+                      >
+                        {DAY_TAG_LABELS[tag]}
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
           <Card className="px-5">
             {selected.length === 0 ? (
               <p className="py-5 text-sm text-muted">
