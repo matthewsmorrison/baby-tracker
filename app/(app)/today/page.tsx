@@ -1,8 +1,8 @@
 import {
   getActiveMedCourses,
   getBabyContext,
-  getDayTags,
   getLatestWeight,
+  getRecentDayTags,
   getRecentEntries,
 } from "@/lib/data";
 import {
@@ -41,7 +41,7 @@ export default async function TodayPage() {
     getRecentEntries(ctx.baby.id),
     getLatestWeight(ctx.baby.id),
     getActiveMedCourses(ctx.baby.id),
-    getDayTags(ctx.baby.id),
+    getRecentDayTags(ctx.baby.id),
   ]);
 
   const now = new Date();
@@ -193,14 +193,7 @@ export default async function TodayPage() {
       {/* Whole-day tags — "no poo" / "teething", toggled with one tap. The
           card only needs tags near today; local-date matching happens
           client-side. */}
-      {ctx.canEdit && (
-        <DayTagCard
-          babyId={ctx.baby.id}
-          recentTags={dayTags.filter(
-            (t) => now.getTime() - new Date(t.day).getTime() <= 2 * DAY_MS
-          )}
-        />
-      )}
+      {ctx.canEdit && <DayTagCard babyId={ctx.baby.id} recentTags={dayTags} />}
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3">

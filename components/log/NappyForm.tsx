@@ -2,7 +2,6 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import exifr from "exifr";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image";
 import { fromLocalInputValue, toLocalInputValue } from "@/lib/dates";
@@ -109,6 +108,11 @@ export function NappyForm({
     let taken: Date | null = null;
     let source: "exif" | "file" | null = null;
     try {
+      // The mini build (EXIF/TIFF only) is a third the size of the default
+      // full build, and loading it on demand keeps EXIF parsing out of the
+      // form bundle entirely — it's only needed when a photo is attached.
+      // @ts-expect-error — exifr ships no types for the dist subpaths.
+      const { default: exifr } = await import("exifr/dist/mini.esm.mjs");
       const tags = await exifr.parse(file, {
         pick: ["DateTimeOriginal", "CreateDate", "ModifyDate"],
         reviveValues: false,

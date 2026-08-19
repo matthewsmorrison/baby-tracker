@@ -1,10 +1,10 @@
-import { getBabyContext, getEntries } from "@/lib/data";
+import { getBabyContext, getChartEntries } from "@/lib/data";
 import { DISCLAIMER } from "@/lib/clinical";
 import { DashboardView } from "@/components/output/DashboardView";
 
 export default async function DashboardPage() {
   const ctx = await getBabyContext();
-  const entries = await getEntries(ctx.baby.id);
+  const entries = await getChartEntries(ctx.baby.id);
 
   return (
     <div className="space-y-4 animate-rise">

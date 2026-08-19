@@ -42,7 +42,7 @@ function NavContent({
           className={orientation === "side" ? "h-4 w-4" : "h-5 w-5"}
           strokeWidth={orientation === "side" ? 2.2 : active ? 2.4 : 2}
         />
-        {href === "/friends" && <UnreadBadge />}
+        {href === "/friends" && <UnreadBadge orientation={orientation} />}
       </span>
       <span className={pulse}>{label}</span>
     </>
@@ -72,6 +72,7 @@ export function Nav({
             <Link
               key={href}
               href={href}
+              prefetch={false}
               className={`flex items-center gap-3 rounded-full px-4 py-2.5 text-sm font-medium transition ${
                 active
                   ? "bg-ink text-on-ink"
@@ -100,6 +101,10 @@ export function Nav({
           <Link
             key={href}
             href={href}
+            // Six always-visible links would otherwise fire six full dynamic
+            // RSC prefetches right at load, competing with hydration; the
+            // router cache (staleTimes) keeps taps fast after first visit.
+            prefetch={false}
             className={`flex flex-col items-center gap-0.5 rounded-2xl px-3 py-1.5 text-[10px] font-medium transition ${
               active ? "text-ink" : "text-faint hover:text-muted"
             }`}

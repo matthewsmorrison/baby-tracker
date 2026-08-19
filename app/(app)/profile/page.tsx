@@ -28,11 +28,31 @@ export default async function ProfilePage() {
   const ctx = await getBabyContext();
   const supabase = await createClient();
 
-  const { data: members } = await supabase
-    .from("baby_members")
-    .select("*")
-    .eq("baby_id", ctx.baby.id)
-    .order("created_at", { ascending: true });
+  // Members must resolve before profiles (needs the user ids); invites and
+  // settings are independent, so all three run as one parallel batch instead
+  // of four serial round trips.
+  const [{ data: members }, invitesRes, { data: mySettings }] =
+    await Promise.all([
+      supabase
+        .from("baby_members")
+        .select("*")
+        .eq("baby_id", ctx.baby.id)
+        .order("created_at", { ascending: true }),
+      ctx.isOwner
+        ? supabase
+            .from("baby_invites")
+            .select("*")
+            .eq("baby_id", ctx.baby.id)
+            .eq("status", "pending")
+            .order("created_at", { ascending: false })
+        : Promise.resolve({ data: null }),
+      supabase
+        .from("user_settings")
+        .select("appear_offline, read_receipts")
+        .eq("user_id", ctx.userId)
+        .maybeSingle(),
+    ]);
+  const invites = (invitesRes.data ?? []) as BabyInvite[];
 
   const userIds = (members ?? []).map((m) => m.user_id);
   const { data: profiles } = await supabase
@@ -41,26 +61,9 @@ export default async function ProfilePage() {
     .in("id", userIds);
   const profileMap = new Map((profiles ?? []).map((p: Profile) => [p.id, p]));
 
-  let invites: BabyInvite[] = [];
-  if (ctx.isOwner) {
-    const { data } = await supabase
-      .from("baby_invites")
-      .select("*")
-      .eq("baby_id", ctx.baby.id)
-      .eq("status", "pending")
-      .order("created_at", { ascending: false });
-    invites = (data ?? []) as BabyInvite[];
-  }
-
   const day = dayOfLife(ctx.baby.birth_at, new Date());
   const myMembership = (members ?? []).find((m) => m.user_id === ctx.userId);
   const myProfile = profileMap.get(ctx.userId) ?? null;
-
-  const { data: mySettings } = await supabase
-    .from("user_settings")
-    .select("appear_offline, read_receipts")
-    .eq("user_id", ctx.userId)
-    .maybeSingle();
 
   const babyCard = (
     <Card className="p-5">

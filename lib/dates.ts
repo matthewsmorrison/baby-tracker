@@ -18,6 +18,13 @@ export function fromLocalInputValue(v: string): string {
   return new Date(v).toISOString();
 }
 
+/** Local-date key, e.g. "2026-07-04". Lives here (not in a component module)
+ *  so importing it doesn't drag a whole entry-list UI into the bundle. */
+export function dayKey(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 export function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString(LOCALE, {
     hour: "2-digit",

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>beanlo — offline</title>
+<style>
+  /* Mirrors app/globals.css tokens so the fallback feels like the app. */
+  :root { --bg:#ede9e1; --ink:#1b1b1a; --muted:#8c8677; --surface:#ffffff; --line:#e7e1d6; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#16140f; --ink:#f1ede4; --muted:#a49d8d; --surface:#201d16; --line:#322e26; }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    min-height: 100dvh; display: flex; align-items: center; justify-content: center;
+    background: var(--bg); color: var(--ink);
+    font-family: system-ui, -apple-system, sans-serif;
+    padding: 24px calc(16px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+  }
+  .card { max-width: 22rem; text-align: center; background: var(--surface); border: 1px solid var(--line); border-radius: 24px; padding: 32px 24px; }
+  img { width: 56px; height: 56px; border-radius: 14px; }
+  h1 { font-size: 1.1rem; margin-top: 16px; }
+  p { color: var(--muted); font-size: .9rem; line-height: 1.5; margin-top: 8px; }
+  button {
+    margin-top: 20px; border: 0; border-radius: 999px; padding: 12px 24px;
+    background: var(--ink); color: var(--bg); font-size: .9rem; font-weight: 600; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <img src="/icons/icon-192.png" alt="">
+    <h1>You&rsquo;re offline</h1>
+    <p>beanlo needs a connection to load your latest entries. Anything you logged earlier is safe — it&rsquo;ll be right here when you&rsquo;re back online.</p>
+    <button onclick="location.reload()">Try again</button>
+  </div>
+  <script>
+    // The moment the connection returns, get out of the way.
+    addEventListener("online", function () { location.reload(); });
+  </script>
+</body>
+</html>

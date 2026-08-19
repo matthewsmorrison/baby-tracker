@@ -96,12 +96,16 @@
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 30px rgba(0, 0, 0, 0.05);
 
-  --animate-rise: rise 0.4s ease-out both;
+  --animate-rise: rise 0.3s ease-out both;
 }
 
+/* Starts partially visible on purpose: after a slow cold load the content
+   used to arrive and then sit at opacity 0 for the whole animation — a
+   second blank screen. Rising from 55% keeps the settle without ever hiding
+   content that has already arrived. */
 @keyframes rise {
   from {
-    opacity: 0;
+    opacity: 0.55;
     transform: translateY(8px);
   }
   to {

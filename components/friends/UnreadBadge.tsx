@@ -8,20 +8,35 @@ const POLL_MS = 60_000;
 
 /** Unread-message count bubble for the Friends nav item. Realtime bumps it
  *  the moment a message arrives or gets read; a slow poll backstops missed
- *  events. Renders nothing when there's nothing to read. */
-export function UnreadBadge() {
+ *  events. Renders nothing when there's nothing to read.
+ *
+ *  The badge is mounted in BOTH navs (desktop sidebar + mobile bottom bar)
+ *  but only one is ever visible, so each instance checks the `md` breakpoint
+ *  and the hidden one skips its auth call, count query, WebSocket and poll
+ *  entirely — half the boot-time work on a phone. */
+export function UnreadBadge({
+  orientation,
+}: {
+  orientation: "side" | "bottom";
+}) {
   const supabase = useState(() => createClient())[0];
   const [count, setCount] = useState(0);
 
   useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)"); // Tailwind `md`
+    const active = orientation === "side" ? mq.matches : !mq.matches;
+    if (!active) return;
+
     let cancelled = false;
     let channel: RealtimeChannel | null = null;
     let interval: ReturnType<typeof setInterval> | null = null;
 
     const setup = async () => {
+      // Local session read — no network; the proxy verified it server-side.
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user || cancelled) return;
 
       const poll = async () => {
@@ -79,7 +94,7 @@ export function UnreadBadge() {
       if (channel) void supabase.removeChannel(channel);
       void cleanupPromise.then((fn) => fn?.());
     };
-  }, [supabase]);
+  }, [supabase, orientation]);
 
   if (count === 0) return null;
   return (

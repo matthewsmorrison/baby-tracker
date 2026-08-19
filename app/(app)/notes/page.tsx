@@ -7,34 +7,35 @@ export default async function NotesPage() {
   const ctx = await getBabyContext();
   const supabase = await createClient();
 
-  const { data: notes } = await supabase
-    .from("baby_notes")
-    .select("*")
-    .eq("baby_id", ctx.baby.id)
-    .order("created_at", { ascending: false });
+  // Notes and the taggable-members list are independent — fetch in parallel
+  // (this page used to be four serial round trips).
+  const [{ data: notes }, { data: members }] = await Promise.all([
+    supabase
+      .from("baby_notes")
+      .select("*")
+      .eq("baby_id", ctx.baby.id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("baby_members")
+      .select("user_id, role")
+      .eq("baby_id", ctx.baby.id),
+  ]);
+
+  // Photo URLs need the notes, profiles need the members — but not each other.
+  const photoPaths = (notes ?? []).flatMap((n) => n.photo_paths ?? []);
+  const userIds = (members ?? []).map((m) => m.user_id);
+  const [signed, { data: profiles }] = await Promise.all([
+    photoPaths.length > 0
+      ? supabase.storage.from("nappy-photos").createSignedUrls(photoPaths, 600)
+      : Promise.resolve({ data: null }),
+    supabase.from("profiles").select("*").in("id", userIds),
+  ]);
 
   // Short-TTL signed URLs for any attached note photos (private bucket).
-  const photoPaths = (notes ?? []).flatMap((n) => n.photo_paths ?? []);
   const photoUrls: Record<string, string> = {};
-  if (photoPaths.length > 0) {
-    const { data } = await supabase.storage
-      .from("nappy-photos")
-      .createSignedUrls(photoPaths, 600);
-    for (const item of data ?? []) {
-      if (item.signedUrl && item.path) photoUrls[item.path] = item.signedUrl;
-    }
+  for (const item of signed.data ?? []) {
+    if (item.signedUrl && item.path) photoUrls[item.path] = item.signedUrl;
   }
-
-  // People you can tag: everyone with access to this baby.
-  const { data: members } = await supabase
-    .from("baby_members")
-    .select("user_id, role")
-    .eq("baby_id", ctx.baby.id);
-  const userIds = (members ?? []).map((m) => m.user_id);
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("*")
-    .in("id", userIds);
   const profileMap = new Map((profiles ?? []).map((p: Profile) => [p.id, p]));
 
   const tagMembers: TagMember[] = (members ?? []).map((m) => {

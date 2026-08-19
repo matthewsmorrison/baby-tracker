@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { createClient } from "./supabase/server";
 import type { Baby, DayTag, Entry, MemberRole } from "./types";
 
@@ -20,16 +20,19 @@ const ACTIVE_BABY_COOKIE = "hearth_active_baby";
  * first). Redirects to /login or /onboarding when either is missing.
  */
 export const getBabyContext = cache(async (): Promise<BabyContext> => {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  // The proxy middleware has already verified the session and forwards the
+  // identity (it strips any client-supplied value first) — re-asking Supabase
+  // "who is this?" here was a second network round-trip on every render.
+  // Data access below still runs through the user's own RLS-scoped client,
+  // so the header only selects whose memberships to look up.
+  const userId = (await headers()).get("x-user-id");
+  if (!userId) redirect("/login");
 
+  const supabase = await createClient();
   const { data: memberships } = await supabase
     .from("baby_members")
     .select("role, baby:babies(*)")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .order("created_at", { ascending: true });
 
   const babies = (memberships ?? [])
@@ -51,7 +54,7 @@ export const getBabyContext = cache(async (): Promise<BabyContext> => {
     canEdit: active.role === "owner" || active.role === "caregiver",
     isOwner: active.role === "owner",
     babies,
-    userId: user.id,
+    userId,
   };
 });
 
@@ -64,6 +67,21 @@ export const getEntries = cache(async (babyId: string): Promise<Entry[]> => {
   const { data } = await supabase
     .from("entries")
     .select("*")
+    .eq("baby_id", babyId)
+    .order("occurred_at", { ascending: false });
+  return (data ?? []) as Entry[];
+});
+
+/** Charts need the whole timeline but only the numeric fields — `select("*")`
+ *  was shipping ~40 columns (notes, photo paths, reminder arrays) per row to
+ *  serialise into the dashboard's client payload, which grows forever. */
+export const getChartEntries = cache(async (babyId: string): Promise<Entry[]> => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("entries")
+    .select(
+      "id, type, occurred_at, ended_at, created_by, wet, dirty, feed_type, left_min, right_min, expressed_ml, formula_ml, volume_ml, weight_g, length_mm, head_circ_mm, temp_c, milestone_label, med_name, med_kind, med_subject"
+    )
     .eq("baby_id", babyId)
     .order("occurred_at", { ascending: false });
   return (data ?? []) as Entry[];
@@ -140,6 +158,23 @@ export async function getEntriesRange(
   const { data } = await query.order("occurred_at", { ascending: false });
   return (data ?? []) as Entry[];
 }
+
+/** Day tags around today only — all the Today page ever shows. */
+export const getRecentDayTags = cache(
+  async (babyId: string): Promise<DayTag[]> => {
+    const supabase = await createClient();
+    const since = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+    const { data } = await supabase
+      .from("baby_day_tags")
+      .select("*")
+      .eq("baby_id", babyId)
+      .gte("day", since)
+      .order("day", { ascending: false });
+    return (data ?? []) as DayTag[];
+  }
+);
 
 /** All of a baby's day tags, newest first. Unbounded on purpose: tags are
  *  rare (a handful a month at most), so the whole set stays tiny and the

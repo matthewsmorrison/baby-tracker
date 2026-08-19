@@ -46,11 +46,9 @@ export function EntryIcon({ entry }: { entry: Entry }) {
   return <Baby className={cls} />;
 }
 
-/** Local-date key, e.g. "2026-07-04". */
-export function dayKey(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
+// Re-exported for existing importers; canonical home is lib/dates so light
+// components can use it without pulling this whole module into their chunk.
+export { dayKey } from "@/lib/dates";
 
 /**
  * One read-only entry row, expandable: nappies reveal the colour, photo and

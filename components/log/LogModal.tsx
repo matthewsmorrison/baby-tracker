@@ -2,25 +2,29 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 import type { Entry, EntryType } from "@/lib/types";
-import { Segmented } from "@/components/ui/Segmented";
 import { Portal } from "@/components/ui/Portal";
-import { NappyForm } from "./NappyForm";
-import { FeedForm } from "./FeedForm";
-import { WeightForm } from "./WeightForm";
-import { SleepForm } from "./SleepForm";
-import { PumpForm } from "./PumpForm";
-import { TemperatureForm } from "./TemperatureForm";
-import { MilestoneForm } from "./MilestoneForm";
-import { MedicationForm } from "./MedicationForm";
-import { QuickLog } from "./QuickLog";
 import { Check, Plus, X } from "lucide-react";
 
 /** Fired (with `{detail: {tab}}`) to open the log modal instantly from
  *  anywhere on the client — no router round-trip, unlike the ?log= deep link.
  *  The feed-timer pill uses this so "tap to return" is immediate. */
 export const OPEN_LOG_EVENT = "beanlo:open-log";
+
+// The forms (and everything they drag in — EXIF parsing, the AI quick log)
+// were ~86% of the Today route's JS while the modal sat closed. Load them on
+// first open instead.
+const LogForms = dynamic(() => import("./LogForms").then((m) => m.LogForms), {
+  ssr: false,
+  loading: () => (
+    <div className="space-y-3" aria-hidden>
+      <div className="h-10 animate-pulse rounded-full bg-surface-alt" />
+      <div className="h-40 animate-pulse rounded-2xl bg-surface-alt" />
+    </div>
+  ),
+});
 
 /**
  * The Log lives in a modal opened by the floating + button on every screen.
@@ -30,14 +34,12 @@ export const OPEN_LOG_EVENT = "beanlo:open-log";
 export function LogModal({
   babyId,
   birthAt,
-  entries,
   nappyBaseWeightG,
   trackedTypes,
   advanced = false,
 }: {
   babyId: string;
   birthAt: string;
-  entries: Entry[];
   nappyBaseWeightG?: number | null;
   trackedTypes: EntryType[];
   /** Advanced tier — enables Bea's quick log and photo pre-fill. */
@@ -81,20 +83,10 @@ export function LogModal({
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Deep link: ?edit=<id> opens the modal on that entry. The layout only
-  // ships recent entries, so anything older (e.g. opened from a back page of
-  // History) is fetched by id — RLS scopes the read to this user's babies.
+  // Deep link: ?edit=<id> opens the modal on that entry, fetched by id (the
+  // layout no longer ships an entries array — RLS scopes the read).
   useEffect(() => {
     if (!editParam) return;
-    const entry = entries.find((e) => e.id === editParam);
-    if (entry) {
-      const id = window.setTimeout(() => {
-        setEditing(entry);
-        setTab(entry.type);
-        setOpen(true);
-      }, 0);
-      return () => clearTimeout(id);
-    }
     let cancelled = false;
     createClient()
       .from("entries")
@@ -111,7 +103,7 @@ export function LogModal({
     return () => {
       cancelled = true;
     };
-  }, [editParam, entries]);
+  }, [editParam]);
 
   // Deep link: ?log=<type> opens a fresh entry on that tab (e.g. the feed
   // timer's "tap to return"). Falls back to the first tab if not tracked.
@@ -186,14 +178,6 @@ export function LogModal({
     close();
   }
 
-  const formProps = {
-    babyId,
-    birthAt,
-    entries,
-    onDone: () => setEditing(null),
-    onSaved: notify,
-  };
-
   // Chat screens (Bea and friend threads) keep their input row clear of
   // floating buttons — nothing may overlay the conversation.
   const inChat =
@@ -242,99 +226,22 @@ export function LogModal({
               </div>
 
               <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-                {advanced && !editing && (
-                  <QuickLog babyId={babyId} onSaved={notify} />
-                )}
-
-                {options.length > 1 && (
-                  <Segmented<EntryType>
-                    options={options}
-                    value={tab}
-                    onChange={(t) => {
-                      setTab(t);
-                      if (editing && editing.type !== t) setEditing(null);
-                    }}
-                  />
-                )}
-
-                {editing && (
-                  <div className="flex items-center justify-between rounded-2xl bg-accent-soft px-4 py-2.5 text-sm">
-                    <span className="font-medium">Editing an existing entry</span>
-                    <button
-                      type="button"
-                      onClick={() => setEditing(null)}
-                      className="font-semibold underline underline-offset-2"
-                    >
-                      New instead
-                    </button>
-                  </div>
-                )}
-
-                {tab === "nappy" && (
-                  <NappyForm
-                    key={editing?.id ?? "new-nappy"}
-                    {...formProps}
-                    initial={editing ?? undefined}
-                    nappyBaseWeightG={nappyBaseWeightG}
-                  />
-                )}
-                {tab === "feed" && (
-                  <FeedForm
-                    key={editing?.id ?? "new-feed"}
-                    {...formProps}
-                    initial={editing ?? undefined}
-                  />
-                )}
-                {tab === "sleep" && (
-                  <SleepForm
-                    key={editing?.id ?? "new-sleep"}
-                    {...formProps}
-                    initial={editing ?? undefined}
-                  />
-                )}
-                {tab === "weight" && (
-                  <WeightForm
-                    key={editing?.id ?? "new-weight"}
-                    {...formProps}
-                    initial={editing ?? undefined}
-                  />
-                )}
-                {tab === "pump" && (
-                  <PumpForm
-                    key={editing?.id ?? "new-pump"}
-                    {...formProps}
-                    initial={editing ?? undefined}
-                  />
-                )}
-                {tab === "carer_sleep" && (
-                  <SleepForm
-                    key={editing?.id ?? "new-carer-sleep"}
-                    {...formProps}
-                    initial={editing ?? undefined}
-                    variant="carer"
-                  />
-                )}
-                {tab === "temperature" && (
-                  <TemperatureForm
-                    key={editing?.id ?? "new-temperature"}
-                    {...formProps}
-                    initial={editing ?? undefined}
-                  />
-                )}
-                {tab === "milestone" && (
-                  <MilestoneForm
-                    key={editing?.id ?? "new-milestone"}
-                    {...formProps}
-                    initial={editing ?? undefined}
-                  />
-                )}
-                {tab === "medication" && (
-                  <MedicationForm
-                    key={editing?.id ?? "new-medication"}
-                    {...formProps}
-                    initial={editing ?? undefined}
-                  />
-                )}
+                <LogForms
+                  babyId={babyId}
+                  birthAt={birthAt}
+                  nappyBaseWeightG={nappyBaseWeightG}
+                  advanced={advanced}
+                  options={options}
+                  tab={tab}
+                  onTabChange={(t) => {
+                    setTab(t);
+                    if (editing && editing.type !== t) setEditing(null);
+                  }}
+                  editing={editing}
+                  onClearEditing={() => setEditing(null)}
+                  onDone={() => setEditing(null)}
+                  onSaved={notify}
+                />
               </div>
             </div>
           </div>

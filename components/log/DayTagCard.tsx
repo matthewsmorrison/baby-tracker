@@ -4,7 +4,7 @@ import { useState, useSyncExternalStore } from "react";
 import { toggleDayTag } from "@/lib/actions";
 import type { DayTag, DayTagKind } from "@/lib/types";
 import { Card, CardTitle } from "@/components/ui/Card";
-import { dayKey } from "@/components/output/entryList";
+import { dayKey } from "@/lib/dates";
 
 export const DAY_TAG_LABELS: Record<DayTagKind, string> = {
   no_poo: "No poo",

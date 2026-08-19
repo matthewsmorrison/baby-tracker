@@ -3,10 +3,10 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { APPEAR_OFFLINE_EVENT, APPEAR_OFFLINE_KEY } from "@/lib/presence";
+import { FEED_TIMER_EVENT, feedTimerKey } from "@/lib/feedTimer";
 import type { PresenceStatus } from "@/lib/types";
 
 const HEARTBEAT_MS = 60_000;
-const FEED_POLL_MS = 5_000;
 
 function subscribeVisibility(onChange: () => void) {
   document.addEventListener("visibilitychange", onChange);
@@ -84,10 +84,11 @@ export function PresencePublisher({
     };
   }, [supabase, userId]);
 
-  // Feed-timer watcher: the FeedForm keeps its running timer in localStorage,
-  // so presence can piggyback on it without touching the timer code.
+  // Feed-timer watcher: the FeedForm keeps its running timer in localStorage
+  // and announces changes via FEED_TIMER_EVENT (storage covers other tabs),
+  // so presence piggybacks with no polling.
   useEffect(() => {
-    const key = `hearth-feed-timer-${babyId}`;
+    const key = feedTimerKey(babyId);
     const read = () => {
       try {
         const raw = localStorage.getItem(key);
@@ -99,11 +100,11 @@ export function PresencePublisher({
       }
     };
     const first = window.setTimeout(read, 0);
-    const i = setInterval(read, FEED_POLL_MS);
+    window.addEventListener(FEED_TIMER_EVENT, read);
     window.addEventListener("storage", read);
     return () => {
       clearTimeout(first);
-      clearInterval(i);
+      window.removeEventListener(FEED_TIMER_EVENT, read);
       window.removeEventListener("storage", read);
     };
   }, [babyId]);

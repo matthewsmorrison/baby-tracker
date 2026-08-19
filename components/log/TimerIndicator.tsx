@@ -2,51 +2,69 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { FEED_TIMER_EVENT, feedTimerKey } from "@/lib/feedTimer";
 import { OPEN_LOG_EVENT } from "./LogModal";
 
 /**
  * Floating "feed timer running" pill, visible on every tab except Log.
  * Navigating away never loses the feed — this makes that visible and gives a
- * one-tap way back.
+ * one-tap way back. State changes arrive as events (FeedForm dispatches for
+ * this tab, `storage` covers other tabs); the 1 s tick only runs while a
+ * timer is actually going, instead of polling localStorage forever.
  */
 export function TimerIndicator({ babyId }: { babyId: string }) {
   const pathname = usePathname();
-  const [elapsed, setElapsed] = useState<number | null>(null);
+  const [timer, setTimer] = useState<{
+    startTs: number;
+    accMs: number;
+  } | null>(null);
+  const [now, setNow] = useState(0);
 
   useEffect(() => {
-    const key = `hearth-feed-timer-${babyId}`;
+    const key = feedTimerKey(babyId);
     const read = () => {
       try {
         const raw = localStorage.getItem(key);
-        if (!raw) return setElapsed(null);
+        if (!raw) return setTimer(null);
         const t = JSON.parse(raw) as {
           side: string | null;
           startTs: number | null;
           acc: { left: number; right: number };
         };
-        if (!t.side || !t.startTs) return setElapsed(null);
-        setElapsed(t.acc.left + t.acc.right + (Date.now() - t.startTs));
+        if (!t.side || !t.startTs) return setTimer(null);
+        setTimer({ startTs: t.startTs, accMs: t.acc.left + t.acc.right });
+        setNow(Date.now());
       } catch {
-        setElapsed(null);
+        setTimer(null);
       }
     };
     const first = window.setTimeout(read, 0);
-    const i = setInterval(read, 1000);
+    window.addEventListener(FEED_TIMER_EVENT, read);
     window.addEventListener("storage", read);
+    document.addEventListener("visibilitychange", read);
     return () => {
       clearTimeout(first);
-      clearInterval(i);
+      window.removeEventListener(FEED_TIMER_EVENT, read);
       window.removeEventListener("storage", read);
+      document.removeEventListener("visibilitychange", read);
     };
   }, [babyId]);
 
-  if (elapsed === null) return null;
+  // Re-render each second to advance the display — only while running.
+  useEffect(() => {
+    if (!timer) return;
+    const i = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(i);
+  }, [timer]);
+
+  if (timer === null) return null;
   // Chat screens stay free of overlays — the timer keeps running in
   // localStorage and the pill reappears on any other tab.
   if (pathname.startsWith("/chat") || /^\/friends\/[^/]+/.test(pathname)) {
     return null;
   }
 
+  const elapsed = timer.accMs + Math.max(0, now - timer.startTs);
   const sec = Math.floor(elapsed / 1000);
   const mmss = `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
 

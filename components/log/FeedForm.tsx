@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { FEED_TIMER_EVENT } from "@/lib/feedTimer";
 import { fromLocalInputValue, toLocalInputValue } from "@/lib/dates";
 import type { Entry, FeedNotes, PostFeedMood } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
@@ -271,6 +272,7 @@ export function FeedForm({
         }));
       } else {
         localStorage.removeItem(timerKey);
+        window.dispatchEvent(new Event(FEED_TIMER_EVENT));
       }
       } catch {
         // corrupt state — start fresh
@@ -333,6 +335,7 @@ export function FeedForm({
     } catch {
       // storage unavailable — timer still works for this page's lifetime
     }
+    window.dispatchEvent(new Event(FEED_TIMER_EVENT));
   }
 
   const bank = (t: TimerState): TimerState =>
@@ -469,6 +472,7 @@ export function FeedForm({
         localStorage.removeItem(timerKey);
         localStorage.removeItem(draftKey);
       } catch {}
+      window.dispatchEvent(new Event(FEED_TIMER_EVENT));
       onSaved(initial ? "Changes saved" : "Feed saved");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");

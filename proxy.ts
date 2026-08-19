@@ -12,11 +12,42 @@ const PUBLIC_PATHS = [
   "/disclaimer",
   "/manifest.webmanifest",
   "/sw.js",
+  "/offline.html",
   "/api/cron", // secret-authenticated; must not redirect to /login
 ];
 
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  const { pathname } = request.nextUrl;
+  // "/" is the public landing (exact match — startsWith "/" would match all).
+  // Match a prefix only at a path boundary so a public prefix can't also
+  // match a longer private path.
+  const isPublic =
+    pathname === "/" ||
+    PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
+
+  // The app trusts x-user-id downstream, so a client-supplied value must
+  // never survive — sanitise unconditionally, before any early return.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.delete("x-user-id");
+
+  const hasAuthCookie = request.cookies
+    .getAll()
+    .some((c) => c.name.startsWith("sb-"));
+
+  // Public page, nobody signed in: nothing to verify, don't pay for auth.
+  // (/login with a session still needs the check below to bounce to /today.)
+  if (isPublic && !hasAuthCookie) {
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
+  // No session cookie on a private path: straight to login, zero round trips.
+  if (!isPublic && !hasAuthCookie) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  let response = NextResponse.next({ request: { headers: requestHeaders } });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -30,7 +61,9 @@ export async function proxy(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          response = NextResponse.next({ request });
+          // Keep the forwarded header set in sync with the mutated cookies.
+          requestHeaders.set("cookie", request.cookies.toString());
+          response = NextResponse.next({ request: { headers: requestHeaders } });
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           );
@@ -39,32 +72,39 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // Do not run code between createServerClient and getUser() — it can cause
-  // random logouts.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims verifies the JWT locally (no network) once the project uses
+  // asymmetric signing keys, and still refreshes an expired session the same
+  // way getUser() did. Do not run code between createServerClient and this
+  // call — it can cause random logouts.
+  const { data } = await supabase.auth.getClaims();
+  const userId = data?.claims?.sub ?? null;
 
-  const { pathname } = request.nextUrl;
-  // "/" is the public landing (exact match — startsWith "/" would match all).
-  // Match a prefix only at a path boundary so a public prefix can't also
-  // match a longer private path.
-  const isPublic =
-    pathname === "/" ||
-    PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
-
-  if (!user && !isPublic) {
+  if (!userId && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
-  if (user && pathname === "/login") {
+  if (userId && pathname === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/today";
     url.search = "";
     return NextResponse.redirect(url);
+  }
+
+  if (userId) {
+    // Forward the verified identity so server components don't have to ask
+    // Supabase "who is this?" a second time on every render.
+    requestHeaders.set("x-user-id", userId);
+    const withIdentity = NextResponse.next({
+      request: { headers: requestHeaders },
+    });
+    // Preserve any refreshed session cookies set during getClaims().
+    response.cookies
+      .getAll()
+      .forEach((c) => withIdentity.cookies.set(c));
+    response = withIdentity;
   }
 
   return response;
