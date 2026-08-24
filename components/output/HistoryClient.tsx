@@ -100,11 +100,31 @@ export function HistoryClient({
   // Guards against overlapping loads across the async awaits below.
   const loadingRef = useRef(false);
   // day ("YYYY-MM-DD") -> tags on that day, kept as a map for the calendar.
-  const [dayTags, setDayTags] = useState<Record<string, DayTagKind[]>>(() => {
+  const tagMap = (tags: DayTag[]) => {
     const m: Record<string, DayTagKind[]> = {};
-    for (const t of initialDayTags) (m[t.day] ??= []).push(t.tag);
+    for (const t of tags) (m[t.day] ??= []).push(t.tag);
     return m;
-  });
+  };
+  const [dayTags, setDayTags] = useState<Record<string, DayTagKind[]>>(() =>
+    tagMap(initialDayTags)
+  );
+
+  // router.refresh() — fired by the log forms after every save and by the
+  // resume handler when the app reopens — re-renders this component with
+  // fresh server props. Local pagination state must re-seed from them or the
+  // page keeps showing the stale copy it captured on first mount. Older
+  // windows the user had paged in are dropped on purpose: they may have
+  // changed too, and "load older" brings them back fresh. (Render-phase
+  // reset — React's supported pattern for deriving state from props.)
+  const [seededFrom, setSeededFrom] = useState(initialEntries);
+  if (seededFrom !== initialEntries) {
+    setSeededFrom(initialEntries);
+    setEntries(initialEntries);
+    setPhotoUrls(initialPhotoUrls);
+    setSince(initialSince);
+    setHasMore(initialHasMore);
+    setDayTags(tagMap(initialDayTags));
+  }
 
   // Optimistic toggle; reverts if the server action fails.
   async function onToggleTag(day: string, tag: DayTagKind) {
