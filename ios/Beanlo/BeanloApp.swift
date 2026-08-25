@@ -17,18 +17,22 @@ struct BeanloApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var store = Store.shared
     @Environment(\.scenePhase) private var scenePhase
+    @AppStorage("appearance") private var appearance = "system"
 
     var body: some Scene {
         WindowGroup {
             Group {
                 if store.session == nil {
                     AuthView()
+                } else if store.memberships.isEmpty && !store.loading && store.baby == nil {
+                    OnboardingView()
                 } else {
                     RootView()
                 }
             }
             .environmentObject(store)
             .tint(.accent)
+            .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
             .task {
                 #if DEBUG
                 assert(WHOWeight.verify(), "WHO tables diverge from the web implementation")

@@ -12,24 +12,35 @@
 		1A99EE711235E2D4854B9CE7 /* BeanloWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 02F169F647B1AD7B65695592 /* BeanloWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		1CDFE0E926C36EA96E32EFA7 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4A96FC94268C38C906EF458 /* Palette.swift */; };
 		2BB72D657D059019188DF11E /* SharedTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0C85F705BE073C0AAA7D86D /* SharedTypes.swift */; };
+		2F15876CD86C16FE12C3E107 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA5223A7D731DDA63AEFBF7B /* OnboardingView.swift */; };
 		305CC1A354E1C962CF1C5BC4 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4A96FC94268C38C906EF458 /* Palette.swift */; };
 		308EAA9631B18C2CF7285949 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E07E60E828EE503E499817F /* Models.swift */; };
+		341DAB8CF48C71F647D83605 /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01F546BC4F0D8E7CCBC073D5 /* FriendsView.swift */; };
 		36BE6331B697036A064D5148 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 311D92C95AFA5F91EF74AEB3 /* AuthView.swift */; };
+		3B86B7042823E48F169CC923 /* HuckleberryImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F8256CA51DFE72B187EC922 /* HuckleberryImport.swift */; };
 		3B9F20E77760A62A63CC6BEE /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC640DB3B9D7F5D263832128 /* Components.swift */; };
 		427717ADE7C97C633EA58B6F /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6F719C239BF8DEEC582702C /* TodayView.swift */; };
+		49B1747BDFB952154E027F7A /* NotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E829E72F306BE1D40E10044 /* NotesView.swift */; };
 		503E381D82766400118E556F /* Clinical.swift in Sources */ = {isa = PBXBuildFile; fileRef = 982D4A9BF820014229C3BDFE /* Clinical.swift */; };
 		517E8A1244BDD791D7EFB007 /* Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0E9A68D9843B3FE63CD44C8 /* Store.swift */; };
 		5F455A88E39FA8A030D28D73 /* WHOWeight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DFC0AB3E65AE8406CF9D882 /* WHOWeight.swift */; };
 		66C17CF5462A34D9C9072771 /* LogSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F2D01B2267930A87A15E7B2 /* LogSheet.swift */; };
 		6DFE2E3CB24AC3739AFD022F /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26004E2E18EE59EC8CACC0CF /* HistoryView.swift */; };
+		70338F2D4DDB4947A870DD19 /* WHOGrowth.swift in Sources */ = {isa = PBXBuildFile; fileRef = C159604E7F661E8A04349551 /* WHOGrowth.swift */; };
+		7801A97AD53FF3861D9A0DFC /* Predict.swift in Sources */ = {isa = PBXBuildFile; fileRef = 060DE9CE01E34B6A50DD0BD2 /* Predict.swift */; };
 		82B33F2324546EDDB826E1D0 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 177A441EF8796BC28453AF4E /* RootView.swift */; };
+		82E3F898F6861949CFF0CC76 /* E2EE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AD9E95B5F36C573BD5EB01E /* E2EE.swift */; };
 		898DD98D8C7C6A198D0C201E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DC78D18552A0B2B5FDC3897 /* Theme.swift */; };
 		8B1E3A53A5E0A015B581C39A /* BeanloApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC930610A13DB8711432F7D6 /* BeanloApp.swift */; };
 		8F9DCE0B906ACB8F843CED52 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = D1C74A9AC6F23FCBBD71C850 /* Supabase */; };
+		A78C85828F7258F520E23C91 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BBF4FD00A2108FBE262AF37 /* ChatView.swift */; };
 		B180C086A5097E8505CB21D3 /* SharedTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0C85F705BE073C0AAA7D86D /* SharedTypes.swift */; };
+		C778B71D269AF16180687169 /* WHOGrowth.swift in Sources */ = {isa = PBXBuildFile; fileRef = C159604E7F661E8A04349551 /* WHOGrowth.swift */; };
 		CA04239F2047BDD2561031A3 /* BeanloWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AA1A2EA983D9E41C9726199 /* BeanloWidgets.swift */; };
 		CACA8B5A03441981CC75C6DC /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5BF01E37E88532DA607099D /* SettingsView.swift */; };
 		D75E582CC6A918B91C6DCD10 /* ChartsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83EED4A7B1C07E4C87090031 /* ChartsView.swift */; };
+		EC164CF285A8B9202025F69C /* FriendsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCB613FA3024E5BC2BB95DEB /* FriendsStore.swift */; };
+		FBBAEDEABA5E8A91CA836325 /* DataSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E41B39BC687CE9EC3C01E47 /* DataSheets.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,30 +68,40 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		01F546BC4F0D8E7CCBC073D5 /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
 		02F169F647B1AD7B65695592 /* BeanloWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = BeanloWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		060DE9CE01E34B6A50DD0BD2 /* Predict.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Predict.swift; sourceTree = "<group>"; };
 		177A441EF8796BC28453AF4E /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		1D448F52284188880960D7D6 /* BeanloWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BeanloWidgets.entitlements; sourceTree = "<group>"; };
 		1DFC0AB3E65AE8406CF9D882 /* WHOWeight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WHOWeight.swift; sourceTree = "<group>"; };
 		26004E2E18EE59EC8CACC0CF /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		2AD9E95B5F36C573BD5EB01E /* E2EE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = E2EE.swift; sourceTree = "<group>"; };
 		2E07E60E828EE503E499817F /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		2E41B39BC687CE9EC3C01E47 /* DataSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataSheets.swift; sourceTree = "<group>"; };
 		311D92C95AFA5F91EF74AEB3 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
+		3BBF4FD00A2108FBE262AF37 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
+		3F8256CA51DFE72B187EC922 /* HuckleberryImport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HuckleberryImport.swift; sourceTree = "<group>"; };
 		4806C593E90F9B916B6FBE29 /* Beanlo.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Beanlo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4F2D01B2267930A87A15E7B2 /* LogSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogSheet.swift; sourceTree = "<group>"; };
 		61A6151EBCB79DE5E8F8F6FD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		6A662D22FABF629622E427C6 /* Beanlo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Beanlo.entitlements; sourceTree = "<group>"; };
 		6DC78D18552A0B2B5FDC3897 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		7B8BCA8DD9C7F316A7BEE0B2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		7E829E72F306BE1D40E10044 /* NotesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesView.swift; sourceTree = "<group>"; };
 		83EED4A7B1C07E4C87090031 /* ChartsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartsView.swift; sourceTree = "<group>"; };
 		8AA1A2EA983D9E41C9726199 /* BeanloWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeanloWidgets.swift; sourceTree = "<group>"; };
 		982D4A9BF820014229C3BDFE /* Clinical.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clinical.swift; sourceTree = "<group>"; };
 		A0E9A68D9843B3FE63CD44C8 /* Store.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Store.swift; sourceTree = "<group>"; };
 		B4A96FC94268C38C906EF458 /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
 		B6F719C239BF8DEEC582702C /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
+		BA5223A7D731DDA63AEFBF7B /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		C159604E7F661E8A04349551 /* WHOGrowth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WHOGrowth.swift; sourceTree = "<group>"; };
 		C5BF01E37E88532DA607099D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		CC930610A13DB8711432F7D6 /* BeanloApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeanloApp.swift; sourceTree = "<group>"; };
 		CE64A91D0330059A2B598E5F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		D0C85F705BE073C0AAA7D86D /* SharedTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedTypes.swift; sourceTree = "<group>"; };
 		EC640DB3B9D7F5D263832128 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		FCB613FA3024E5BC2BB95DEB /* FriendsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -113,12 +134,21 @@
 				6A662D22FABF629622E427C6 /* Beanlo.entitlements */,
 				CC930610A13DB8711432F7D6 /* BeanloApp.swift */,
 				83EED4A7B1C07E4C87090031 /* ChartsView.swift */,
+				3BBF4FD00A2108FBE262AF37 /* ChatView.swift */,
 				982D4A9BF820014229C3BDFE /* Clinical.swift */,
 				EC640DB3B9D7F5D263832128 /* Components.swift */,
+				2E41B39BC687CE9EC3C01E47 /* DataSheets.swift */,
+				2AD9E95B5F36C573BD5EB01E /* E2EE.swift */,
+				FCB613FA3024E5BC2BB95DEB /* FriendsStore.swift */,
+				01F546BC4F0D8E7CCBC073D5 /* FriendsView.swift */,
 				26004E2E18EE59EC8CACC0CF /* HistoryView.swift */,
+				3F8256CA51DFE72B187EC922 /* HuckleberryImport.swift */,
 				CE64A91D0330059A2B598E5F /* Info.plist */,
 				4F2D01B2267930A87A15E7B2 /* LogSheet.swift */,
 				2E07E60E828EE503E499817F /* Models.swift */,
+				7E829E72F306BE1D40E10044 /* NotesView.swift */,
+				BA5223A7D731DDA63AEFBF7B /* OnboardingView.swift */,
+				060DE9CE01E34B6A50DD0BD2 /* Predict.swift */,
 				177A441EF8796BC28453AF4E /* RootView.swift */,
 				C5BF01E37E88532DA607099D /* SettingsView.swift */,
 				A0E9A68D9843B3FE63CD44C8 /* Store.swift */,
@@ -143,6 +173,7 @@
 			children = (
 				B4A96FC94268C38C906EF458 /* Palette.swift */,
 				D0C85F705BE073C0AAA7D86D /* SharedTypes.swift */,
+				C159604E7F661E8A04349551 /* WHOGrowth.swift */,
 				1DFC0AB3E65AE8406CF9D882 /* WHOWeight.swift */,
 			);
 			path = SharedKit;
@@ -258,18 +289,28 @@
 				36BE6331B697036A064D5148 /* AuthView.swift in Sources */,
 				8B1E3A53A5E0A015B581C39A /* BeanloApp.swift in Sources */,
 				D75E582CC6A918B91C6DCD10 /* ChartsView.swift in Sources */,
+				A78C85828F7258F520E23C91 /* ChatView.swift in Sources */,
 				503E381D82766400118E556F /* Clinical.swift in Sources */,
 				3B9F20E77760A62A63CC6BEE /* Components.swift in Sources */,
+				FBBAEDEABA5E8A91CA836325 /* DataSheets.swift in Sources */,
+				82E3F898F6861949CFF0CC76 /* E2EE.swift in Sources */,
+				EC164CF285A8B9202025F69C /* FriendsStore.swift in Sources */,
+				341DAB8CF48C71F647D83605 /* FriendsView.swift in Sources */,
 				6DFE2E3CB24AC3739AFD022F /* HistoryView.swift in Sources */,
+				3B86B7042823E48F169CC923 /* HuckleberryImport.swift in Sources */,
 				66C17CF5462A34D9C9072771 /* LogSheet.swift in Sources */,
 				308EAA9631B18C2CF7285949 /* Models.swift in Sources */,
+				49B1747BDFB952154E027F7A /* NotesView.swift in Sources */,
+				2F15876CD86C16FE12C3E107 /* OnboardingView.swift in Sources */,
 				1CDFE0E926C36EA96E32EFA7 /* Palette.swift in Sources */,
+				7801A97AD53FF3861D9A0DFC /* Predict.swift in Sources */,
 				82B33F2324546EDDB826E1D0 /* RootView.swift in Sources */,
 				CACA8B5A03441981CC75C6DC /* SettingsView.swift in Sources */,
 				B180C086A5097E8505CB21D3 /* SharedTypes.swift in Sources */,
 				517E8A1244BDD791D7EFB007 /* Store.swift in Sources */,
 				898DD98D8C7C6A198D0C201E /* Theme.swift in Sources */,
 				427717ADE7C97C633EA58B6F /* TodayView.swift in Sources */,
+				C778B71D269AF16180687169 /* WHOGrowth.swift in Sources */,
 				154F1A228FF74ADBEC32129D /* WHOWeight.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -281,6 +322,7 @@
 				CA04239F2047BDD2561031A3 /* BeanloWidgets.swift in Sources */,
 				305CC1A354E1C962CF1C5BC4 /* Palette.swift in Sources */,
 				2BB72D657D059019188DF11E /* SharedTypes.swift in Sources */,
+				70338F2D4DDB4947A870DD19 /* WHOGrowth.swift in Sources */,
 				5F455A88E39FA8A030D28D73 /* WHOWeight.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -47,11 +47,17 @@ final class Store: ObservableObject {
         )
     )
 
+    static let webBase = URL(string: "https://beanlo.com")!
+
     @Published var session: Session?
     @Published var baby: Baby?
+    @Published var memberships: [Membership] = []
     @Published var role: String = "caregiver"
     @Published var carers: [Carer] = []
+    @Published var myProfile: Profile?
+    @Published var mySettings = UserSettings()
     @Published var entries: [Entry] = []
+    @Published var activeCourses: [Entry] = []
     @Published var dayTags: [DayTag] = []
     @Published var loading = false
     @Published var errorMessage: String?
@@ -67,6 +73,8 @@ final class Store: ObservableObject {
 
     var userId: UUID? { session?.user.id }
     var isOwner: Bool { role == "owner" }
+    var canEdit: Bool { role == "owner" || role == "caregiver" }
+    var aiEnabled: Bool { baby?.membershipTier == "advanced" }
 
     var trackedTypes: [EntryType] {
         let tracked = baby?.trackedTypes ?? ["nappy", "feed", "sleep", "weight"]
@@ -358,20 +366,23 @@ final class Store: ObservableObject {
         defer { loading = false }
         do {
             if baby == nil {
-                let memberships: [Membership] = try await supabase
+                let fetched: [Membership] = try await supabase
                     .from("baby_members")
                     .select("role, baby:babies(*)")
                     .order("created_at", ascending: true)
                     .execute().value
-                baby = memberships.first?.baby
-                role = memberships.first?.role ?? "caregiver"
+                memberships = fetched
+                let activeId = UserDefaults.standard.string(forKey: "active-baby").flatMap(UUID.init)
+                let active = fetched.first { $0.baby.id == activeId } ?? fetched.first
+                baby = active?.baby
+                role = active?.role ?? "caregiver"
             }
             guard let baby else { return }
 
             let since = Calendar.current.date(byAdding: .day, value: -60, to: .now)!
             async let entriesReq: [Entry] = supabase
                 .from("entries")
-                .select("id, baby_id, type, occurred_at, ended_at, wet, dirty, stool_colour, nappy_weight_g, feed_type, left_min, right_min, expressed_ml, formula_ml, volume_ml, weight_g, length_mm, head_circ_mm, temp_c, med_name, med_dose, med_kind, med_subject, milestone_label, note, source")
+                .select()
                 .eq("baby_id", value: baby.id)
                 .gte("occurred_at", value: since.ISO8601Format())
                 .order("occurred_at", ascending: false)
@@ -381,8 +392,33 @@ final class Store: ObservableObject {
                 .select()
                 .eq("baby_id", value: baby.id)
                 .execute().value
+            // Medication courses can start long before the entries window.
+            let nowISO = Date().ISO8601Format()
+            async let coursesReq: [Entry] = supabase
+                .from("entries")
+                .select()
+                .eq("baby_id", value: baby.id)
+                .eq("type", value: "medication")
+                .or("med_kind.is.null,med_kind.neq.dose")
+                .lte("occurred_at", value: nowISO)
+                .or("ended_at.is.null,ended_at.gte.\(nowISO)")
+                .execute().value
+            async let profileReq: [Profile] = supabase
+                .from("profiles")
+                .select()
+                .eq("id", value: session!.user.id)
+                .execute().value
+            async let settingsReq: [UserSettings] = supabase
+                .from("user_settings")
+                .select("appear_offline, read_receipts")
+                .eq("user_id", value: session!.user.id)
+                .execute().value
             entries = try await entriesReq
             dayTags = try await tagsReq
+            activeCourses = (try? await coursesReq) ?? []
+            myProfile = try await profileReq.first
+            mySettings = (try? await settingsReq.first) ?? UserSettings()
+            signedUrlCache = [:]
             errorMessage = nil
             writeWidgetSnapshot()
             // A timer started pre-load now gets its Live Activity (with the
@@ -391,6 +427,96 @@ final class Store: ObservableObject {
         } catch {
             errorMessage = friendly(error)
         }
+    }
+
+    /// Older entries for History: pull the next 60-day window and append.
+    @Published var hasMoreHistory = true
+    func loadOlderEntries() async {
+        guard let baby, let oldest = entries.map(\.occurredAt).min() else { return }
+        do {
+            let since = Calendar.current.date(byAdding: .day, value: -60, to: oldest)!
+            let older: [Entry] = try await supabase
+                .from("entries")
+                .select()
+                .eq("baby_id", value: baby.id)
+                .gte("occurred_at", value: since.ISO8601Format())
+                .lt("occurred_at", value: oldest.ISO8601Format())
+                .order("occurred_at", ascending: false)
+                .execute().value
+            let known = Set(entries.map(\.id))
+            entries.append(contentsOf: older.filter { !known.contains($0.id) })
+            hasMoreHistory = !older.isEmpty && baby.birthAt < since
+        } catch {
+            errorMessage = friendly(error)
+        }
+    }
+
+    /// Switch the active baby (multi-baby households) and reload everything.
+    func switchBaby(_ id: UUID) async {
+        guard let membership = memberships.first(where: { $0.baby.id == id }) else { return }
+        UserDefaults.standard.set(id.uuidString, forKey: "active-baby")
+        baby = membership.baby
+        role = membership.role
+        entries = []
+        dayTags = []
+        carers = []
+        await refresh()
+    }
+
+    // MARK: - Photos (private nappy-photos bucket)
+
+    /// Short-TTL signed URLs for photo paths, cached per refresh cycle.
+    private var signedUrlCache: [String: URL] = [:]
+
+    func signedPhotoURL(_ path: String) async -> URL? {
+        if let hit = signedUrlCache[path] { return hit }
+        guard let signed = try? await supabase.storage
+            .from("nappy-photos")
+            .createSignedURL(path: path, expiresIn: 600) else { return nil }
+        signedUrlCache[path] = signed
+        return signed
+    }
+
+    /// Upload a compressed JPEG for an entry; returns the storage path.
+    func uploadNappyPhoto(_ data: Data, entryId: UUID) async throws -> String {
+        guard let baby else { throw URLError(.badURL) }
+        let path = "\(baby.id.uuidString.lowercased())/\(entryId.uuidString.lowercased()).jpg"
+        _ = try await supabase.storage.from("nappy-photos").upload(
+            path,
+            data: data,
+            options: FileOptions(contentType: "image/jpeg", upsert: true)
+        )
+        return path
+    }
+
+    // MARK: - Bea API (bearer-authenticated calls to the web backend)
+
+    /// POST JSON to a beanlo API route with the user's access token.
+    func apiRequest(_ path: String, body: [String: Any]) async throws -> URLRequest {
+        guard let token = session?.accessToken else { throw URLError(.userAuthenticationRequired) }
+        var request = URLRequest(url: Store.webBase.appendingPathComponent(path))
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        return request
+    }
+
+    // MARK: - Presence (mirrors the web PresencePublisher)
+
+    func publishPresence() async {
+        guard let userId else { return }
+        if mySettings.appearOffline == true { return }
+        struct P: Encodable {
+            let presence_status: String
+            let presence_at: String
+        }
+        let status = feedTimer.isRunning ? "feeding" : "online"
+        _ = try? await supabase
+            .from("profiles")
+            .update(P(presence_status: status, presence_at: Date().ISO8601Format()))
+            .eq("id", value: userId)
+            .execute()
     }
 
     /// Everyone with access to this baby, for Settings → Carers.
@@ -449,7 +575,8 @@ final class Store: ObservableObject {
         Haptics.success()
     }
 
-    func save(_ new: NewEntry) async throws {
+    @discardableResult
+    func save(_ new: NewEntry) async throws -> Entry {
         let inserted: Entry = try await supabase
             .from("entries")
             .insert(new)
@@ -459,6 +586,19 @@ final class Store: ObservableObject {
         entries.insert(inserted, at: entries.firstIndex { $0.occurredAt < inserted.occurredAt } ?? entries.count)
         writeWidgetSnapshot()
         Haptics.success()
+        return inserted
+    }
+
+    /// Attach an uploaded photo path to an existing entry.
+    func setPhotoPath(_ path: String, entryId: UUID) async {
+        struct P: Encodable { let photo_path: String }
+        _ = try? await supabase.from("entries")
+            .update(P(photo_path: path))
+            .eq("id", value: entryId)
+            .execute()
+        if let i = entries.firstIndex(where: { $0.id == entryId }) {
+            entries[i].photoPath = path
+        }
     }
 
     func update(_ entry: Entry) async throws {
@@ -504,6 +644,166 @@ final class Store: ObservableObject {
             errorMessage = friendly(error)
             await refresh()
         }
+    }
+
+    // MARK: - Account & data management (Settings parity)
+
+    func updateSetting(appearOffline: Bool? = nil, readReceipts: Bool? = nil) async {
+        guard let userId else { return }
+        struct Row: Encodable {
+            let user_id: UUID
+            let appear_offline: Bool?
+            let read_receipts: Bool?
+        }
+        var next = mySettings
+        if let appearOffline { next.appearOffline = appearOffline }
+        if let readReceipts { next.readReceipts = readReceipts }
+        mySettings = next
+        _ = try? await supabase.from("user_settings")
+            .upsert(Row(user_id: userId, appear_offline: next.appearOffline, read_receipts: next.readReceipts), onConflict: "user_id")
+            .execute()
+        if appearOffline == false { await publishPresence() }
+    }
+
+    func uploadAvatar(_ jpeg: Data) async throws {
+        guard let userId else { return }
+        let path = "\(userId.uuidString.lowercased()).jpg"
+        _ = try await supabase.storage.from("avatars").upload(
+            path, data: jpeg, options: FileOptions(contentType: "image/jpeg", upsert: true)
+        )
+        let publicURL = try supabase.storage.from("avatars").getPublicURL(path: path)
+        struct A: Encodable { let avatar_url: String }
+        _ = try await supabase.from("profiles")
+            .update(A(avatar_url: publicURL.absoluteString + "?v=\(Int(Date().timeIntervalSince1970))"))
+            .eq("id", value: userId)
+            .execute()
+        myProfile?.avatarUrl = publicURL.absoluteString
+        Haptics.success()
+    }
+
+    /// Owner only (RLS enforces): removes the baby for every carer.
+    func deleteBaby() async throws {
+        guard let baby else { return }
+        try await supabase.from("babies").delete().eq("id", value: baby.id).execute()
+        self.baby = nil
+        memberships.removeAll { $0.baby.id == baby.id }
+        entries = []
+        await refresh()
+    }
+
+    /// Non-owners: give up access to the active baby.
+    func leaveBaby() async throws {
+        guard let baby, let userId else { return }
+        try await supabase.from("baby_members")
+            .delete()
+            .eq("baby_id", value: baby.id)
+            .eq("user_id", value: userId)
+            .execute()
+        self.baby = nil
+        memberships.removeAll { $0.baby.id == baby.id }
+        await refresh()
+    }
+
+    /// Full account deletion via the web backend (needs the service role).
+    func deleteAccount() async throws {
+        let request = try await apiRequest("/api/account/delete", body: [:])
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+            throw URLError(.badServerResponse)
+        }
+        await signOut()
+    }
+
+    /// Batched inserts for the Huckleberry import; returns (imported, skipped-duplicates).
+    func importEntries(_ drafts: [NewEntry]) async throws -> (imported: Int, duplicates: Int) {
+        guard baby != nil else { return (0, 0) }
+        let times = drafts.map(\.occurredAt)
+        guard let minT = times.min(), let maxT = times.max() else { return (0, 0) }
+        struct Existing: Decodable {
+            let type: EntryType
+            let occurredAt: Date
+            enum CodingKeys: String, CodingKey {
+                case type
+                case occurredAt = "occurred_at"
+            }
+        }
+        let existing: [Existing] = try await supabase
+            .from("entries")
+            .select("type, occurred_at")
+            .eq("baby_id", value: baby!.id)
+            .gte("occurred_at", value: minT.ISO8601Format())
+            .lte("occurred_at", value: maxT.ISO8601Format())
+            .execute().value
+        let seen = Set(existing.map { "\($0.type.rawValue)|\(Int($0.occurredAt.timeIntervalSince1970))" })
+        let fresh = drafts.filter { !seen.contains("\($0.type.rawValue)|\(Int($0.occurredAt.timeIntervalSince1970))") }
+
+        // Insert per type: bulk inserts union keys across rows, which would
+        // trip not-null defaults like med_kind (learned on the web importer).
+        var imported = 0
+        for type in Set(fresh.map(\.type)) {
+            let group = fresh.filter { $0.type == type }
+            for chunkStart in stride(from: 0, to: group.count, by: 200) {
+                let chunk = Array(group[chunkStart..<min(chunkStart + 200, group.count)])
+                try await supabase.from("entries").insert(chunk).execute()
+                imported += chunk.count
+            }
+        }
+        await refresh()
+        return (imported, drafts.count - fresh.count)
+    }
+
+    func removeImportedEntries() async throws -> Int {
+        guard let baby else { return 0 }
+        struct Row: Decodable { let id: UUID }
+        let removed: [Row] = try await supabase
+            .from("entries")
+            .delete()
+            .eq("baby_id", value: baby.id)
+            .eq("source", value: "huckleberry")
+            .select("id")
+            .execute().value
+        await refresh()
+        return removed.count
+    }
+
+    /// Full-history CSV, matching the web export's spirit.
+    func csvExport() async -> String {
+        guard let baby else { return "" }
+        let all: [Entry] = (try? await supabase
+            .from("entries")
+            .select()
+            .eq("baby_id", value: baby.id)
+            .order("occurred_at", ascending: true)
+            .execute().value) ?? entries.sorted { $0.occurredAt < $1.occurredAt }
+        let f = ISO8601DateFormatter()
+        var lines = ["type,occurred_at,ended_at,wet,dirty,stool_colour,left_min,right_min,expressed_ml,formula_ml,weight_g,length_mm,head_circ_mm,temp_c,med_name,med_dose,note"]
+        func quote(_ s: String?) -> String {
+            guard let s, !s.isEmpty else { return "" }
+            return "\"\(s.replacingOccurrences(of: "\"", with: "\"\""))\""
+        }
+        func num(_ n: Int?) -> String { n.map { String($0) } ?? "" }
+        for e in all {
+            var cols: [String] = []
+            cols.append(e.type.rawValue)
+            cols.append(f.string(from: e.occurredAt))
+            cols.append(e.endedAt.map { f.string(from: $0) } ?? "")
+            cols.append(e.wet.map { String($0) } ?? "")
+            cols.append(e.dirty.map { String($0) } ?? "")
+            cols.append(e.stoolColour ?? "")
+            cols.append(num(e.leftMin))
+            cols.append(num(e.rightMin))
+            cols.append(num(e.expressedMl))
+            cols.append(num(e.formulaMl))
+            cols.append(num(e.weightG))
+            cols.append(num(e.lengthMm))
+            cols.append(num(e.headCircMm))
+            cols.append(e.tempC.map { String($0) } ?? "")
+            cols.append(quote(e.medName))
+            cols.append(quote(e.medDose))
+            cols.append(quote(e.note))
+            lines.append(cols.joined(separator: ","))
+        }
+        return lines.joined(separator: "\n")
     }
 
     private func friendly(_ error: Error) -> String {

@@ -69,6 +69,7 @@ targets:
         ITSAppUsesNonExemptEncryption: false
         UIUserInterfaceStyle: Automatic
         NSSupportsLiveActivities: true
+        NSCameraUsageDescription: beanlo uses the camera to photograph a nappy so its contents and colour are kept with the entry for your records.
         CFBundleURLTypes:
           - CFBundleURLName: io.beanlo
             CFBundleURLSchemes: [beanlo]

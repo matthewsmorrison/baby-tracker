@@ -88,6 +88,45 @@ struct StatTile: View {
     }
 }
 
+/// In-app rear-camera capture for nappy photos (UIKit picker wrapper).
+struct CameraCapture: UIViewControllerRepresentable {
+    @Environment(\.dismiss) private var dismiss
+    let onCapture: (Data) -> Void
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+            picker.sourceType = .camera
+            picker.cameraDevice = .rear
+        }
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ controller: UIImagePickerController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: CameraCapture
+        init(_ parent: CameraCapture) { self.parent = parent }
+
+        func imagePickerController(
+            _ picker: UIImagePickerController,
+            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
+        ) {
+            if let image = info[.originalImage] as? UIImage, let data = image.compressedJPEG() {
+                parent.onCapture(data)
+            }
+            parent.dismiss()
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.dismiss()
+        }
+    }
+}
+
 extension Date {
     /// Local calendar key, e.g. "2026-07-04" — matches the web app's dayKey.
     var dayKey: String {

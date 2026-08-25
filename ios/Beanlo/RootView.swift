@@ -17,7 +17,10 @@ struct RootView: View {
             Tab("Charts", systemImage: "chart.bar.fill", value: 2) {
                 NavigationStack { ChartsView() }
             }
-            Tab("Settings", systemImage: "gearshape.fill", value: 3) {
+            Tab("Notes", systemImage: "square.and.pencil", value: 3) {
+                NavigationStack { NotesView() }
+            }
+            Tab("Settings", systemImage: "gearshape.fill", value: 4) {
                 NavigationStack { SettingsView() }
             }
         }
@@ -57,7 +60,8 @@ struct RootView: View {
             switch UserDefaults.standard.string(forKey: "DevTab") {
             case "history": selectedTab = 1
             case "charts": selectedTab = 2
-            case "settings": selectedTab = 3
+            case "notes": selectedTab = 3
+            case "settings": selectedTab = 4
             case "log": logSheet = .nappy
             case "logfeed": logSheet = .feed
             default: break

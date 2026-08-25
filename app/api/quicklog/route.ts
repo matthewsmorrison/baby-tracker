@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { cookies } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
+import { getRouteAuth } from "@/lib/supabase/route";
 import { BEA_MODEL } from "@/lib/aiContext";
 import { ACTIVE_BABY_COOKIE } from "@/lib/data";
 import { RATE_LIMITED, rateLimit } from "@/lib/rateLimit";
@@ -107,12 +107,11 @@ const ENTRY_SCHEMA = {
 };
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
-  if (!rateLimit(`quicklog:${user.id}`, 30, 10 * 60_000)) {
+  // Cookie session (web) or bearer token (native iOS) — RLS either way.
+  const auth = await getRouteAuth(request);
+  if (!auth) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const { supabase, userId } = auth;
+  if (!rateLimit(`quicklog:${userId}`, 30, 10 * 60_000)) {
     return NextResponse.json(RATE_LIMITED, { status: 429 });
   }
 
@@ -131,7 +130,7 @@ export async function POST(request: Request) {
   const { data: memberships } = await supabase
     .from("baby_members")
     .select("role, baby:babies(*)")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .order("created_at", { ascending: true });
   const babies = (memberships ?? [])
     .map((m) => ({ baby: m.baby as unknown as Baby, role: m.role as string }))

@@ -63,9 +63,19 @@ struct Entry: Codable, Identifiable, Hashable {
     var medDose: String?
     var medKind: String?
     var medSubject: String?
+    var reminderTimes: [String]?
+    var reminderTz: String?
+    var reminderUserIds: [UUID]?
     var milestoneLabel: String?
+    var sleepLocation: String?
+    var settleMethod: String?
+    var spitUp: Bool?
+    var postFeedMood: String?
+    var feedNotes: FeedNotes?
+    var photoPath: String?
     var note: String?
     var source: String?
+    var createdBy: UUID?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -90,9 +100,28 @@ struct Entry: Codable, Identifiable, Hashable {
         case medDose = "med_dose"
         case medKind = "med_kind"
         case medSubject = "med_subject"
+        case reminderTimes = "reminder_times"
+        case reminderTz = "reminder_tz"
+        case reminderUserIds = "reminder_user_ids"
         case milestoneLabel = "milestone_label"
+        case sleepLocation = "sleep_location"
+        case settleMethod = "settle_method"
+        case spitUp = "spit_up"
+        case postFeedMood = "post_feed_mood"
+        case feedNotes = "feed_notes"
+        case photoPath = "photo_path"
         case note, source
+        case createdBy = "created_by"
     }
+}
+
+/// Per-part feed notes (jsonb column), same shape as the web.
+struct FeedNotes: Codable, Hashable {
+    var left: String?
+    var right: String?
+    var expressed: String?
+    var formula: String?
+    var isEmpty: Bool { left == nil && right == nil && expressed == nil && formula == nil }
 }
 
 /// Insert payload — no id (DB generates), created_by filled by the store.
@@ -119,6 +148,15 @@ struct NewEntry: Codable {
     var medDose: String?
     var medKind: String?
     var medSubject: String?
+    var reminderTimes: [String]?
+    var reminderTz: String?
+    var reminderUserIds: [UUID]?
+    var sleepLocation: String?
+    var settleMethod: String?
+    var spitUp: Bool?
+    var postFeedMood: String?
+    var feedNotes: FeedNotes?
+    var milestoneLabel: String?
     var note: String?
     var source: String?
 
@@ -144,7 +182,139 @@ struct NewEntry: Codable {
         case medDose = "med_dose"
         case medKind = "med_kind"
         case medSubject = "med_subject"
+        case reminderTimes = "reminder_times"
+        case reminderTz = "reminder_tz"
+        case reminderUserIds = "reminder_user_ids"
+        case sleepLocation = "sleep_location"
+        case settleMethod = "settle_method"
+        case spitUp = "spit_up"
+        case postFeedMood = "post_feed_mood"
+        case feedNotes = "feed_notes"
+        case milestoneLabel = "milestone_label"
         case note, source
+    }
+}
+
+// MARK: - Social / notes / chat models
+
+struct Profile: Codable, Identifiable, Hashable {
+    let id: UUID
+    var fullName: String?
+    var email: String?
+    var avatarUrl: String?
+    var presenceStatus: String?
+    var presenceAt: Date?
+    var statusText: String?
+    var publicKey: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case fullName = "full_name"
+        case email
+        case avatarUrl = "avatar_url"
+        case presenceStatus = "presence_status"
+        case presenceAt = "presence_at"
+        case statusText = "status_text"
+        case publicKey = "public_key"
+    }
+
+    var displayName: String { fullName ?? email ?? "Friend" }
+
+    /// Presence with the web's stale-heartbeat TTL applied (2 minutes).
+    var livePresence: String {
+        guard let presenceAt, Date().timeIntervalSince(presenceAt) < 150 else { return "offline" }
+        return presenceStatus ?? "offline"
+    }
+}
+
+struct Friendship: Codable, Identifiable {
+    let id: UUID
+    var requester: UUID
+    var addressee: UUID
+    var status: String
+    var blockedBy: UUID?
+
+    enum CodingKeys: String, CodingKey {
+        case id, requester, addressee, status
+        case blockedBy = "blocked_by"
+    }
+
+    func other(_ me: UUID) -> UUID { requester == me ? addressee : requester }
+}
+
+struct DirectMessage: Codable, Identifiable, Hashable {
+    let id: UUID
+    var sender: UUID
+    var recipient: UUID
+    var body: String
+    var createdAt: Date
+    var readAt: Date?
+    var receiptSuppressed: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case id, sender, recipient, body
+        case createdAt = "created_at"
+        case readAt = "read_at"
+        case receiptSuppressed = "receipt_suppressed"
+    }
+}
+
+struct BabyNote: Codable, Identifiable, Hashable {
+    let id: UUID
+    var babyId: UUID
+    var kind: String
+    var body: String
+    var answer: String?
+    var answeredAt: Date?
+    var taggedUserIds: [UUID]
+    var photoPaths: [String]?
+    var createdBy: UUID
+    var createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, kind, body, answer
+        case babyId = "baby_id"
+        case answeredAt = "answered_at"
+        case taggedUserIds = "tagged_user_ids"
+        case photoPaths = "photo_paths"
+        case createdBy = "created_by"
+        case createdAt = "created_at"
+    }
+}
+
+struct ChatConversation: Codable, Identifiable, Hashable {
+    let id: UUID
+    var title: String?
+    var createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, title
+        case createdAt = "created_at"
+    }
+}
+
+struct ChatMessage: Codable, Identifiable, Hashable {
+    var id: UUID?
+    var role: String
+    var content: String
+    var feedback: String?
+}
+
+struct BabyInvite: Codable, Identifiable {
+    let id: UUID
+    var email: String
+    var role: String
+    var token: UUID
+    var status: String
+}
+
+struct UserSettings: Codable {
+    var appearOffline: Bool?
+    var readReceipts: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case appearOffline = "appear_offline"
+        case readReceipts = "read_receipts"
     }
 }
 
@@ -191,6 +361,7 @@ struct Baby: Codable, Identifiable, Hashable {
     var trackedTypes: [String]?
     var feedIntervalMin: Int?
     var nappyBaseWeightG: Int?
+    var membershipTier: String?
 
     enum CodingKeys: String, CodingKey {
         case id, name, sex
@@ -199,6 +370,7 @@ struct Baby: Codable, Identifiable, Hashable {
         case trackedTypes = "tracked_types"
         case feedIntervalMin = "feed_interval_min"
         case nappyBaseWeightG = "nappy_base_weight_g"
+        case membershipTier = "membership_tier"
     }
 }
 
