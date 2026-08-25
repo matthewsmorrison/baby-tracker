@@ -18,6 +18,23 @@ struct SettingsView: View {
             }
 
             Section {
+                Toggle(isOn: Binding(
+                    get: { store.pushEnabled },
+                    set: { on in
+                        Task { on ? _ = await store.enablePush() : await store.disablePush() }
+                    }
+                )) {
+                    Label("Notifications", systemImage: "bell.badge.fill")
+                }
+                .tint(.accent)
+            } header: {
+                Text("Alerts")
+            } footer: {
+                Text("Feed-due nudges, nappy watch and medication reminders — the same alerts as the web app, delivered natively.")
+            }
+            .listRowBackground(Color.surface)
+
+            Section {
                 LabeledContent("Signed in as", value: store.session?.user.email ?? "—")
                 Link(destination: URL(string: "https://beanlo.com/profile")!) {
                     Label("Full settings on beanlo.com", systemImage: "safari")

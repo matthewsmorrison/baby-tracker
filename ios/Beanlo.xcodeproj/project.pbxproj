@@ -8,6 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		00B7AA22324D873ABF62A5B3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7B8BCA8DD9C7F316A7BEE0B2 /* Assets.xcassets */; };
+		1A99EE711235E2D4854B9CE7 /* BeanloWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 02F169F647B1AD7B65695592 /* BeanloWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		1CDFE0E926C36EA96E32EFA7 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4A96FC94268C38C906EF458 /* Palette.swift */; };
+		2BB72D657D059019188DF11E /* SharedTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0C85F705BE073C0AAA7D86D /* SharedTypes.swift */; };
+		305CC1A354E1C962CF1C5BC4 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4A96FC94268C38C906EF458 /* Palette.swift */; };
 		308EAA9631B18C2CF7285949 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E07E60E828EE503E499817F /* Models.swift */; };
 		36BE6331B697036A064D5148 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 311D92C95AFA5F91EF74AEB3 /* AuthView.swift */; };
 		3B9F20E77760A62A63CC6BEE /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC640DB3B9D7F5D263832128 /* Components.swift */; };
@@ -20,26 +24,59 @@
 		898DD98D8C7C6A198D0C201E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DC78D18552A0B2B5FDC3897 /* Theme.swift */; };
 		8B1E3A53A5E0A015B581C39A /* BeanloApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC930610A13DB8711432F7D6 /* BeanloApp.swift */; };
 		8F9DCE0B906ACB8F843CED52 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = D1C74A9AC6F23FCBBD71C850 /* Supabase */; };
+		B180C086A5097E8505CB21D3 /* SharedTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0C85F705BE073C0AAA7D86D /* SharedTypes.swift */; };
+		CA04239F2047BDD2561031A3 /* BeanloWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AA1A2EA983D9E41C9726199 /* BeanloWidgets.swift */; };
 		CACA8B5A03441981CC75C6DC /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5BF01E37E88532DA607099D /* SettingsView.swift */; };
 		D75E582CC6A918B91C6DCD10 /* ChartsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83EED4A7B1C07E4C87090031 /* ChartsView.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		80C89ADD091B394FC2AF6831 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 725B2E0F1D8960D6803B5B52 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3F6C84776910293F8726DDA1;
+			remoteInfo = BeanloWidgets;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		4546DDBE72A2D464A1EDF6EA /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				1A99EE711235E2D4854B9CE7 /* BeanloWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		02F169F647B1AD7B65695592 /* BeanloWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = BeanloWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		177A441EF8796BC28453AF4E /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		1D448F52284188880960D7D6 /* BeanloWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BeanloWidgets.entitlements; sourceTree = "<group>"; };
 		26004E2E18EE59EC8CACC0CF /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		2E07E60E828EE503E499817F /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		311D92C95AFA5F91EF74AEB3 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
 		4806C593E90F9B916B6FBE29 /* Beanlo.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Beanlo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4F2D01B2267930A87A15E7B2 /* LogSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogSheet.swift; sourceTree = "<group>"; };
+		61A6151EBCB79DE5E8F8F6FD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		6A662D22FABF629622E427C6 /* Beanlo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Beanlo.entitlements; sourceTree = "<group>"; };
 		6DC78D18552A0B2B5FDC3897 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		7B8BCA8DD9C7F316A7BEE0B2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		83EED4A7B1C07E4C87090031 /* ChartsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartsView.swift; sourceTree = "<group>"; };
+		8AA1A2EA983D9E41C9726199 /* BeanloWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeanloWidgets.swift; sourceTree = "<group>"; };
 		982D4A9BF820014229C3BDFE /* Clinical.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clinical.swift; sourceTree = "<group>"; };
 		A0E9A68D9843B3FE63CD44C8 /* Store.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Store.swift; sourceTree = "<group>"; };
+		B4A96FC94268C38C906EF458 /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
 		B6F719C239BF8DEEC582702C /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
 		C5BF01E37E88532DA607099D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		CC930610A13DB8711432F7D6 /* BeanloApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeanloApp.swift; sourceTree = "<group>"; };
 		CE64A91D0330059A2B598E5F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		D0C85F705BE073C0AAA7D86D /* SharedTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedTypes.swift; sourceTree = "<group>"; };
 		EC640DB3B9D7F5D263832128 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -55,11 +92,22 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0495BD163A413FDA0748B36B /* BeanloWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				1D448F52284188880960D7D6 /* BeanloWidgets.entitlements */,
+				8AA1A2EA983D9E41C9726199 /* BeanloWidgets.swift */,
+				61A6151EBCB79DE5E8F8F6FD /* Info.plist */,
+			);
+			path = BeanloWidgets;
+			sourceTree = "<group>";
+		};
 		6108710FFB5ECB398B306FF3 /* Beanlo */ = {
 			isa = PBXGroup;
 			children = (
 				7B8BCA8DD9C7F316A7BEE0B2 /* Assets.xcassets */,
 				311D92C95AFA5F91EF74AEB3 /* AuthView.swift */,
+				6A662D22FABF629622E427C6 /* Beanlo.entitlements */,
 				CC930610A13DB8711432F7D6 /* BeanloApp.swift */,
 				83EED4A7B1C07E4C87090031 /* ChartsView.swift */,
 				982D4A9BF820014229C3BDFE /* Clinical.swift */,
@@ -81,14 +129,26 @@
 			isa = PBXGroup;
 			children = (
 				6108710FFB5ECB398B306FF3 /* Beanlo */,
+				0495BD163A413FDA0748B36B /* BeanloWidgets */,
+				9B17228058042B46FA519CB2 /* SharedKit */,
 				E0B5A77C4F386C5CECA3CB9C /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		9B17228058042B46FA519CB2 /* SharedKit */ = {
+			isa = PBXGroup;
+			children = (
+				B4A96FC94268C38C906EF458 /* Palette.swift */,
+				D0C85F705BE073C0AAA7D86D /* SharedTypes.swift */,
+			);
+			path = SharedKit;
 			sourceTree = "<group>";
 		};
 		E0B5A77C4F386C5CECA3CB9C /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				4806C593E90F9B916B6FBE29 /* Beanlo.app */,
+				02F169F647B1AD7B65695592 /* BeanloWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -103,10 +163,12 @@
 				73CDBF0E67E2576D83B3A44C /* Sources */,
 				3860C37145DCA913CC9A5DD2 /* Resources */,
 				C970A569FA17F26A85C22BA7 /* Frameworks */,
+				4546DDBE72A2D464A1EDF6EA /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				5DB4D0D63E342D1F17C3551E /* PBXTargetDependency */,
 			);
 			name = Beanlo;
 			packageProductDependencies = (
@@ -115,6 +177,23 @@
 			productName = Beanlo;
 			productReference = 4806C593E90F9B916B6FBE29 /* Beanlo.app */;
 			productType = "com.apple.product-type.application";
+		};
+		3F6C84776910293F8726DDA1 /* BeanloWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2EF2ABA96217D2E4B710C028 /* Build configuration list for PBXNativeTarget "BeanloWidgets" */;
+			buildPhases = (
+				C5AF4BBFE0E35D9212C83763 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BeanloWidgets;
+			packageProductDependencies = (
+			);
+			productName = BeanloWidgets;
+			productReference = 02F169F647B1AD7B65695592 /* BeanloWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -126,6 +205,9 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					2667AD8F3AA6F31202B6F406 = {
+						ProvisioningStyle = Automatic;
+					};
+					3F6C84776910293F8726DDA1 = {
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -148,6 +230,7 @@
 			projectRoot = "";
 			targets = (
 				2667AD8F3AA6F31202B6F406 /* Beanlo */,
+				3F6C84776910293F8726DDA1 /* BeanloWidgets */,
 			);
 		};
 /* End PBXProject section */
@@ -176,15 +259,35 @@
 				6DFE2E3CB24AC3739AFD022F /* HistoryView.swift in Sources */,
 				66C17CF5462A34D9C9072771 /* LogSheet.swift in Sources */,
 				308EAA9631B18C2CF7285949 /* Models.swift in Sources */,
+				1CDFE0E926C36EA96E32EFA7 /* Palette.swift in Sources */,
 				82B33F2324546EDDB826E1D0 /* RootView.swift in Sources */,
 				CACA8B5A03441981CC75C6DC /* SettingsView.swift in Sources */,
+				B180C086A5097E8505CB21D3 /* SharedTypes.swift in Sources */,
 				517E8A1244BDD791D7EFB007 /* Store.swift in Sources */,
 				898DD98D8C7C6A198D0C201E /* Theme.swift in Sources */,
 				427717ADE7C97C633EA58B6F /* TodayView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C5AF4BBFE0E35D9212C83763 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CA04239F2047BDD2561031A3 /* BeanloWidgets.swift in Sources */,
+				305CC1A354E1C962CF1C5BC4 /* Palette.swift in Sources */,
+				2BB72D657D059019188DF11E /* SharedTypes.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		5DB4D0D63E342D1F17C3551E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3F6C84776910293F8726DDA1 /* BeanloWidgets */;
+			targetProxy = 80C89ADD091B394FC2AF6831 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		376E98FEB26DFAAC944217ED /* Debug */ = {
@@ -250,11 +353,33 @@
 			};
 			name = Debug;
 		};
+		39CCF9B9D5017A52106C2541 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = BeanloWidgets/BeanloWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = BeanloWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.morta.beanlo.widgets;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
 		51B06B574A98B6FEB49D6B4C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Beanlo/Beanlo.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -278,6 +403,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Beanlo/Beanlo.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -352,6 +478,27 @@
 			};
 			name = Release;
 		};
+		CD223691F7003B96F7FBC184 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = BeanloWidgets/BeanloWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = BeanloWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.morta.beanlo.widgets;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -369,6 +516,15 @@
 			buildConfigurations = (
 				7D047BDC1F6BE6526CD3968D /* Debug */,
 				51B06B574A98B6FEB49D6B4C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		2EF2ABA96217D2E4B710C028 /* Build configuration list for PBXNativeTarget "BeanloWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				39CCF9B9D5017A52106C2541 /* Debug */,
+				CD223691F7003B96F7FBC184 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

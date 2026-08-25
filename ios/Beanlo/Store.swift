@@ -1,5 +1,36 @@
 import Foundation
 import Supabase
+import ActivityKit
+import WidgetKit
+import UserNotifications
+import UIKit
+
+enum FeedSide: String, Codable {
+    case left, right
+    var label: String { self == .left ? "Left" : "Right" }
+}
+
+/// App-global breast-feed timer: survives closing the log sheet, drives the
+/// floating pill and the Live Activity, persists across launches.
+struct FeedTimerState: Codable, Equatable {
+    var side: FeedSide?
+    var segmentStart: Date?
+    var accLeft: TimeInterval = 0
+    var accRight: TimeInterval = 0
+
+    var isRunning: Bool { side != nil && segmentStart != nil }
+    var isActive: Bool { isRunning || accLeft + accRight > 0 }
+
+    func total(_ s: FeedSide, at now: Date = .now) -> TimeInterval {
+        let base = s == .left ? accLeft : accRight
+        if side == s, let start = segmentStart {
+            return base + max(0, now.timeIntervalSince(start))
+        }
+        return base
+    }
+
+    var grandTotal: TimeInterval { total(.left) + total(.right) }
+}
 
 // One shared observable store: session, baby context, entries and day tags.
 // All reads/writes go through the user's own RLS-scoped Supabase client —
@@ -22,6 +53,15 @@ final class Store: ObservableObject {
     @Published var dayTags: [DayTag] = []
     @Published var loading = false
     @Published var errorMessage: String?
+    @Published private(set) var feedTimer = FeedTimerState() {
+        didSet {
+            if let data = try? JSONEncoder().encode(feedTimer) {
+                UserDefaults.standard.set(data, forKey: "feed-timer")
+            }
+            syncLiveActivity()
+        }
+    }
+    @Published var pushEnabled = UserDefaults.standard.bool(forKey: "push-enabled")
 
     var userId: UUID? { session?.user.id }
 
@@ -31,7 +71,150 @@ final class Store: ObservableObject {
         return order.filter { tracked.contains($0.rawValue) }
     }
 
-    private init() {}
+    private init() {
+        if let data = UserDefaults.standard.data(forKey: "feed-timer"),
+           let saved = try? JSONDecoder().decode(FeedTimerState.self, from: data) {
+            feedTimer = saved
+        }
+    }
+
+    // MARK: - Feed timer
+
+    /// Tap a side: start it (banking any other running side), or pause it.
+    func toggleFeedTimer(_ side: FeedSide) {
+        var t = feedTimer
+        let now = Date()
+        if let running = t.side, let start = t.segmentStart {
+            let elapsed = max(0, now.timeIntervalSince(start))
+            if running == .left { t.accLeft += elapsed } else { t.accRight += elapsed }
+            t.side = nil
+            t.segmentStart = nil
+            if running == side {
+                feedTimer = t
+                return
+            }
+        }
+        t.side = side
+        t.segmentStart = now
+        feedTimer = t
+    }
+
+    /// Manual stepper adjustment (only while that side isn't running).
+    func setFeedTimerMinutes(_ side: FeedSide, _ minutes: Int) {
+        guard feedTimer.side != side else { return }
+        var t = feedTimer
+        let secs = TimeInterval(max(0, minutes) * 60)
+        if side == .left { t.accLeft = secs } else { t.accRight = secs }
+        feedTimer = t
+    }
+
+    func clearFeedTimer() {
+        feedTimer = FeedTimerState()
+    }
+
+    /// Mirror the timer into a Live Activity (lock screen / Dynamic Island).
+    private func syncLiveActivity() {
+        let t = feedTimer
+        let existing = Activity<FeedTimerAttributes>.activities.first
+        guard t.isActive else {
+            if let existing {
+                Task { await existing.end(nil, dismissalPolicy: .immediate) }
+            }
+            return
+        }
+        // The timer can start before the baby context has loaded — fall back
+        // to the widget snapshot's name and re-sync after refresh().
+        let babyName = baby?.name ?? TodaySnapshot.load()?.babyName ?? "your baby"
+        let status = { (s: String) in
+            UserDefaults(suiteName: AppGroup.id)?.set(s, forKey: "live-activity-status")
+        }
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+            status("disabled")
+            return
+        }
+        let total = t.grandTotal
+        let state = FeedTimerAttributes.ContentState(
+            sideLabel: t.side?.label ?? "Paused",
+            running: t.isRunning,
+            startReference: Date().addingTimeInterval(-total),
+            totalSeconds: Int(total)
+        )
+        if let existing {
+            Task { await existing.update(ActivityContent(state: state, staleDate: nil)) }
+        } else {
+            do {
+                _ = try Activity<FeedTimerAttributes>.request(
+                    attributes: FeedTimerAttributes(babyName: babyName),
+                    content: ActivityContent(state: state, staleDate: nil)
+                )
+                status("started")
+            } catch {
+                status("failed: \(error)")
+            }
+        }
+    }
+
+    // MARK: - Widgets
+
+    /// Publish the numbers the lock-screen/home widgets show.
+    private func writeWidgetSnapshot() {
+        guard let baby else { return }
+        let now = Date()
+        let day = Clinical.dayOfLife(birthAt: baby.birthAt, at: now)
+        let nappies = entries.filter {
+            $0.type == .nappy && now.timeIntervalSince($0.occurredAt) <= 86_400 && $0.occurredAt <= now
+        }
+        TodaySnapshot(
+            babyName: baby.name,
+            dayOfLife: day,
+            lastFeedAt: entries.first { $0.type == .feed }?.occurredAt,
+            feedIntervalMin: baby.feedIntervalMin,
+            nappyCount: nappies.count,
+            nappyTarget: Clinical.expectedNappies(day: day).total,
+            updatedAt: now
+        ).save()
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    // MARK: - Push notifications (APNs)
+
+    /// Ask permission and register; the device token lands in AppDelegate
+    /// which calls `uploadPushToken`.
+    func enablePush() async -> Bool {
+        let granted = (try? await UNUserNotificationCenter.current()
+            .requestAuthorization(options: [.alert, .sound, .badge])) ?? false
+        guard granted else {
+            pushEnabled = false
+            UserDefaults.standard.set(false, forKey: "push-enabled")
+            return false
+        }
+        UIApplication.shared.registerForRemoteNotifications()
+        pushEnabled = true
+        UserDefaults.standard.set(true, forKey: "push-enabled")
+        return true
+    }
+
+    func disablePush() async {
+        if let token = UserDefaults.standard.string(forKey: "push-token") {
+            try? await supabase.from("ios_push_tokens").delete().eq("token", value: token).execute()
+        }
+        UIApplication.shared.unregisterForRemoteNotifications()
+        pushEnabled = false
+        UserDefaults.standard.set(false, forKey: "push-enabled")
+    }
+
+    func uploadPushToken(_ hex: String) async {
+        UserDefaults.standard.set(hex, forKey: "push-token")
+        guard let userId else { return }
+        struct TokenRow: Encodable {
+            let user_id: UUID
+            let token: String
+        }
+        _ = try? await supabase
+            .from("ios_push_tokens")
+            .upsert(TokenRow(user_id: userId, token: hex), onConflict: "token")
+            .execute()
+    }
 
     #if DEBUG
     /// Simulator test hook: `simctl launch … -DevSessionAT x -DevSessionRT y`
@@ -197,6 +380,10 @@ final class Store: ObservableObject {
             entries = try await entriesReq
             dayTags = try await tagsReq
             errorMessage = nil
+            writeWidgetSnapshot()
+            // A timer started pre-load now gets its Live Activity (with the
+            // real baby name).
+            syncLiveActivity()
         } catch {
             errorMessage = friendly(error)
         }
@@ -210,6 +397,7 @@ final class Store: ObservableObject {
             .single()
             .execute().value
         entries.insert(inserted, at: entries.firstIndex { $0.occurredAt < inserted.occurredAt } ?? entries.count)
+        writeWidgetSnapshot()
         Haptics.success()
     }
 
@@ -225,12 +413,14 @@ final class Store: ObservableObject {
             entries[i] = updated
         }
         entries.sort { $0.occurredAt > $1.occurredAt }
+        writeWidgetSnapshot()
         Haptics.success()
     }
 
     func delete(_ entry: Entry) async throws {
         try await supabase.from("entries").delete().eq("id", value: entry.id).execute()
         entries.removeAll { $0.id == entry.id }
+        writeWidgetSnapshot()
     }
 
     /// Toggle a whole-day tag ("no_poo" / "teething") for a local calendar day.

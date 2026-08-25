@@ -19,9 +19,19 @@ targets:
     platform: iOS
     sources:
       - Beanlo
+      - SharedKit
     dependencies:
       - package: Supabase
         product: Supabase
+      - target: BeanloWidgets
+        embed: true
+    entitlements:
+      path: Beanlo/Beanlo.entitlements
+      properties:
+        # Flips to production automatically when archiving for TestFlight.
+        aps-environment: development
+        com.apple.security.application-groups:
+          - group.io.morta.beanlo
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.morta.beanlo
@@ -44,6 +54,34 @@ targets:
           UIColorName: LaunchBackground
         ITSAppUsesNonExemptEncryption: false
         UIUserInterfaceStyle: Automatic
+        NSSupportsLiveActivities: true
         CFBundleURLTypes:
           - CFBundleURLName: io.morta.beanlo
             CFBundleURLSchemes: [beanlo]
+
+  BeanloWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - BeanloWidgets
+      - SharedKit
+    entitlements:
+      path: BeanloWidgets/BeanloWidgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.io.morta.beanlo
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.morta.beanlo.widgets
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: 1
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        SKIP_INSTALL: YES
+        CODE_SIGN_STYLE: Automatic
+    info:
+      path: BeanloWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: beanlo
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension

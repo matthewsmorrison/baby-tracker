@@ -21,14 +21,23 @@ export interface PushPayload {
 }
 
 /**
- * Send a payload to every subscription for the given users, pruning any that
- * the push service reports as gone (410/404). Returns how many were delivered.
+ * Send a payload to every subscription for the given users — web push and,
+ * when APNs is configured, native iOS — pruning any endpoint the service
+ * reports as gone. Returns how many were delivered.
  */
 export async function sendToUsers(
   userIds: string[],
   payload: PushPayload
 ): Promise<number> {
   if (userIds.length === 0) return 0;
+  // Native iOS first; failures there must never block web push.
+  let apnsSent = 0;
+  try {
+    const { sendApnsToUsers } = await import("./apns");
+    apnsSent = await sendApnsToUsers(userIds, payload);
+  } catch (e) {
+    console.error("apns error:", e instanceof Error ? e.message : e);
+  }
   configure();
   const service = createServiceClient();
   const { data: subs } = await service
@@ -56,5 +65,5 @@ export async function sendToUsers(
   if (dead.length) {
     await service.from("push_subscriptions").delete().in("id", dead);
   }
-  return sent;
+  return sent + apnsSent;
 }

@@ -17,13 +17,13 @@ struct LogSheet: View {
 
     // Nappy
     @State private var dirty = false
-    // Feed
+    // Feed — breast minutes live in the app-global timer (store.feedTimer)
+    // for new entries so they survive closing the sheet; editing uses plain
+    // local steppers.
     @State private var leftMin = 0
     @State private var rightMin = 0
     @State private var expressedMl = 0
     @State private var formulaMl = 0
-    @State private var timerSide: FeedSide?
-    @State private var timerStart: Date?
     // Sleep
     @State private var sleepEnd = Date()
     @State private var sleepOngoing = true
@@ -39,8 +39,6 @@ struct LogSheet: View {
     @State private var medForMother = false
     // Milestone
     @State private var milestoneText = ""
-
-    enum FeedSide { case left, right }
 
     var body: some View {
         NavigationStack {
@@ -115,8 +113,13 @@ struct LogSheet: View {
             Card {
                 VStack(alignment: .leading, spacing: 16) {
                     CardTitle("Breast")
-                    timerRow(side: .left, label: "Left", minutes: $leftMin)
-                    timerRow(side: .right, label: "Right", minutes: $rightMin)
+                    if editing == nil {
+                        liveTimerRow(.left)
+                        liveTimerRow(.right)
+                    } else {
+                        editStepperRow(label: "Left", minutes: $leftMin)
+                        editStepperRow(label: "Right", minutes: $rightMin)
+                    }
                     Divider()
                     CardTitle("Bottle")
                     MlStepper(label: "Expressed milk", value: $expressedMl)
@@ -193,29 +196,49 @@ struct LogSheet: View {
         }
     }
 
-    private func timerRow(side: FeedSide, label: String, minutes: Binding<Int>) -> some View {
-        HStack(spacing: 12) {
+    /// New-entry row: play/pause drives the app-global timer (which also
+    /// runs the lock-screen Live Activity); the stepper adjusts banked time
+    /// while paused.
+    private func liveTimerRow(_ side: FeedSide) -> some View {
+        let running = store.feedTimer.side == side
+        return HStack(spacing: 12) {
             Button {
                 Haptics.tap()
-                toggleTimer(side, minutes: minutes)
+                store.toggleFeedTimer(side)
             } label: {
-                Image(systemName: timerSide == side ? "pause.fill" : "play.fill")
+                Image(systemName: running ? "pause.fill" : "play.fill")
                     .font(.body.weight(.semibold))
-                    .foregroundStyle(timerSide == side ? Color.onInk : Color.ink)
+                    .foregroundStyle(running ? Color.onInk : Color.ink)
                     .frame(width: 42, height: 42)
-                    .background(timerSide == side ? Color.ink : Color.surfaceAlt, in: .circle)
-                    .overlay(Circle().strokeBorder(Color.line, lineWidth: timerSide == side ? 0 : 1))
+                    .background(running ? Color.ink : Color.surfaceAlt, in: .circle)
+                    .overlay(Circle().strokeBorder(Color.line, lineWidth: running ? 0 : 1))
             }
             .buttonStyle(.plain)
 
-            Text(label).font(.system(.body, design: .rounded, weight: .medium))
-            if timerSide == side {
-                TimelineView(.periodic(from: .now, by: 1)) { _ in
-                    Text(runningLabel(base: minutes.wrappedValue))
-                        .font(.caption.weight(.bold).monospacedDigit())
-                        .foregroundStyle(Color.accent)
+            Text(side.label).font(.system(.body, design: .rounded, weight: .medium))
+            Spacer()
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                let secs = Int(store.feedTimer.total(side, at: context.date))
+                HStack(spacing: 0) {
+                    Text(String(format: "%d:%02d", secs / 60, secs % 60))
+                        .font(.stat(22))
+                        .monospacedDigit()
+                        .foregroundStyle(running ? Color.accent : Color.ink)
+                    Text(" min").font(.caption).foregroundStyle(Color.muted)
                 }
             }
+            Stepper("", value: Binding(
+                get: { Int(store.feedTimer.total(side) / 60) },
+                set: { store.setFeedTimerMinutes(side, $0) }
+            ), in: 0...180)
+            .labelsHidden()
+            .disabled(running)
+        }
+    }
+
+    private func editStepperRow(label: String, minutes: Binding<Int>) -> some View {
+        HStack(spacing: 12) {
+            Text(label).font(.system(.body, design: .rounded, weight: .medium))
             Spacer()
             HStack(spacing: 0) {
                 Text("\(minutes.wrappedValue)")
@@ -225,31 +248,6 @@ struct LogSheet: View {
             }
             Stepper("", value: minutes, in: 0...180).labelsHidden()
         }
-    }
-
-    private func runningLabel(base: Int) -> String {
-        guard let start = timerStart else { return "" }
-        let s = Int(Date().timeIntervalSince(start))
-        return String(format: "%d:%02d", s / 60, s % 60)
-    }
-
-    private func toggleTimer(_ side: FeedSide, minutes: Binding<Int>) {
-        if timerSide == side {
-            bankTimer()
-        } else {
-            bankTimer()
-            timerSide = side
-            timerStart = Date()
-        }
-    }
-
-    /// Stop the running timer and add its elapsed minutes to that side.
-    private func bankTimer() {
-        guard let side = timerSide, let start = timerStart else { return }
-        let mins = max(1, Int(round(Date().timeIntervalSince(start) / 60)))
-        if side == .left { leftMin += mins } else { rightMin += mins }
-        timerSide = nil
-        timerStart = nil
     }
 
     private var notesField: some View {
@@ -271,7 +269,9 @@ struct LogSheet: View {
 
     private var valid: Bool {
         switch type {
-        case .feed: return leftMin + rightMin + expressedMl + formulaMl > 0 || timerSide != nil
+        case .feed:
+            if editing != nil { return leftMin + rightMin + expressedMl + formulaMl > 0 }
+            return store.feedTimer.isActive || expressedMl + formulaMl > 0
         case .weight: return Double(weightKgText.replacingOccurrences(of: ",", with: ".")) != nil
         case .pump: return pumpMl > 0
         case .temperature: return Double(tempText.replacingOccurrences(of: ",", with: ".")) != nil
@@ -303,7 +303,15 @@ struct LogSheet: View {
 
     private func save() async {
         guard let baby = store.baby, let userId = store.userId else { return }
-        bankTimer()
+        // Bank a running side so its seconds count.
+        if type == .feed, editing == nil, let running = store.feedTimer.side {
+            store.toggleFeedTimer(running)
+        }
+        if type == .feed, editing == nil {
+            let t = store.feedTimer
+            leftMin = t.accLeft > 0 ? max(1, Int((t.accLeft / 60).rounded())) : 0
+            rightMin = t.accRight > 0 ? max(1, Int((t.accRight / 60).rounded())) : 0
+        }
         busy = true
         error = nil
 
@@ -368,6 +376,7 @@ struct LogSheet: View {
                 try await store.update(existing)
             } else {
                 try await store.save(new)
+                if type == .feed { store.clearFeedTimer() }
             }
             dismiss()
         } catch {

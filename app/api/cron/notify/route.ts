@@ -62,11 +62,16 @@ export async function POST(request: Request) {
   const now = Date.now();
   const results = { feedDue: 0, lowNappies: 0, medReminders: 0, digests: 0 };
 
-  // Only bother with babies that have at least one subscribed member.
-  const { data: subs } = await svc
-    .from("push_subscriptions")
-    .select("user_id");
-  const subscribedUsers = new Set((subs ?? []).map((s) => s.user_id));
+  // Only bother with babies that have at least one subscribed member —
+  // web push or the native iOS app.
+  const [{ data: subs }, { data: iosTokens }] = await Promise.all([
+    svc.from("push_subscriptions").select("user_id"),
+    svc.from("ios_push_tokens").select("user_id"),
+  ]);
+  const subscribedUsers = new Set([
+    ...(subs ?? []).map((s) => s.user_id),
+    ...(iosTokens ?? []).map((t) => t.user_id),
+  ]);
   if (subscribedUsers.size === 0) return NextResponse.json({ ok: true, results });
 
   const { data: memberships } = await svc

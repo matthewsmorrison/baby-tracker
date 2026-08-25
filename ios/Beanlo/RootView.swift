@@ -21,6 +21,17 @@ struct RootView: View {
                 NavigationStack { SettingsView() }
             }
         }
+        // Feed-timer pill: the timer keeps running when the sheet closes —
+        // this makes that visible and gives a one-tap way back.
+        .overlay(alignment: .bottom) {
+            if store.feedTimer.isActive && logSheet == nil && editing == nil {
+                TimerPill {
+                    Haptics.tap()
+                    logSheet = .feed
+                }
+                .padding(.bottom, 96)
+            }
+        }
         // Floating glass log button, docked above the tab bar.
         .overlay(alignment: .bottomTrailing) {
             Button {
@@ -51,11 +62,44 @@ struct RootView: View {
             case "logfeed": logSheet = .feed
             default: break
             }
+            if let side = UserDefaults.standard.string(forKey: "DevStartTimer") {
+                store.toggleFeedTimer(side == "right" ? .right : .left)
+            }
         }
         #endif
         .sheet(item: $editing) { entry in
             LogSheet(initialType: entry.type, editing: entry)
         }
         .refreshable { await store.refresh() }
+    }
+}
+
+struct TimerPill: View {
+    @EnvironmentObject private var store: Store
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(Color.accent)
+                    .frame(width: 9, height: 9)
+                Text("Feed timing ·")
+                    .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    let secs = Int(store.feedTimer.total(.left, at: context.date) + store.feedTimer.total(.right, at: context.date))
+                    Text(String(format: "%d:%02d", secs / 60, secs % 60))
+                        .font(.stat(16))
+                        .monospacedDigit()
+                }
+                Text("tap to return")
+                    .font(.caption)
+                    .opacity(0.65)
+            }
+            .foregroundStyle(Color.ink)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 12)
+        }
+        .glassEffect(.regular.tint(Color.accent.opacity(0.35)).interactive(), in: .capsule)
     }
 }
