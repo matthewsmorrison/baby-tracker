@@ -1,0 +1,49 @@
+# Xcode project definition — regenerate with `xcodegen` after editing.
+# The native app talks to the same Supabase project as the web app, so both
+# carers see the same data under the same accounts (RLS enforces access).
+name: Beanlo
+options:
+  bundleIdPrefix: io.morta
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+
+packages:
+  Supabase:
+    url: https://github.com/supabase/supabase-swift
+    from: 2.0.0
+
+targets:
+  Beanlo:
+    type: application
+    platform: iOS
+    sources:
+      - Beanlo
+    dependencies:
+      - package: Supabase
+        product: Supabase
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.morta.beanlo
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: 1
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTS_MACCATALYST: NO
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        # Set your Apple Developer team once in Xcode (Signing & Capabilities)
+        # or fill it in here; everything else is automatic signing.
+        CODE_SIGN_STYLE: Automatic
+    info:
+      path: Beanlo/Info.plist
+      properties:
+        CFBundleDisplayName: beanlo
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        ITSAppUsesNonExemptEncryption: false
+        UIUserInterfaceStyle: Automatic
+        CFBundleURLTypes:
+          - CFBundleURLName: io.morta.beanlo
+            CFBundleURLSchemes: [beanlo]

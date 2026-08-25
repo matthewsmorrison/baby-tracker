@@ -1,0 +1,440 @@
+import SwiftUI
+
+/// Log or edit any entry type. Presented as a sheet from the floating + or
+/// from a History row.
+struct LogSheet: View {
+    @EnvironmentObject private var store: Store
+    @Environment(\.dismiss) private var dismiss
+
+    let initialType: EntryType
+    var editing: Entry?
+
+    @State private var type: EntryType = .nappy
+    @State private var occurredAt = Date()
+    @State private var note = ""
+    @State private var busy = false
+    @State private var error: String?
+
+    // Nappy
+    @State private var dirty = false
+    // Feed
+    @State private var leftMin = 0
+    @State private var rightMin = 0
+    @State private var expressedMl = 0
+    @State private var formulaMl = 0
+    @State private var timerSide: FeedSide?
+    @State private var timerStart: Date?
+    // Sleep
+    @State private var sleepEnd = Date()
+    @State private var sleepOngoing = true
+    // Weight
+    @State private var weightKgText = ""
+    // Pump
+    @State private var pumpMl = 0
+    // Temperature
+    @State private var tempText = ""
+    // Medication
+    @State private var medName = ""
+    @State private var medDose = ""
+    @State private var medForMother = false
+    // Milestone
+    @State private var milestoneText = ""
+
+    enum FeedSide { case left, right }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    if editing == nil {
+                        typePicker
+                    }
+                    form
+                    notesField
+                    whenPicker
+
+                    if let error {
+                        Text(error).font(.footnote).foregroundStyle(Color.alertTone)
+                    }
+                }
+                .padding(18)
+            }
+            .background(Color.sand)
+            .navigationTitle(editing == nil ? "Log \(type.label.lowercased())" : "Edit \(type.label.lowercased())")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button {
+                        Task { await save() }
+                    } label: {
+                        if busy { ProgressView() } else { Text("Save").bold() }
+                    }
+                    .disabled(busy || !valid)
+                }
+            }
+        }
+        .presentationDetents([.large])
+        .presentationBackground(Color.sand)
+        .onAppear { hydrate() }
+    }
+
+    // MARK: - Pieces
+
+    private var typePicker: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(store.trackedTypes) { t in
+                    Chip(label: t.label, systemImage: t.symbol, active: type == t) {
+                        withAnimation(.snappy) { type = t }
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var form: some View {
+        switch type {
+        case .nappy:
+            Card {
+                VStack(alignment: .leading, spacing: 12) {
+                    CardTitle("What was in it?")
+                    HStack(spacing: 10) {
+                        BigChoice(label: "Wet only", symbol: "drop.fill", tint: .chartBlue, active: !dirty) { dirty = false }
+                        BigChoice(label: "Mixed", symbol: "aqi.medium", tint: .chartBrown, active: dirty) { dirty = true }
+                    }
+                    Text("Mixed = a nappy with poo (we assume wee too).")
+                        .font(.caption2).foregroundStyle(Color.faint)
+                }
+            }
+
+        case .feed:
+            Card {
+                VStack(alignment: .leading, spacing: 16) {
+                    CardTitle("Breast")
+                    timerRow(side: .left, label: "Left", minutes: $leftMin)
+                    timerRow(side: .right, label: "Right", minutes: $rightMin)
+                    Divider()
+                    CardTitle("Bottle")
+                    MlStepper(label: "Expressed milk", value: $expressedMl)
+                    MlStepper(label: "Formula", value: $formulaMl)
+                }
+            }
+
+        case .sleep, .carerSleep:
+            Card {
+                VStack(alignment: .leading, spacing: 12) {
+                    Toggle(isOn: $sleepOngoing.animation(.snappy)) {
+                        Text("Still asleep").font(.system(.body, design: .rounded, weight: .medium))
+                    }
+                    .tint(.accent)
+                    if !sleepOngoing {
+                        DatePicker("Woke at", selection: $sleepEnd, displayedComponents: [.date, .hourAndMinute])
+                            .font(.system(.body, design: .rounded))
+                    }
+                }
+            }
+
+        case .weight:
+            Card {
+                VStack(alignment: .leading, spacing: 10) {
+                    CardTitle("Weight")
+                    HStack {
+                        TextField("4.20", text: $weightKgText)
+                            .keyboardType(.decimalPad)
+                            .font(.stat(34))
+                        Text("kg").font(.system(.title3, design: .rounded)).foregroundStyle(Color.muted)
+                    }
+                }
+            }
+
+        case .pump:
+            Card {
+                MlStepper(label: "Total expressed", value: $pumpMl)
+            }
+
+        case .temperature:
+            Card {
+                VStack(alignment: .leading, spacing: 10) {
+                    CardTitle("Temperature")
+                    HStack {
+                        TextField("37.0", text: $tempText)
+                            .keyboardType(.decimalPad)
+                            .font(.stat(34))
+                        Text("°C").font(.system(.title3, design: .rounded)).foregroundStyle(Color.muted)
+                    }
+                    Text("38°C or higher in a baby under 3 months needs same-day advice.")
+                        .font(.caption2).foregroundStyle(Color.watch)
+                }
+            }
+
+        case .medication:
+            Card {
+                VStack(alignment: .leading, spacing: 12) {
+                    TextField("Medicine (e.g. Vitamin D)", text: $medName)
+                        .font(.system(.body, design: .rounded))
+                    TextField("Dose (e.g. 1 drop)", text: $medDose)
+                        .font(.system(.body, design: .rounded))
+                    HStack(spacing: 8) {
+                        Chip(label: "For baby", active: !medForMother) { medForMother = false }
+                        Chip(label: "For mother", active: medForMother) { medForMother = true }
+                    }
+                }
+            }
+
+        case .milestone:
+            Card {
+                TextField("First smile…", text: $milestoneText)
+                    .font(.system(.body, design: .rounded))
+            }
+        }
+    }
+
+    private func timerRow(side: FeedSide, label: String, minutes: Binding<Int>) -> some View {
+        HStack(spacing: 12) {
+            Button {
+                Haptics.tap()
+                toggleTimer(side, minutes: minutes)
+            } label: {
+                Image(systemName: timerSide == side ? "pause.fill" : "play.fill")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(timerSide == side ? Color.onInk : Color.ink)
+                    .frame(width: 42, height: 42)
+                    .background(timerSide == side ? Color.ink : Color.surfaceAlt, in: .circle)
+                    .overlay(Circle().strokeBorder(Color.line, lineWidth: timerSide == side ? 0 : 1))
+            }
+            .buttonStyle(.plain)
+
+            Text(label).font(.system(.body, design: .rounded, weight: .medium))
+            if timerSide == side {
+                TimelineView(.periodic(from: .now, by: 1)) { _ in
+                    Text(runningLabel(base: minutes.wrappedValue))
+                        .font(.caption.weight(.bold).monospacedDigit())
+                        .foregroundStyle(Color.accent)
+                }
+            }
+            Spacer()
+            HStack(spacing: 0) {
+                Text("\(minutes.wrappedValue)")
+                    .font(.stat(22))
+                    .contentTransition(.numericText())
+                Text(" min").font(.caption).foregroundStyle(Color.muted)
+            }
+            Stepper("", value: minutes, in: 0...180).labelsHidden()
+        }
+    }
+
+    private func runningLabel(base: Int) -> String {
+        guard let start = timerStart else { return "" }
+        let s = Int(Date().timeIntervalSince(start))
+        return String(format: "%d:%02d", s / 60, s % 60)
+    }
+
+    private func toggleTimer(_ side: FeedSide, minutes: Binding<Int>) {
+        if timerSide == side {
+            bankTimer()
+        } else {
+            bankTimer()
+            timerSide = side
+            timerStart = Date()
+        }
+    }
+
+    /// Stop the running timer and add its elapsed minutes to that side.
+    private func bankTimer() {
+        guard let side = timerSide, let start = timerStart else { return }
+        let mins = max(1, Int(round(Date().timeIntervalSince(start) / 60)))
+        if side == .left { leftMin += mins } else { rightMin += mins }
+        timerSide = nil
+        timerStart = nil
+    }
+
+    private var notesField: some View {
+        Card {
+            TextField("Anything worth remembering (optional)", text: $note, axis: .vertical)
+                .lineLimit(2...4)
+                .font(.system(.body, design: .rounded))
+        }
+    }
+
+    private var whenPicker: some View {
+        Card {
+            DatePicker("When", selection: $occurredAt, in: ...Date().addingTimeInterval(60), displayedComponents: [.date, .hourAndMinute])
+                .font(.system(.body, design: .rounded, weight: .medium))
+        }
+    }
+
+    // MARK: - Save
+
+    private var valid: Bool {
+        switch type {
+        case .feed: return leftMin + rightMin + expressedMl + formulaMl > 0 || timerSide != nil
+        case .weight: return Double(weightKgText.replacingOccurrences(of: ",", with: ".")) != nil
+        case .pump: return pumpMl > 0
+        case .temperature: return Double(tempText.replacingOccurrences(of: ",", with: ".")) != nil
+        case .medication: return !medName.trimmingCharacters(in: .whitespaces).isEmpty
+        case .milestone: return !milestoneText.trimmingCharacters(in: .whitespaces).isEmpty
+        default: return true
+        }
+    }
+
+    private func hydrate() {
+        type = initialType
+        guard let e = editing else { return }
+        occurredAt = e.occurredAt
+        note = e.note ?? ""
+        dirty = e.dirty ?? false
+        leftMin = e.leftMin ?? 0
+        rightMin = e.rightMin ?? 0
+        expressedMl = e.expressedMl ?? 0
+        formulaMl = e.formulaMl ?? 0
+        if let end = e.endedAt { sleepEnd = end; sleepOngoing = false }
+        if let g = e.weightG { weightKgText = String(format: "%.2f", Double(g) / 1000) }
+        pumpMl = e.expressedMl ?? 0
+        if let t = e.tempC { tempText = String(format: "%.1f", t) }
+        medName = e.medName ?? ""
+        medDose = e.medDose ?? ""
+        medForMother = e.medSubject == "mother"
+        milestoneText = e.milestoneLabel ?? ""
+    }
+
+    private func save() async {
+        guard let baby = store.baby, let userId = store.userId else { return }
+        bankTimer()
+        busy = true
+        error = nil
+
+        var new = NewEntry(babyId: baby.id, type: type, occurredAt: occurredAt, createdBy: userId)
+        let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        new.note = trimmedNote.isEmpty ? nil : trimmedNote
+
+        switch type {
+        case .nappy:
+            new.wet = true
+            new.dirty = dirty
+        case .feed:
+            new.leftMin = leftMin > 0 ? leftMin : nil
+            new.rightMin = rightMin > 0 ? rightMin : nil
+            new.expressedMl = expressedMl > 0 ? expressedMl : nil
+            new.formulaMl = formulaMl > 0 ? formulaMl : nil
+            let breast = leftMin + rightMin > 0
+            let bottle = expressedMl + formulaMl > 0
+            new.feedType = breast && bottle ? "mixed"
+                : breast ? "breast"
+                : expressedMl > 0 && formulaMl > 0 ? "mixed"
+                : expressedMl > 0 ? "expressed" : "formula"
+            if breast {
+                new.endedAt = occurredAt.addingTimeInterval(TimeInterval((leftMin + rightMin) * 60))
+            }
+        case .sleep, .carerSleep:
+            new.endedAt = sleepOngoing ? nil : sleepEnd
+        case .weight:
+            if let kg = Double(weightKgText.replacingOccurrences(of: ",", with: ".")) {
+                new.weightG = Int(kg * 1000)
+            }
+        case .pump:
+            new.expressedMl = pumpMl
+        case .temperature:
+            new.tempC = Double(tempText.replacingOccurrences(of: ",", with: "."))
+        case .medication:
+            new.medName = medName.trimmingCharacters(in: .whitespaces)
+            new.medDose = medDose.isEmpty ? nil : medDose
+            new.medKind = "dose"
+            new.medSubject = medForMother ? "mother" : "baby"
+        case .milestone:
+            break
+        }
+
+        do {
+            if var existing = editing {
+                existing.occurredAt = new.occurredAt
+                existing.note = new.note
+                existing.wet = new.wet ?? existing.wet
+                existing.dirty = new.dirty ?? existing.dirty
+                existing.leftMin = new.leftMin
+                existing.rightMin = new.rightMin
+                existing.expressedMl = new.expressedMl ?? (type == .pump ? pumpMl : nil)
+                existing.formulaMl = new.formulaMl
+                existing.feedType = new.feedType ?? existing.feedType
+                existing.endedAt = type == .sleep || type == .carerSleep
+                    ? (sleepOngoing ? nil : sleepEnd) : new.endedAt ?? existing.endedAt
+                existing.weightG = new.weightG ?? existing.weightG
+                existing.tempC = new.tempC ?? existing.tempC
+                existing.medName = new.medName ?? existing.medName
+                existing.medDose = new.medDose ?? existing.medDose
+                try await store.update(existing)
+            } else {
+                try await store.save(new)
+            }
+            dismiss()
+        } catch {
+            self.error = error.localizedDescription
+        }
+        busy = false
+    }
+}
+
+// MARK: - Form controls
+
+private struct BigChoice: View {
+    let label: String
+    let symbol: String
+    let tint: Color
+    let active: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button {
+            Haptics.tap()
+            action()
+        } label: {
+            VStack(spacing: 6) {
+                Image(systemName: symbol).font(.title3)
+                Text(label).font(.system(.subheadline, design: .rounded, weight: .semibold))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(active ? tint.opacity(0.16) : Color.surfaceAlt, in: .rect(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(active ? tint : Color.line, lineWidth: active ? 2 : 1)
+            )
+            .foregroundStyle(active ? tint : Color.muted)
+        }
+        .buttonStyle(.plain)
+        .animation(.snappy(duration: 0.18), value: active)
+    }
+}
+
+private struct MlStepper: View {
+    let label: String
+    @Binding var value: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(label).font(.system(.body, design: .rounded, weight: .medium))
+                Spacer()
+                HStack(spacing: 0) {
+                    Text("\(value)").font(.stat(22)).contentTransition(.numericText())
+                    Text(" ml").font(.caption).foregroundStyle(Color.muted)
+                }
+            }
+            HStack(spacing: 8) {
+                ForEach([30, 60, 90], id: \.self) { amount in
+                    Chip(label: "\(amount) ml", active: false) {
+                        withAnimation(.snappy) { value += amount }
+                    }
+                }
+                if value > 0 {
+                    Chip(label: "Clear", active: false) {
+                        withAnimation(.snappy) { value = 0 }
+                    }
+                }
+            }
+        }
+    }
+}

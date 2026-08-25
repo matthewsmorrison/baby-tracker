@@ -1,0 +1,398 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		00B7AA22324D873ABF62A5B3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7B8BCA8DD9C7F316A7BEE0B2 /* Assets.xcassets */; };
+		308EAA9631B18C2CF7285949 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E07E60E828EE503E499817F /* Models.swift */; };
+		36BE6331B697036A064D5148 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 311D92C95AFA5F91EF74AEB3 /* AuthView.swift */; };
+		3B9F20E77760A62A63CC6BEE /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC640DB3B9D7F5D263832128 /* Components.swift */; };
+		427717ADE7C97C633EA58B6F /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6F719C239BF8DEEC582702C /* TodayView.swift */; };
+		503E381D82766400118E556F /* Clinical.swift in Sources */ = {isa = PBXBuildFile; fileRef = 982D4A9BF820014229C3BDFE /* Clinical.swift */; };
+		517E8A1244BDD791D7EFB007 /* Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0E9A68D9843B3FE63CD44C8 /* Store.swift */; };
+		66C17CF5462A34D9C9072771 /* LogSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F2D01B2267930A87A15E7B2 /* LogSheet.swift */; };
+		6DFE2E3CB24AC3739AFD022F /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26004E2E18EE59EC8CACC0CF /* HistoryView.swift */; };
+		82B33F2324546EDDB826E1D0 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 177A441EF8796BC28453AF4E /* RootView.swift */; };
+		898DD98D8C7C6A198D0C201E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DC78D18552A0B2B5FDC3897 /* Theme.swift */; };
+		8B1E3A53A5E0A015B581C39A /* BeanloApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC930610A13DB8711432F7D6 /* BeanloApp.swift */; };
+		8F9DCE0B906ACB8F843CED52 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = D1C74A9AC6F23FCBBD71C850 /* Supabase */; };
+		CACA8B5A03441981CC75C6DC /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5BF01E37E88532DA607099D /* SettingsView.swift */; };
+		D75E582CC6A918B91C6DCD10 /* ChartsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83EED4A7B1C07E4C87090031 /* ChartsView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		177A441EF8796BC28453AF4E /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		26004E2E18EE59EC8CACC0CF /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		2E07E60E828EE503E499817F /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		311D92C95AFA5F91EF74AEB3 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
+		4806C593E90F9B916B6FBE29 /* Beanlo.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Beanlo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4F2D01B2267930A87A15E7B2 /* LogSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogSheet.swift; sourceTree = "<group>"; };
+		6DC78D18552A0B2B5FDC3897 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		7B8BCA8DD9C7F316A7BEE0B2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		83EED4A7B1C07E4C87090031 /* ChartsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartsView.swift; sourceTree = "<group>"; };
+		982D4A9BF820014229C3BDFE /* Clinical.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clinical.swift; sourceTree = "<group>"; };
+		A0E9A68D9843B3FE63CD44C8 /* Store.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Store.swift; sourceTree = "<group>"; };
+		B6F719C239BF8DEEC582702C /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
+		C5BF01E37E88532DA607099D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		CC930610A13DB8711432F7D6 /* BeanloApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeanloApp.swift; sourceTree = "<group>"; };
+		CE64A91D0330059A2B598E5F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		EC640DB3B9D7F5D263832128 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C970A569FA17F26A85C22BA7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8F9DCE0B906ACB8F843CED52 /* Supabase in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		6108710FFB5ECB398B306FF3 /* Beanlo */ = {
+			isa = PBXGroup;
+			children = (
+				7B8BCA8DD9C7F316A7BEE0B2 /* Assets.xcassets */,
+				311D92C95AFA5F91EF74AEB3 /* AuthView.swift */,
+				CC930610A13DB8711432F7D6 /* BeanloApp.swift */,
+				83EED4A7B1C07E4C87090031 /* ChartsView.swift */,
+				982D4A9BF820014229C3BDFE /* Clinical.swift */,
+				EC640DB3B9D7F5D263832128 /* Components.swift */,
+				26004E2E18EE59EC8CACC0CF /* HistoryView.swift */,
+				CE64A91D0330059A2B598E5F /* Info.plist */,
+				4F2D01B2267930A87A15E7B2 /* LogSheet.swift */,
+				2E07E60E828EE503E499817F /* Models.swift */,
+				177A441EF8796BC28453AF4E /* RootView.swift */,
+				C5BF01E37E88532DA607099D /* SettingsView.swift */,
+				A0E9A68D9843B3FE63CD44C8 /* Store.swift */,
+				6DC78D18552A0B2B5FDC3897 /* Theme.swift */,
+				B6F719C239BF8DEEC582702C /* TodayView.swift */,
+			);
+			path = Beanlo;
+			sourceTree = "<group>";
+		};
+		94E759CB4370495424B00391 = {
+			isa = PBXGroup;
+			children = (
+				6108710FFB5ECB398B306FF3 /* Beanlo */,
+				E0B5A77C4F386C5CECA3CB9C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		E0B5A77C4F386C5CECA3CB9C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				4806C593E90F9B916B6FBE29 /* Beanlo.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		2667AD8F3AA6F31202B6F406 /* Beanlo */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 15547C42439380AFF065F556 /* Build configuration list for PBXNativeTarget "Beanlo" */;
+			buildPhases = (
+				73CDBF0E67E2576D83B3A44C /* Sources */,
+				3860C37145DCA913CC9A5DD2 /* Resources */,
+				C970A569FA17F26A85C22BA7 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Beanlo;
+			packageProductDependencies = (
+				D1C74A9AC6F23FCBBD71C850 /* Supabase */,
+			);
+			productName = Beanlo;
+			productReference = 4806C593E90F9B916B6FBE29 /* Beanlo.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		725B2E0F1D8960D6803B5B52 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					2667AD8F3AA6F31202B6F406 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 0760C191342C8BE3BC20EF5F /* Build configuration list for PBXProject "Beanlo" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 94E759CB4370495424B00391;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				E6D14B57E58642FF6227B3E5 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				2667AD8F3AA6F31202B6F406 /* Beanlo */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		3860C37145DCA913CC9A5DD2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				00B7AA22324D873ABF62A5B3 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		73CDBF0E67E2576D83B3A44C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				36BE6331B697036A064D5148 /* AuthView.swift in Sources */,
+				8B1E3A53A5E0A015B581C39A /* BeanloApp.swift in Sources */,
+				D75E582CC6A918B91C6DCD10 /* ChartsView.swift in Sources */,
+				503E381D82766400118E556F /* Clinical.swift in Sources */,
+				3B9F20E77760A62A63CC6BEE /* Components.swift in Sources */,
+				6DFE2E3CB24AC3739AFD022F /* HistoryView.swift in Sources */,
+				66C17CF5462A34D9C9072771 /* LogSheet.swift in Sources */,
+				308EAA9631B18C2CF7285949 /* Models.swift in Sources */,
+				82B33F2324546EDDB826E1D0 /* RootView.swift in Sources */,
+				CACA8B5A03441981CC75C6DC /* SettingsView.swift in Sources */,
+				517E8A1244BDD791D7EFB007 /* Store.swift in Sources */,
+				898DD98D8C7C6A198D0C201E /* Theme.swift in Sources */,
+				427717ADE7C97C633EA58B6F /* TodayView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		376E98FEB26DFAAC944217ED /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		51B06B574A98B6FEB49D6B4C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = Beanlo/Info.plist;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.morta.beanlo;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		7D047BDC1F6BE6526CD3968D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = Beanlo/Info.plist;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.morta.beanlo;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		9EC4BADDEBA2123EDE2A5F2A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0760C191342C8BE3BC20EF5F /* Build configuration list for PBXProject "Beanlo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				376E98FEB26DFAAC944217ED /* Debug */,
+				9EC4BADDEBA2123EDE2A5F2A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		15547C42439380AFF065F556 /* Build configuration list for PBXNativeTarget "Beanlo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7D047BDC1F6BE6526CD3968D /* Debug */,
+				51B06B574A98B6FEB49D6B4C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		E6D14B57E58642FF6227B3E5 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		D1C74A9AC6F23FCBBD71C850 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E6D14B57E58642FF6227B3E5 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 725B2E0F1D8960D6803B5B52 /* Project object */;
+}
