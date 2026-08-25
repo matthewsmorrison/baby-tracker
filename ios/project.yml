@@ -13,6 +13,18 @@ packages:
     url: https://github.com/supabase/supabase-swift
     from: 2.0.0
 
+# One shared scheme: always run the APP (the widget extension is built and
+# embedded automatically — running it directly just errors at SpringBoard).
+schemes:
+  Beanlo:
+    build:
+      targets:
+        Beanlo: all
+    run:
+      config: Debug
+    archive:
+      config: Release
+
 targets:
   Beanlo:
     type: application
