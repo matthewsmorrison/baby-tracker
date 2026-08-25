@@ -7,7 +7,7 @@ import ActivityKit
 // Types shared between the app and the widget extension.
 
 enum AppGroup {
-    static let id = "group.io.morta.beanlo"
+    static let id = "group.io.beanlo"
     static let snapshotKey = "today-snapshot"
 }
 

@@ -4,7 +4,7 @@
 <dict>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.io.morta.beanlo</string>
+		<string>group.io.beanlo</string>
 	</array>
 </dict>
 </plist>

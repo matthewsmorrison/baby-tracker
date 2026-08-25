@@ -24,14 +24,23 @@ no other dependencies beyond `supabase-swift`.
 - **Google**: `signInWithOAuth(.google)` in an in-app browser sheet,
   same redirect.
 
-## TestFlight
+## Running on your own iPhone today (free personal team)
 
-1. Open `Beanlo.xcodeproj` in Xcode → target *Beanlo* → *Signing &
-   Capabilities* → pick your team (personal Apple Developer account works).
-2. Product → Archive → Distribute App → TestFlight & App Store Connect.
-   First time: create the app record in App Store Connect when prompted
-   (bundle id `io.morta.beanlo`).
-3. In App Store Connect → TestFlight → Internal Testing, add yourself and
-   Victoria as testers; builds land on your phones via the TestFlight app.
+Plug the phone in, select it as the run destination, pick your personal
+team on BOTH targets (Beanlo and BeanloWidgets) under *Signing &
+Capabilities*, and hit Run. Free-team installs expire after 7 days
+(re-run to refresh) and can't use push notifications.
 
-Internal testing needs no App Review and updates arrive in minutes.
+## TestFlight (needs the paid Apple Developer Program)
+
+TestFlight — and push notifications — require Apple Developer Program
+membership ($99/yr): enroll at developer.apple.com/programs (approval
+usually takes a day or two). Then:
+
+1. Uncomment `aps-environment` in `project.yml` and rerun `xcodegen`
+   to re-enable push.
+2. Open `Beanlo.xcodeproj` → pick your (now paid) team on both targets.
+3. Product → Archive → Distribute App → TestFlight & App Store Connect.
+   First time: create the app record when prompted (bundle id `io.beanlo`).
+4. App Store Connect → TestFlight → Internal Testing → add yourself and
+   Victoria; builds land via the TestFlight app in minutes, no App Review.

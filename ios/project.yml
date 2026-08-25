@@ -28,13 +28,15 @@ targets:
     entitlements:
       path: Beanlo/Beanlo.entitlements
       properties:
-        # Flips to production automatically when archiving for TestFlight.
-        aps-environment: development
+        # Push needs the paid Apple Developer Program (personal teams can't
+        # sign it). After enrolling, uncomment and rerun xcodegen — it flips
+        # to production automatically when archiving for TestFlight:
+        # aps-environment: development
         com.apple.security.application-groups:
-          - group.io.morta.beanlo
+          - group.io.beanlo
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: io.morta.beanlo
+        PRODUCT_BUNDLE_IDENTIFIER: io.beanlo
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: 1
         SWIFT_VERSION: "5.0"
@@ -56,7 +58,7 @@ targets:
         UIUserInterfaceStyle: Automatic
         NSSupportsLiveActivities: true
         CFBundleURLTypes:
-          - CFBundleURLName: io.morta.beanlo
+          - CFBundleURLName: io.beanlo
             CFBundleURLSchemes: [beanlo]
 
   BeanloWidgets:
@@ -69,10 +71,10 @@ targets:
       path: BeanloWidgets/BeanloWidgets.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.io.morta.beanlo
+          - group.io.beanlo
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: io.morta.beanlo.widgets
+        PRODUCT_BUNDLE_IDENTIFIER: io.beanlo.widgets
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: 1
         SWIFT_VERSION: "5.0"

@@ -9,7 +9,7 @@ import type { PushPayload } from "./push";
 //   APNS_TEAM_ID      Apple Developer team id
 //   APNS_KEY_ID       key id of the APNs auth key
 //   APNS_PRIVATE_KEY  the .p8 contents (\n-escaped is fine)
-//   APNS_TOPIC        bundle id (defaults to io.morta.beanlo)
+//   APNS_TOPIC        bundle id (defaults to io.beanlo)
 //   APNS_ENV          "production" (default) or "sandbox"
 
 const b64url = (input: Buffer | string) =>
@@ -62,7 +62,7 @@ export async function sendApnsToUsers(
     process.env.APNS_ENV === "sandbox"
       ? "https://api.sandbox.push.apple.com"
       : "https://api.push.apple.com";
-  const topic = process.env.APNS_TOPIC || "io.morta.beanlo";
+  const topic = process.env.APNS_TOPIC || "io.beanlo";
   const body = JSON.stringify({
     aps: {
       alert: { title: payload.title, body: payload.body },
