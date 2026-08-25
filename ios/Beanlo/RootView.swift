@@ -5,11 +5,14 @@ struct RootView: View {
     @State private var logSheet: EntryType?
     @State private var editing: Entry?
     @State private var selectedTab = 0
+    @State private var showSettings = false
 
     var body: some View {
         TabView(selection: $selectedTab) {
+            // iPhone shows at most five tabs before collapsing into "More",
+            // so Settings lives behind the gear on the Today header instead.
             Tab("Today", systemImage: "sun.max.fill", value: 0) {
-                NavigationStack { TodayView(logSheet: $logSheet) }
+                NavigationStack { TodayView(logSheet: $logSheet, showSettings: $showSettings) }
             }
             Tab("History", systemImage: "clock.fill", value: 1) {
                 NavigationStack { HistoryView(editing: $editing) }
@@ -20,9 +23,10 @@ struct RootView: View {
             Tab("Notes", systemImage: "square.and.pencil", value: 3) {
                 NavigationStack { NotesView() }
             }
-            Tab("Settings", systemImage: "gearshape.fill", value: 4) {
-                NavigationStack { SettingsView() }
+            Tab("Friends", systemImage: "person.2.fill", value: 4) {
+                NavigationStack { FriendsView() }
             }
+            .badge(store.unreadDMs)
         }
         // Feed-timer pill: the timer keeps running when the sheet closes —
         // this makes that visible and gives a one-tap way back.
@@ -54,6 +58,16 @@ struct RootView: View {
         .sheet(item: $logSheet) { initial in
             LogSheet(initialType: initial)
         }
+        .sheet(isPresented: $showSettings) {
+            NavigationStack {
+                SettingsView()
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { showSettings = false }
+                        }
+                    }
+            }
+        }
         #if DEBUG
         .onAppear {
             // Simulator test hook: `simctl launch … -DevTab charts|history|log`
@@ -61,7 +75,8 @@ struct RootView: View {
             case "history": selectedTab = 1
             case "charts": selectedTab = 2
             case "notes": selectedTab = 3
-            case "settings": selectedTab = 4
+            case "friends": selectedTab = 4
+            case "settings": showSettings = true
             case "log": logSheet = .nappy
             case "logfeed": logSheet = .feed
             default: break

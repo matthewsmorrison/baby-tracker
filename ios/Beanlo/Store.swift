@@ -418,6 +418,7 @@ final class Store: ObservableObject {
             activeCourses = (try? await coursesReq) ?? []
             myProfile = try await profileReq.first
             mySettings = (try? await settingsReq.first) ?? UserSettings()
+            await refreshUnreadDMs()
             signedUrlCache = [:]
             errorMessage = nil
             writeWidgetSnapshot()
@@ -427,6 +428,19 @@ final class Store: ObservableObject {
         } catch {
             errorMessage = friendly(error)
         }
+    }
+
+    /// Unread DMs badge on the Friends tab — mirrors the web's UnreadBadge.
+    @Published var unreadDMs = 0
+    func refreshUnreadDMs() async {
+        guard let userId else { return }
+        let count = try? await supabase
+            .from("direct_messages")
+            .select("id", head: true, count: .exact)
+            .eq("recipient", value: userId)
+            .is("read_at", value: nil)
+            .execute().count
+        unreadDMs = count ?? unreadDMs
     }
 
     /// Older entries for History: pull the next 60-day window and append.

@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -69,7 +69,7 @@
 
 /* Begin PBXFileReference section */
 		01F546BC4F0D8E7CCBC073D5 /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
-		02F169F647B1AD7B65695592 /* BeanloWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = BeanloWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		02F169F647B1AD7B65695592 /* BeanloWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BeanloWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		060DE9CE01E34B6A50DD0BD2 /* Predict.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Predict.swift; sourceTree = "<group>"; };
 		177A441EF8796BC28453AF4E /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		1D448F52284188880960D7D6 /* BeanloWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BeanloWidgets.entitlements; sourceTree = "<group>"; };
@@ -81,7 +81,7 @@
 		311D92C95AFA5F91EF74AEB3 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
 		3BBF4FD00A2108FBE262AF37 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
 		3F8256CA51DFE72B187EC922 /* HuckleberryImport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HuckleberryImport.swift; sourceTree = "<group>"; };
-		4806C593E90F9B916B6FBE29 /* Beanlo.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Beanlo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4806C593E90F9B916B6FBE29 /* Beanlo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Beanlo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4F2D01B2267930A87A15E7B2 /* LogSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogSheet.swift; sourceTree = "<group>"; };
 		61A6151EBCB79DE5E8F8F6FD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		6A662D22FABF629622E427C6 /* Beanlo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Beanlo.entitlements; sourceTree = "<group>"; };
@@ -260,7 +260,6 @@
 			packageReferences = (
 				E6D14B57E58642FF6227B3E5 /* XCRemoteSwiftPackageReference "supabase-swift" */,
 			);
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -407,6 +406,7 @@
 				CODE_SIGN_ENTITLEMENTS = BeanloWidgets/BeanloWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DZ9VAB947K;
 				INFOPLIST_FILE = BeanloWidgets/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -431,6 +431,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DZ9VAB947K;
 				INFOPLIST_FILE = Beanlo/Info.plist;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -455,6 +456,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DZ9VAB947K;
 				INFOPLIST_FILE = Beanlo/Info.plist;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -532,6 +534,7 @@
 				CODE_SIGN_ENTITLEMENTS = BeanloWidgets/BeanloWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DZ9VAB947K;
 				INFOPLIST_FILE = BeanloWidgets/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

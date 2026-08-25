@@ -3,6 +3,7 @@ import SwiftUI
 struct TodayView: View {
     @EnvironmentObject private var store: Store
     @Binding var logSheet: EntryType?
+    @Binding var showSettings: Bool
     @State private var now = Date()
 
     private let tick = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
@@ -68,17 +69,20 @@ struct TodayView: View {
 
     private var hero: some View {
         VStack(spacing: 4) {
-            // Friends + Ask Bea live off the hero, like the web's header.
+            // Settings gear + Ask Bea live off the hero — Friends took the
+            // fifth tab slot (iPhone collapses a sixth tab into "More").
             HStack {
-                NavigationLink {
-                    FriendsView()
+                Button {
+                    Haptics.tap()
+                    showSettings = true
                 } label: {
-                    Image(systemName: "person.2.fill")
+                    Image(systemName: "gearshape.fill")
                         .font(.subheadline)
                         .foregroundStyle(Color.ink)
                         .frame(width: 40, height: 40)
                 }
                 .glassEffect(.regular.interactive(), in: .circle)
+                .accessibilityLabel("Settings")
                 Spacer()
                 if store.aiEnabled {
                     NavigationLink {
