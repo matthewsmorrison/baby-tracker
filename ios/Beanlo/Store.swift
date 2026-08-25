@@ -49,6 +49,8 @@ final class Store: ObservableObject {
 
     @Published var session: Session?
     @Published var baby: Baby?
+    @Published var role: String = "caregiver"
+    @Published var carers: [Carer] = []
     @Published var entries: [Entry] = []
     @Published var dayTags: [DayTag] = []
     @Published var loading = false
@@ -64,6 +66,7 @@ final class Store: ObservableObject {
     @Published var pushEnabled = UserDefaults.standard.bool(forKey: "push-enabled")
 
     var userId: UUID? { session?.user.id }
+    var isOwner: Bool { role == "owner" }
 
     var trackedTypes: [EntryType] {
         let tracked = baby?.trackedTypes ?? ["nappy", "feed", "sleep", "weight"]
@@ -361,13 +364,14 @@ final class Store: ObservableObject {
                     .order("created_at", ascending: true)
                     .execute().value
                 baby = memberships.first?.baby
+                role = memberships.first?.role ?? "caregiver"
             }
             guard let baby else { return }
 
             let since = Calendar.current.date(byAdding: .day, value: -60, to: .now)!
             async let entriesReq: [Entry] = supabase
                 .from("entries")
-                .select("id, baby_id, type, occurred_at, ended_at, wet, dirty, nappy_weight_g, feed_type, left_min, right_min, expressed_ml, formula_ml, volume_ml, weight_g, temp_c, med_name, med_dose, med_kind, med_subject, milestone_label, note, source")
+                .select("id, baby_id, type, occurred_at, ended_at, wet, dirty, stool_colour, nappy_weight_g, feed_type, left_min, right_min, expressed_ml, formula_ml, volume_ml, weight_g, length_mm, head_circ_mm, temp_c, med_name, med_dose, med_kind, med_subject, milestone_label, note, source")
                 .eq("baby_id", value: baby.id)
                 .gte("occurred_at", value: since.ISO8601Format())
                 .order("occurred_at", ascending: false)
@@ -387,6 +391,62 @@ final class Store: ObservableObject {
         } catch {
             errorMessage = friendly(error)
         }
+    }
+
+    /// Everyone with access to this baby, for Settings → Carers.
+    func loadCarers() async {
+        guard let baby else { return }
+        struct MemberRow: Codable {
+            let userId: UUID
+            let role: String
+            enum CodingKeys: String, CodingKey {
+                case userId = "user_id"
+                case role
+            }
+        }
+        struct ProfileRow: Codable {
+            let id: UUID
+            let fullName: String?
+            let email: String?
+            enum CodingKeys: String, CodingKey {
+                case id
+                case fullName = "full_name"
+                case email
+            }
+        }
+        do {
+            let members: [MemberRow] = try await supabase
+                .from("baby_members")
+                .select("user_id, role")
+                .eq("baby_id", value: baby.id)
+                .execute().value
+            let profiles: [ProfileRow] = try await supabase
+                .from("profiles")
+                .select("id, full_name, email")
+                .in("id", values: members.map(\.userId))
+                .execute().value
+            let byId = Dictionary(uniqueKeysWithValues: profiles.map { ($0.id, $0) })
+            carers = members.map {
+                Carer(id: $0.userId, role: $0.role, name: byId[$0.userId]?.fullName, email: byId[$0.userId]?.email)
+            }
+        } catch {
+            // Carer list is decorative; stay quiet on failure.
+        }
+    }
+
+    /// Owner-only baby settings update (RLS enforces the role server-side).
+    func updateBaby(_ changes: BabyUpdate) async throws {
+        guard let baby else { return }
+        let updated: Baby = try await supabase
+            .from("babies")
+            .update(changes)
+            .eq("id", value: baby.id)
+            .select()
+            .single()
+            .execute().value
+        self.baby = updated
+        writeWidgetSnapshot()
+        Haptics.success()
     }
 
     func save(_ new: NewEntry) async throws {

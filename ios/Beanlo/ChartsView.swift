@@ -3,6 +3,7 @@ import Charts
 
 struct ChartsView: View {
     @EnvironmentObject private var store: Store
+    @State private var showWHO = false
 
     private struct DayStat: Identifiable {
         let id: String
@@ -98,7 +99,18 @@ struct ChartsView: View {
                 if weights.count >= 2 {
                     Card {
                         VStack(alignment: .leading, spacing: 12) {
-                            CardTitle("Weight")
+                            HStack {
+                                CardTitle("Weight")
+                                Spacer()
+                                Button {
+                                    Haptics.tap()
+                                    showWHO = true
+                                } label: {
+                                    Label("WHO chart", systemImage: "arrow.up.left.and.arrow.down.right")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(Color.accent)
+                                }
+                            }
                             Chart(weights, id: \.date) { point in
                                 LineMark(
                                     x: .value("Date", point.date),
@@ -137,5 +149,138 @@ struct ChartsView: View {
         .background(Color.sand)
         .navigationTitle("Charts")
         .refreshable { await store.refresh() }
+        .sheet(isPresented: $showWHO) {
+            WHOChartView(weights: weights)
+        }
+        #if DEBUG
+        .onAppear {
+            if UserDefaults.standard.bool(forKey: "DevWHO") { showWHO = true }
+        }
+        #endif
+    }
+}
+
+/// Full-screen UK-WHO (red book) weight-for-age chart: the nine printed
+/// centile curves for the baby's sex, with every logged weight plotted.
+struct WHOChartView: View {
+    @EnvironmentObject private var store: Store
+    @Environment(\.dismiss) private var dismiss
+    let weights: [(date: Date, kg: Double)]
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if let baby = store.baby, let sex = baby.sex {
+                    chart(baby: baby, isBoy: sex == "boy")
+                } else {
+                    ContentUnavailableView(
+                        "Set your baby's sex first",
+                        systemImage: "chart.xyaxis.line",
+                        description: Text("The WHO chart needs it to pick the right centile curves — Settings → Baby → Sex.")
+                    )
+                }
+            }
+            .background(Color.sand)
+            .navigationTitle("UK-WHO weight chart")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .presentationBackground(Color.sand)
+    }
+
+    private func chart(baby: Baby, isBoy: Bool) -> some View {
+        // The red book prints boys in blue, girls in pink.
+        let curveColour = isBoy
+            ? Color(light: 0x4383B4, dark: 0x6FA5CC)
+            : Color(light: 0xC76585, dark: 0xD98BA5)
+        let ageDays = Date().timeIntervalSince(baby.birthAt) / 86_400
+        let horizonDays = min(730.0, max(120, ageDays * 1.35))
+
+        // Sample each centile curve: every 3.5 days through the steep first
+        // 13 weeks, then roughly weekly.
+        var sampleAges: [Double] = stride(from: 0.0, through: min(91, horizonDays), by: 3.5).map { $0 }
+        if horizonDays > 91 {
+            sampleAges += stride(from: 98.0, through: horizonDays, by: 7).map { $0 }
+        }
+
+        let points = weights.map { (
+            age: $0.date.timeIntervalSince(baby.birthAt) / 86_400,
+            kg: $0.kg
+        ) }
+
+        let latestCentile: Double? = points.last.map {
+            WHOWeight.centile(isBoy: isBoy, ageDays: $0.age, weightG: $0.kg * 1000)
+        }
+
+        return ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                Chart {
+                    ForEach(WHOWeight.ukCentiles, id: \.label) { centile in
+                        ForEach(sampleAges, id: \.self) { age in
+                            LineMark(
+                                x: .value("Age", age / 7),
+                                y: .value("kg", WHOWeight.weightAtZ(isBoy: isBoy, ageDays: age, z: centile.z) / 1000),
+                                series: .value("Centile", centile.label)
+                            )
+                            .foregroundStyle(curveColour.opacity(centile.label == "50" ? 0.75 : 0.35))
+                            .lineStyle(StrokeStyle(lineWidth: centile.label == "50" ? 1.6 : 1))
+                        }
+                    }
+                    ForEach(points.indices, id: \.self) { i in
+                        LineMark(
+                            x: .value("Age", points[i].age / 7),
+                            y: .value("kg", points[i].kg),
+                            series: .value("Centile", "baby")
+                        )
+                        .foregroundStyle(Color.ink)
+                        .lineStyle(StrokeStyle(lineWidth: 2.5))
+                        PointMark(
+                            x: .value("Age", points[i].age / 7),
+                            y: .value("kg", points[i].kg)
+                        )
+                        .foregroundStyle(Color.ink)
+                        .symbolSize(46)
+                    }
+                }
+                .chartXAxisLabel("age in weeks")
+                .chartYAxisLabel("kg")
+                .chartYAxis { AxisMarks(position: .leading) }
+                .chartYScale(domain: .automatic(includesZero: false))
+                .frame(height: 440)
+                .padding(.top, 8)
+
+                if let latestCentile {
+                    Card(padding: 14) {
+                        Text("Latest weight sits around the **\(centileLabel(latestCentile))** for a \(isBoy ? "boy" : "girl") this age.")
+                            .font(.system(.subheadline, design: .rounded))
+                    }
+                }
+
+                Text("Centile lines are the nine printed on the UK-WHO charts in your red book (0.4th–99.6th). Weighing on the same scales, at the same time of day, makes trends more meaningful. \(Clinical.disclaimer)")
+                    .font(.caption2)
+                    .foregroundStyle(Color.faint)
+            }
+            .padding(16)
+        }
+        .background(Color.sand)
+    }
+
+    private func centileLabel(_ pct: Double) -> String {
+        if pct < 0.4 { return "0.4th centile or below" }
+        if pct > 99.6 { return "99.6th centile or above" }
+        let r = Int(pct.rounded())
+        let suffix: String
+        switch (r % 100, r % 10) {
+        case (11...13, _): suffix = "th"
+        case (_, 1): suffix = "st"
+        case (_, 2): suffix = "nd"
+        case (_, 3): suffix = "rd"
+        default: suffix = "th"
+        }
+        return "\(r)\(suffix) centile"
     }
 }

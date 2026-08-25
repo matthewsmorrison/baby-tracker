@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		00B7AA22324D873ABF62A5B3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7B8BCA8DD9C7F316A7BEE0B2 /* Assets.xcassets */; };
+		154F1A228FF74ADBEC32129D /* WHOWeight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DFC0AB3E65AE8406CF9D882 /* WHOWeight.swift */; };
 		1A99EE711235E2D4854B9CE7 /* BeanloWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 02F169F647B1AD7B65695592 /* BeanloWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		1CDFE0E926C36EA96E32EFA7 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4A96FC94268C38C906EF458 /* Palette.swift */; };
 		2BB72D657D059019188DF11E /* SharedTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0C85F705BE073C0AAA7D86D /* SharedTypes.swift */; };
@@ -18,6 +19,7 @@
 		427717ADE7C97C633EA58B6F /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6F719C239BF8DEEC582702C /* TodayView.swift */; };
 		503E381D82766400118E556F /* Clinical.swift in Sources */ = {isa = PBXBuildFile; fileRef = 982D4A9BF820014229C3BDFE /* Clinical.swift */; };
 		517E8A1244BDD791D7EFB007 /* Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0E9A68D9843B3FE63CD44C8 /* Store.swift */; };
+		5F455A88E39FA8A030D28D73 /* WHOWeight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DFC0AB3E65AE8406CF9D882 /* WHOWeight.swift */; };
 		66C17CF5462A34D9C9072771 /* LogSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F2D01B2267930A87A15E7B2 /* LogSheet.swift */; };
 		6DFE2E3CB24AC3739AFD022F /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26004E2E18EE59EC8CACC0CF /* HistoryView.swift */; };
 		82B33F2324546EDDB826E1D0 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 177A441EF8796BC28453AF4E /* RootView.swift */; };
@@ -58,6 +60,7 @@
 		02F169F647B1AD7B65695592 /* BeanloWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = BeanloWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		177A441EF8796BC28453AF4E /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		1D448F52284188880960D7D6 /* BeanloWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BeanloWidgets.entitlements; sourceTree = "<group>"; };
+		1DFC0AB3E65AE8406CF9D882 /* WHOWeight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WHOWeight.swift; sourceTree = "<group>"; };
 		26004E2E18EE59EC8CACC0CF /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		2E07E60E828EE503E499817F /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		311D92C95AFA5F91EF74AEB3 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
@@ -140,6 +143,7 @@
 			children = (
 				B4A96FC94268C38C906EF458 /* Palette.swift */,
 				D0C85F705BE073C0AAA7D86D /* SharedTypes.swift */,
+				1DFC0AB3E65AE8406CF9D882 /* WHOWeight.swift */,
 			);
 			path = SharedKit;
 			sourceTree = "<group>";
@@ -266,6 +270,7 @@
 				517E8A1244BDD791D7EFB007 /* Store.swift in Sources */,
 				898DD98D8C7C6A198D0C201E /* Theme.swift in Sources */,
 				427717ADE7C97C633EA58B6F /* TodayView.swift in Sources */,
+				154F1A228FF74ADBEC32129D /* WHOWeight.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -276,6 +281,7 @@
 				CA04239F2047BDD2561031A3 /* BeanloWidgets.swift in Sources */,
 				305CC1A354E1C962CF1C5BC4 /* Palette.swift in Sources */,
 				2BB72D657D059019188DF11E /* SharedTypes.swift in Sources */,
+				5F455A88E39FA8A030D28D73 /* WHOWeight.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

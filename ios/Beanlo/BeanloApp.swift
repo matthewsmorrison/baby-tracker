@@ -31,6 +31,7 @@ struct BeanloApp: App {
             .tint(.accent)
             .task {
                 #if DEBUG
+                assert(WHOWeight.verify(), "WHO tables diverge from the web implementation")
                 await store.adoptDevSessionIfPresent()
                 #endif
                 // Refresh the APNs token on each launch (tokens can rotate).

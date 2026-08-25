@@ -17,6 +17,8 @@ struct LogSheet: View {
 
     // Nappy
     @State private var dirty = false
+    @State private var stoolColour: StoolColour?
+    @State private var nappyWeightText = ""
     // Feed — breast minutes live in the app-global timer (store.feedTimer)
     // for new entries so they survive closing the sheet; editing uses plain
     // local steppers.
@@ -27,8 +29,10 @@ struct LogSheet: View {
     // Sleep
     @State private var sleepEnd = Date()
     @State private var sleepOngoing = true
-    // Weight
+    // Measurements
     @State private var weightKgText = ""
+    @State private var lengthCmText = ""
+    @State private var headCmText = ""
     // Pump
     @State private var pumpMl = 0
     // Temperature
@@ -101,11 +105,37 @@ struct LogSheet: View {
                 VStack(alignment: .leading, spacing: 12) {
                     CardTitle("What was in it?")
                     HStack(spacing: 10) {
-                        BigChoice(label: "Wet only", symbol: "drop.fill", tint: .chartBlue, active: !dirty) { dirty = false }
-                        BigChoice(label: "Mixed", symbol: "aqi.medium", tint: .chartBrown, active: dirty) { dirty = true }
+                        BigChoice(label: "Wet only", symbol: "drop.fill", tint: .chartBlue, active: !dirty) {
+                            withAnimation(.snappy) { dirty = false }
+                        }
+                        BigChoice(label: "Mixed", symbol: "aqi.medium", tint: .chartBrown, active: dirty) {
+                            withAnimation(.snappy) { dirty = true }
+                        }
                     }
                     Text("Mixed = a nappy with poo (we assume wee too).")
                         .font(.caption2).foregroundStyle(Color.faint)
+
+                    if dirty {
+                        CardTitle("Poo colour (optional)")
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 8)], spacing: 8) {
+                            ForEach(StoolColour.allCases) { colour in
+                                swatchChip(colour)
+                            }
+                        }
+                        if let stoolColour, stoolColour.warns {
+                            Text("Pale/chalky stool or blood always needs same-day advice — contact your midwife or doctor.")
+                                .font(.caption)
+                                .foregroundStyle(Color.alertTone)
+                        }
+                    }
+
+                    CardTitle("Nappy weight (optional)")
+                    HStack {
+                        TextField(store.baby?.nappyBaseWeightG.map { "dry nappy is \($0) g" } ?? "grams", text: $nappyWeightText)
+                            .keyboardType(.numberPad)
+                            .font(.system(.body, design: .rounded))
+                        Text("g").font(.caption).foregroundStyle(Color.muted)
+                    }
                 }
             }
 
@@ -143,7 +173,7 @@ struct LogSheet: View {
 
         case .weight:
             Card {
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 14) {
                     CardTitle("Weight")
                     HStack {
                         TextField("4.20", text: $weightKgText)
@@ -151,6 +181,23 @@ struct LogSheet: View {
                             .font(.stat(34))
                         Text("kg").font(.system(.title3, design: .rounded)).foregroundStyle(Color.muted)
                     }
+                    Divider()
+                    CardTitle("Length (optional)")
+                    HStack {
+                        TextField("54.5", text: $lengthCmText)
+                            .keyboardType(.decimalPad)
+                            .font(.stat(24))
+                        Text("cm").font(.system(.body, design: .rounded)).foregroundStyle(Color.muted)
+                    }
+                    CardTitle("Head circumference (optional)")
+                    HStack {
+                        TextField("37.0", text: $headCmText)
+                            .keyboardType(.decimalPad)
+                            .font(.stat(24))
+                        Text("cm").font(.system(.body, design: .rounded)).foregroundStyle(Color.muted)
+                    }
+                    Text("Weight is optional too when logging just length or head — fill in whatever was measured.")
+                        .font(.caption2).foregroundStyle(Color.faint)
                 }
             }
 
@@ -236,6 +283,35 @@ struct LogSheet: View {
         }
     }
 
+    private func swatchChip(_ colour: StoolColour) -> some View {
+        let active = stoolColour == colour
+        return Button {
+            Haptics.tap()
+            withAnimation(.snappy) { stoolColour = active ? nil : colour }
+        } label: {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(Color(light: colour.swatch, dark: colour.swatch))
+                    .frame(width: 14, height: 14)
+                    .overlay(Circle().strokeBorder(Color.line, lineWidth: 1))
+                Text(colour.label)
+                    .font(.system(.caption, design: .rounded, weight: .semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(active ? Color.accentSoft : Color.surfaceAlt, in: .rect(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(active ? Color.accent : Color.line, lineWidth: active ? 1.5 : 1)
+            )
+            .foregroundStyle(Color.ink)
+        }
+        .buttonStyle(.plain)
+    }
+
     private func editStepperRow(label: String, minutes: Binding<Int>) -> some View {
         HStack(spacing: 12) {
             Text(label).font(.system(.body, design: .rounded, weight: .medium))
@@ -272,7 +348,9 @@ struct LogSheet: View {
         case .feed:
             if editing != nil { return leftMin + rightMin + expressedMl + formulaMl > 0 }
             return store.feedTimer.isActive || expressedMl + formulaMl > 0
-        case .weight: return Double(weightKgText.replacingOccurrences(of: ",", with: ".")) != nil
+        case .weight:
+            return [weightKgText, lengthCmText, headCmText]
+                .contains { Double($0.replacingOccurrences(of: ",", with: ".")) != nil }
         case .pump: return pumpMl > 0
         case .temperature: return Double(tempText.replacingOccurrences(of: ",", with: ".")) != nil
         case .medication: return !medName.trimmingCharacters(in: .whitespaces).isEmpty
@@ -283,10 +361,17 @@ struct LogSheet: View {
 
     private func hydrate() {
         type = initialType
+        #if DEBUG
+        if UserDefaults.standard.bool(forKey: "DevDirty") { dirty = true }
+        #endif
         guard let e = editing else { return }
         occurredAt = e.occurredAt
         note = e.note ?? ""
         dirty = e.dirty ?? false
+        stoolColour = e.stoolColour.flatMap(StoolColour.init(rawValue:))
+        nappyWeightText = e.nappyWeightG.map(String.init) ?? ""
+        if let mm = e.lengthMm { lengthCmText = String(format: "%.1f", Double(mm) / 10) }
+        if let mm = e.headCircMm { headCmText = String(format: "%.1f", Double(mm) / 10) }
         leftMin = e.leftMin ?? 0
         rightMin = e.rightMin ?? 0
         expressedMl = e.expressedMl ?? 0
@@ -323,6 +408,8 @@ struct LogSheet: View {
         case .nappy:
             new.wet = true
             new.dirty = dirty
+            new.stoolColour = dirty ? stoolColour?.rawValue : nil
+            new.nappyWeightG = Int(nappyWeightText.trimmingCharacters(in: .whitespaces))
         case .feed:
             new.leftMin = leftMin > 0 ? leftMin : nil
             new.rightMin = rightMin > 0 ? rightMin : nil
@@ -343,6 +430,12 @@ struct LogSheet: View {
             if let kg = Double(weightKgText.replacingOccurrences(of: ",", with: ".")) {
                 new.weightG = Int(kg * 1000)
             }
+            if let cm = Double(lengthCmText.replacingOccurrences(of: ",", with: ".")) {
+                new.lengthMm = Int(cm * 10)
+            }
+            if let cm = Double(headCmText.replacingOccurrences(of: ",", with: ".")) {
+                new.headCircMm = Int(cm * 10)
+            }
         case .pump:
             new.expressedMl = pumpMl
         case .temperature:
@@ -362,6 +455,12 @@ struct LogSheet: View {
                 existing.note = new.note
                 existing.wet = new.wet ?? existing.wet
                 existing.dirty = new.dirty ?? existing.dirty
+                if type == .nappy {
+                    existing.stoolColour = new.stoolColour
+                    existing.nappyWeightG = new.nappyWeightG
+                }
+                existing.lengthMm = new.lengthMm ?? existing.lengthMm
+                existing.headCircMm = new.headCircMm ?? existing.headCircMm
                 existing.leftMin = new.leftMin
                 existing.rightMin = new.rightMin
                 existing.expressedMl = new.expressedMl ?? (type == .pump ? pumpMl : nil)

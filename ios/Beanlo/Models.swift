@@ -47,6 +47,7 @@ struct Entry: Codable, Identifiable, Hashable {
     var endedAt: Date?
     var wet: Bool?
     var dirty: Bool?
+    var stoolColour: String?
     var nappyWeightG: Int?
     var feedType: String?
     var leftMin: Int?
@@ -55,6 +56,8 @@ struct Entry: Codable, Identifiable, Hashable {
     var formulaMl: Int?
     var volumeMl: Int?
     var weightG: Int?
+    var lengthMm: Int?
+    var headCircMm: Int?
     var tempC: Double?
     var medName: String?
     var medDose: String?
@@ -71,6 +74,7 @@ struct Entry: Codable, Identifiable, Hashable {
         case occurredAt = "occurred_at"
         case endedAt = "ended_at"
         case wet, dirty
+        case stoolColour = "stool_colour"
         case nappyWeightG = "nappy_weight_g"
         case feedType = "feed_type"
         case leftMin = "left_min"
@@ -79,6 +83,8 @@ struct Entry: Codable, Identifiable, Hashable {
         case formulaMl = "formula_ml"
         case volumeMl = "volume_ml"
         case weightG = "weight_g"
+        case lengthMm = "length_mm"
+        case headCircMm = "head_circ_mm"
         case tempC = "temp_c"
         case medName = "med_name"
         case medDose = "med_dose"
@@ -98,6 +104,7 @@ struct NewEntry: Codable {
     var endedAt: Date?
     var wet: Bool?
     var dirty: Bool?
+    var stoolColour: String?
     var nappyWeightG: Int?
     var feedType: String?
     var leftMin: Int?
@@ -105,6 +112,8 @@ struct NewEntry: Codable {
     var expressedMl: Int?
     var formulaMl: Int?
     var weightG: Int?
+    var lengthMm: Int?
+    var headCircMm: Int?
     var tempC: Double?
     var medName: String?
     var medDose: String?
@@ -120,6 +129,7 @@ struct NewEntry: Codable {
         case createdBy = "created_by"
         case endedAt = "ended_at"
         case wet, dirty
+        case stoolColour = "stool_colour"
         case nappyWeightG = "nappy_weight_g"
         case feedType = "feed_type"
         case leftMin = "left_min"
@@ -127,6 +137,8 @@ struct NewEntry: Codable {
         case expressedMl = "expressed_ml"
         case formulaMl = "formula_ml"
         case weightG = "weight_g"
+        case lengthMm = "length_mm"
+        case headCircMm = "head_circ_mm"
         case tempC = "temp_c"
         case medName = "med_name"
         case medDose = "med_dose"
@@ -136,17 +148,52 @@ struct NewEntry: Codable {
     }
 }
 
+/// The red book's stool colour chart, mirrored from the web (lib/clinical.ts).
+enum StoolColour: String, CaseIterable, Identifiable {
+    case meconium, transitional, yellow, tan, brown, green, pale, blood
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .meconium: "Meconium"
+        case .transitional: "Transitional"
+        case .yellow: "Yellow"
+        case .tan: "Tan"
+        case .brown: "Brown"
+        case .green: "Green"
+        case .pale: "Pale ⚠"
+        case .blood: "Blood ⚠"
+        }
+    }
+
+    var warns: Bool { self == .pale || self == .blood }
+
+    var swatch: UInt32 {
+        switch self {
+        case .meconium: 0x2E2E28
+        case .transitional: 0x6E5A34
+        case .yellow: 0xE3B44A
+        case .tan: 0xBFA173
+        case .brown: 0x7A5A3A
+        case .green: 0x5C7A3A
+        case .pale: 0xECE7D6
+        case .blood: 0x9E3B32
+        }
+    }
+}
+
 struct Baby: Codable, Identifiable, Hashable {
     let id: UUID
     var name: String
     var birthAt: Date
     var birthWeightG: Int
+    var sex: String?
     var trackedTypes: [String]?
     var feedIntervalMin: Int?
     var nappyBaseWeightG: Int?
 
     enum CodingKeys: String, CodingKey {
-        case id, name
+        case id, name, sex
         case birthAt = "birth_at"
         case birthWeightG = "birth_weight_g"
         case trackedTypes = "tracked_types"
@@ -158,6 +205,35 @@ struct Baby: Codable, Identifiable, Hashable {
 struct Membership: Codable {
     var role: String
     var baby: Baby
+}
+
+/// Owner-editable baby settings (nil = leave unchanged; synthesised Codable
+/// omits nil keys from the PATCH).
+struct BabyUpdate: Codable {
+    var name: String?
+    var birthAt: Date?
+    var birthWeightG: Int?
+    var sex: String?
+    var feedIntervalMin: Int?
+    var nappyBaseWeightG: Int?
+    var trackedTypes: [String]?
+
+    enum CodingKeys: String, CodingKey {
+        case name, sex
+        case birthAt = "birth_at"
+        case birthWeightG = "birth_weight_g"
+        case feedIntervalMin = "feed_interval_min"
+        case nappyBaseWeightG = "nappy_base_weight_g"
+        case trackedTypes = "tracked_types"
+    }
+}
+
+/// A carer with access to the baby (Settings → Carers).
+struct Carer: Codable, Identifiable {
+    let id: UUID
+    var role: String
+    var name: String?
+    var email: String?
 }
 
 struct DayTag: Codable, Identifiable {
