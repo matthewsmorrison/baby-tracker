@@ -9,6 +9,10 @@ struct AuthView: View {
     @State private var busy = false
     @State private var error: String?
     @FocusState private var focused: Bool
+    // Password fallback: Beanlo is passwordless, but App Review needs demo
+    // credentials that work — and some users genuinely prefer a password.
+    @State private var usePassword = false
+    @State private var password = ""
 
     var body: some View {
         ZStack {
@@ -42,18 +46,29 @@ struct AuthView: View {
                             .padding(16)
                             .glassEffect(.regular, in: .rect(cornerRadius: 18))
 
+                        if usePassword {
+                            SecureField("Password", text: $password)
+                                .textContentType(.password)
+                                .padding(16)
+                                .glassEffect(.regular, in: .rect(cornerRadius: 18))
+                        }
+
                         Button {
-                            Task { await send() }
+                            Task { usePassword ? await passwordSignIn() : await send() }
                         } label: {
                             Group {
-                                if busy { ProgressView() } else { Text("Email me a sign-in link") }
+                                if busy {
+                                    ProgressView()
+                                } else {
+                                    Text(usePassword ? "Sign in" : "Email me a sign-in link")
+                                }
                             }
                             .font(.system(.body, design: .rounded, weight: .semibold))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 6)
                         }
                         .buttonStyle(.glassProminent)
-                        .disabled(busy || !email.contains("@"))
+                        .disabled(busy || !email.contains("@") || (usePassword && password.isEmpty))
 
                         HStack {
                             Rectangle().fill(Color.line).frame(height: 1)
@@ -75,6 +90,13 @@ struct AuthView: View {
                         }
                         .buttonStyle(.glass)
                         .disabled(busy)
+
+                        Button(usePassword ? "Email me a link instead" : "Use a password instead") {
+                            usePassword.toggle()
+                            error = nil
+                        }
+                        .font(.footnote)
+                        .foregroundStyle(Color.faint)
                     } else {
                         VStack(spacing: 10) {
                             Image(systemName: "envelope.badge.fill")
@@ -131,6 +153,21 @@ struct AuthView: View {
             if !error.localizedDescription.localizedCaseInsensitiveContains("cancel") {
                 self.error = "Google sign-in didn't complete — try again."
             }
+        }
+        busy = false
+    }
+
+    private func passwordSignIn() async {
+        busy = true
+        error = nil
+        do {
+            try await store.signInWithPassword(
+                email: email.trimmingCharacters(in: .whitespaces),
+                password: password
+            )
+            Haptics.success()
+        } catch {
+            self.error = "That email and password don't match."
         }
         busy = false
     }

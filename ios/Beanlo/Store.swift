@@ -328,6 +328,12 @@ final class Store: ObservableObject {
         )
     }
 
+    /// Password fallback for accounts that have one (App Review's demo
+    /// account, and anyone who prefers a password).
+    func signInWithPassword(email: String, password: String) async throws {
+        _ = try await supabase.auth.signIn(email: email, password: password)
+    }
+
     /// Google OAuth in an in-app browser sheet; the redirect lands back on
     /// beanlo:// and the SDK completes the session automatically.
     func signInWithGoogle() async throws {
