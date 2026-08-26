@@ -134,7 +134,7 @@ struct TodayWidget: Widget {
         }
         .configurationDisplayName("beanlo")
         .description("Time since the last feed and today's nappy count.")
-        .supportedFamilies([.systemSmall, .accessoryRectangular, .accessoryCircular])
+        .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular, .accessoryCircular])
     }
 }
 
@@ -147,49 +147,126 @@ struct TodayWidgetView: View {
             switch family {
             case .accessoryCircular: circular
             case .accessoryRectangular: rectangular
+            case .systemMedium: medium
             default: small
             }
         }
         .containerBackground(for: .widget) { Color.sand }
     }
 
-    // Lock screen ring: how far through the feed interval we are.
+    // Lock screen ring: feed-interval progress — or nappy progress when
+    // feed tracking is switched off in Settings.
+    @ViewBuilder
     private var circular: some View {
-        Gauge(value: intervalProgress) {
-            Image(systemName: "waterbottle.fill")
-        } currentValueLabel: {
-            if let last = entry.snapshot?.lastFeedAt {
-                Text(last, style: .timer)
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-            } else {
-                Text("—")
+        if entry.snapshot?.showsFeeds ?? true {
+            Gauge(value: intervalProgress) {
+                Image(systemName: "waterbottle.fill")
+            } currentValueLabel: {
+                if let last = entry.snapshot?.lastFeedAt {
+                    Text(last, style: .timer)
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                } else {
+                    Text("—")
+                }
             }
+            .gaugeStyle(.accessoryCircular)
+        } else {
+            Gauge(value: nappyProgress) {
+                Image(systemName: "drop.fill")
+            } currentValueLabel: {
+                Text("\(entry.snapshot?.nappyCount ?? 0)")
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+            }
+            .gaugeStyle(.accessoryCircular)
         }
-        .gaugeStyle(.accessoryCircular)
     }
 
     private var rectangular: some View {
         VStack(alignment: .leading, spacing: 2) {
             if let snap = entry.snapshot {
-                HStack(spacing: 4) {
-                    Image(systemName: "waterbottle.fill").font(.caption2)
-                    if let last = snap.lastFeedAt {
-                        Text("Fed ") + Text(last, style: .relative).fontWeight(.bold) + Text(" ago")
-                    } else {
-                        Text("No feeds yet")
+                if snap.showsFeeds {
+                    HStack(spacing: 4) {
+                        Image(systemName: "waterbottle.fill").font(.caption2)
+                        if let last = snap.lastFeedAt {
+                            Text("Fed ") + Text(last, style: .relative).fontWeight(.bold) + Text(" ago")
+                        } else {
+                            Text("No feeds yet")
+                        }
                     }
+                    .font(.system(.caption, design: .rounded))
                 }
-                .font(.system(.caption, design: .rounded))
-                HStack(spacing: 4) {
-                    Image(systemName: "drop.fill").font(.caption2)
-                    Text("\(snap.nappyCount) of \(snap.nappyTarget) nappies")
+                if snap.showsNappies {
+                    HStack(spacing: 4) {
+                        Image(systemName: "drop.fill").font(.caption2)
+                        Text("\(snap.nappyCount) of \(snap.nappyTarget) nappies")
+                    }
+                    .font(.system(.caption, design: .rounded))
+                    .foregroundStyle(snap.showsFeeds ? .secondary : .primary)
                 }
-                .font(.system(.caption, design: .rounded))
-                .foregroundStyle(.secondary)
             } else {
                 Text("Open beanlo to start")
                     .font(.system(.caption, design: .rounded))
+            }
+        }
+    }
+
+    // Roomier layout: counts on the left, one-tap logging on the right.
+    private var medium: some View {
+        HStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: 6) {
+                if let snap = entry.snapshot {
+                    HStack {
+                        Text(snap.babyName)
+                            .font(.system(.subheadline, design: .rounded, weight: .bold))
+                            .foregroundStyle(Color.ink)
+                        Text("D\(snap.dayOfLife)")
+                            .font(.system(.caption2, design: .rounded, weight: .bold))
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 3)
+                            .background(Color.accentSoft, in: .capsule)
+                            .foregroundStyle(Color.accent)
+                    }
+                    Spacer()
+                    if snap.showsFeeds {
+                        Text("Last feed")
+                            .font(.caption2)
+                            .foregroundStyle(Color.muted)
+                        if let last = snap.lastFeedAt {
+                            Text(last, style: .relative)
+                                .font(.stat(24))
+                                .foregroundStyle(Color.ink)
+                                .minimumScaleFactor(0.6)
+                                .lineLimit(1)
+                        } else {
+                            Text("—").font(.stat(24)).foregroundStyle(Color.muted)
+                        }
+                    }
+                    if snap.showsNappies {
+                        HStack(spacing: 3) {
+                            ForEach(0..<max(snap.nappyTarget, snap.nappyCount), id: \.self) { i in
+                                Capsule()
+                                    .fill(i < snap.nappyCount ? Color.chartBlue : Color.line)
+                                    .frame(height: 5)
+                            }
+                        }
+                        Text("\(snap.nappyCount) of \(snap.nappyTarget) nappies")
+                            .font(.system(.caption2, design: .rounded))
+                            .foregroundStyle(Color.muted)
+                    }
+                } else {
+                    Text("Open beanlo to start")
+                        .font(.system(.caption, design: .rounded))
+                        .foregroundStyle(Color.muted)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if entry.canQuickLog {
+                VStack(spacing: 8) {
+                    quickButton(kind: .wet, label: "Wet", tint: Color.chartBlue)
+                    quickButton(kind: .mixed, label: "Mixed", tint: Color.chartBrown)
+                }
+                .frame(width: 96)
             }
         }
     }
@@ -210,7 +287,7 @@ struct TodayWidgetView: View {
                         .foregroundStyle(Color.accent)
                 }
                 Spacer()
-                if let last = snap.lastFeedAt {
+                if snap.showsFeeds, let last = snap.lastFeedAt {
                     Text("Last feed")
                         .font(.caption2)
                         .foregroundStyle(Color.muted)
@@ -219,12 +296,22 @@ struct TodayWidgetView: View {
                         .foregroundStyle(Color.ink)
                         .minimumScaleFactor(0.6)
                         .lineLimit(1)
+                } else if !snap.showsFeeds, snap.showsNappies {
+                    // Feeds untracked — nappies become the hero stat.
+                    Text("Nappies today")
+                        .font(.caption2)
+                        .foregroundStyle(Color.muted)
+                    Text("\(snap.nappyCount) of \(snap.nappyTarget)")
+                        .font(.stat(22))
+                        .foregroundStyle(Color.ink)
                 }
-                HStack(spacing: 3) {
-                    ForEach(0..<max(snap.nappyTarget, snap.nappyCount), id: \.self) { i in
-                        Capsule()
-                            .fill(i < snap.nappyCount ? Color.chartBlue : Color.line)
-                            .frame(height: 5)
+                if snap.showsNappies {
+                    HStack(spacing: 3) {
+                        ForEach(0..<max(snap.nappyTarget, snap.nappyCount), id: \.self) { i in
+                            Capsule()
+                                .fill(i < snap.nappyCount ? Color.chartBlue : Color.line)
+                                .frame(height: 5)
+                        }
                     }
                 }
                 if entry.canQuickLog {
@@ -264,5 +351,10 @@ struct TodayWidgetView: View {
         guard let snap = entry.snapshot, let last = snap.lastFeedAt,
               let interval = snap.feedIntervalMin, interval > 0 else { return 0 }
         return min(1, max(0, Date().timeIntervalSince(last) / Double(interval * 60)))
+    }
+
+    private var nappyProgress: Double {
+        guard let snap = entry.snapshot, snap.nappyTarget > 0 else { return 0 }
+        return min(1, Double(snap.nappyCount) / Double(snap.nappyTarget))
     }
 }

@@ -21,6 +21,13 @@ struct TodaySnapshot: Codable {
     var nappyCount: Int
     var nappyTarget: Int
     var updatedAt: Date
+    // Optional so snapshots written by older builds still decode; treat
+    // nil as "tracked" (the pre-toggle behaviour).
+    var trackedFeed: Bool?
+    var trackedNappy: Bool?
+
+    var showsFeeds: Bool { trackedFeed ?? true }
+    var showsNappies: Bool { trackedNappy ?? true }
 
     static func load() -> TodaySnapshot? {
         guard let data = UserDefaults(suiteName: AppGroup.id)?.data(forKey: AppGroup.snapshotKey) else { return nil }

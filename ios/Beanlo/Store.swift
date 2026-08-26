@@ -182,7 +182,9 @@ final class Store: ObservableObject {
             feedIntervalMin: baby.feedIntervalMin,
             nappyCount: nappies.count,
             nappyTarget: Clinical.expectedNappies(day: day).total,
-            updatedAt: now
+            updatedAt: now,
+            trackedFeed: trackedTypes.contains(.feed),
+            trackedNappy: trackedTypes.contains(.nappy)
         ).save()
         writeQuickCreds()
         WidgetCenter.shared.reloadAllTimelines()
