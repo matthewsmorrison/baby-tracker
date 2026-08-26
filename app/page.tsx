@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   Baby,
   Flame,
@@ -12,43 +13,77 @@ import { Footer } from "@/components/marketing/Footer";
 import { APP_NAME } from "@/lib/legal";
 
 export const metadata = {
-  title: "beanlo — a gentle newborn tracker for the first weeks",
+  title: "beanlo — the newborn tracker that's up with you at 3am",
   description:
-    "Track nappies, feeds, weight and sleep in the fourth trimester. Photo-labelled nappies, expected ranges from established newborn guidance, and sharing with everyone caring for your baby. A tracking aid, not medical advice.",
+    "The iPhone app for the fourth trimester: nappies, feeds, weight and sleep against real newborn guidance — plus friends who can see when you're up feeding at 3am. UK-WHO red book centiles built in. A tracking aid, not medical advice.",
 };
+
+// TestFlight public link (App Store Connect → TestFlight → External Testing
+// → public link). Swap for the App Store URL once the app is released.
+const APP_STORE_URL: string | null = null;
 
 const FEATURES = [
   {
     icon: Baby,
     title: "Nappies, made sense of",
-    body: "Log wet and dirty nappies against the day-by-day amounts newborns are expected to have, so you can see at a glance whether things are on track.",
+    body: "Log a nappy in one tap — from the app, the home-screen widget, Siri or the Action Button — and see counts against the day-by-day amounts newborns are expected to have.",
   },
   {
     icon: HeartPulse,
     title: "Feeds & pumping",
-    body: "Breast, expressed and formula in one place, with the next feed due and how output changes through the day.",
+    body: "A breast-feed timer on your lock screen and Dynamic Island, next-feed nudges, and breast, expressed and formula in one picture.",
   },
   {
     icon: LineChart,
-    title: "Weight vs expected",
-    body: "Plot weight against the expected range for each day of life — the reassuring upward turn back to birth weight, shown clearly.",
+    title: "The red book, on your phone",
+    body: "Weight, height and head circumference plotted on the same nine UK-WHO centile curves printed in your red book.",
   },
   {
     icon: Moon,
     title: "Sleep & rest",
-    body: "Track the baby’s sleep — and your own, because looking after yourselves matters too.",
+    body: "Track the baby's sleep — and your own, because looking after yourselves matters too.",
   },
   {
     icon: MessageCircleQuestion,
     title: "Ask your data",
-    body: "Ask plain-language questions about everything you’ve logged and get answers grounded only in your own records.",
+    body: "Ask plain-language questions about everything you've logged and get answers grounded only in your own records.",
   },
   {
     icon: Users,
     title: "Share with your carers",
-    body: "Invite a partner, family or your health visitor. Everyone caring for the baby sees the same picture.",
+    body: "Invite a partner, family or your health visitor. Everyone caring for the baby sees the same picture, updated live.",
   },
 ];
+
+const SCREENS = [
+  { src: "/screens/history.png", alt: "Calendar history of feeds, nappies and weights in the beanlo app" },
+  { src: "/screens/today.png", alt: "beanlo's Today screen: next feed due, nap window and nappy count" },
+  { src: "/screens/charts.png", alt: "Feeding and nappy charts in the beanlo app" },
+];
+
+/** The classic black App Store badge, drawn inline so it needs no assets. */
+function AppStoreBadge() {
+  const badge = (
+    <span className="inline-flex items-center gap-3 rounded-xl bg-black px-5 py-2.5 text-white shadow-sm transition hover:opacity-85 dark:ring-1 dark:ring-white/25">
+      <svg viewBox="0 0 384 512" aria-hidden className="h-8 w-8 fill-current">
+        <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
+      </svg>
+      <span className="text-left leading-tight">
+        <span className="block text-[11px] font-medium opacity-80">
+          {APP_STORE_URL ? "Download on the" : "Coming soon to the"}
+        </span>
+        <span className="block text-xl font-semibold tracking-tight">App Store</span>
+      </span>
+    </span>
+  );
+  return APP_STORE_URL ? (
+    <a href={APP_STORE_URL} aria-label="Download beanlo on the App Store">
+      {badge}
+    </a>
+  ) : (
+    badge
+  );
+}
 
 export default function Landing() {
   return (
@@ -61,25 +96,17 @@ export default function Landing() {
           </span>
           <span className="text-lg font-bold tracking-tight">{APP_NAME}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/guides"
-            className="hidden rounded-full px-3 py-2 text-sm font-medium text-muted hover:text-ink sm:inline"
-          >
-            Guides
-          </Link>
-          <Link
-            href="/login"
-            className="rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium hover:border-ink"
-          >
-            Sign in
-          </Link>
-        </div>
+        <Link
+          href="/guides"
+          className="rounded-full px-3 py-2 text-sm font-medium text-muted hover:text-ink"
+        >
+          Guides
+        </Link>
       </header>
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="relative overflow-hidden px-6 pb-16 pt-10 text-center sm:pt-16">
+        <section className="relative overflow-hidden px-6 pb-10 pt-10 text-center sm:pt-16">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0"
@@ -90,24 +117,19 @@ export default function Landing() {
           />
           <div className="relative mx-auto max-w-2xl">
             <h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
-              A gentle tracker for the first days and weeks
+              The newborn tracker that&rsquo;s up with you at 3am
             </h1>
             <p className="mx-auto mt-4 max-w-xl text-lg text-muted">
-              {APP_NAME} helps you keep an eye on nappies, feeds, weight and
-              sleep in the fourth trimester — with expected ranges from
-              established newborn guidance, so you know what’s normal and when
-              to ask for help.
+              {APP_NAME} for iPhone keeps nappies, feeds, weight and sleep
+              against real newborn guidance — the same UK-WHO centiles as your
+              red book — and shows you which of your friends are up feeding
+              too, so the night shift feels less alone.
             </p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link
-                href="/login"
-                className="w-full rounded-full bg-ink px-6 py-3 text-base font-semibold text-on-ink hover:opacity-90 sm:w-auto"
-              >
-                Get started
-              </Link>
+            <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <AppStoreBadge />
               <a
                 href="#features"
-                className="w-full rounded-full border border-line bg-surface px-6 py-3 text-base font-medium hover:border-ink sm:w-auto"
+                className="rounded-full border border-line bg-surface px-6 py-3 text-base font-medium hover:border-ink"
               >
                 See what it does
               </a>
@@ -118,8 +140,45 @@ export default function Landing() {
           </div>
         </section>
 
+        {/* App screenshots */}
+        <section className="overflow-hidden px-6 pb-4 pt-6">
+          <div className="mx-auto flex max-w-3xl items-end justify-center gap-4 sm:gap-6">
+            {SCREENS.map((s, i) => (
+              <div
+                key={s.src}
+                className={`w-[30%] shrink-0 overflow-hidden rounded-[1.6rem] border border-line bg-surface shadow-xl sm:rounded-[2.2rem] ${
+                  i === 1 ? "z-10 -mb-2 w-[36%]" : "opacity-95"
+                }`}
+              >
+                <Image
+                  src={s.src}
+                  alt={s.alt}
+                  width={598}
+                  height={1300}
+                  priority={i === 1}
+                  className="h-auto w-full"
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 3am club */}
+        <section className="px-6 py-12">
+          <div className="mx-auto max-w-2xl rounded-3xl bg-ink p-8 text-center text-on-ink">
+            <h2 className="text-2xl font-bold">The 3am club</h2>
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed opacity-85">
+              Add the friends from your antenatal group and see when they&rsquo;re
+              up feeding too — a status line, a wave, a private message. Every
+              message is end-to-end encrypted; nobody but the two of you can
+              read it, including us. It turns out 3am is a lot more bearable
+              with company.
+            </p>
+          </div>
+        </section>
+
         {/* Features */}
-        <section id="features" className="mx-auto max-w-4xl px-6 py-8">
+        <section id="features" className="mx-auto max-w-4xl px-6 py-4">
           <div className="grid gap-4 sm:grid-cols-2">
             {FEATURES.map((f) => (
               <div
@@ -141,7 +200,7 @@ export default function Landing() {
           <div className="rounded-3xl border border-line bg-surface-alt p-7 text-center">
             <h2 className="text-xl font-bold">Built to help, never to alarm</h2>
             <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted">
-              {APP_NAME} is a tracking aid, not a medical device. It doesn’t
+              {APP_NAME} is a tracking aid, not a medical device. It doesn&rsquo;t
               diagnose and never gives an all-clear that could delay care. It
               flags the things worth checking — like pale stools or blood — and
               always points you to your midwife, health visitor or doctor for
@@ -167,12 +226,7 @@ export default function Landing() {
 
         {/* CTA */}
         <section className="px-6 pb-16 text-center">
-          <Link
-            href="/login"
-            className="inline-block rounded-full bg-ink px-7 py-3 text-base font-semibold text-on-ink hover:opacity-90"
-          >
-            Start tracking
-          </Link>
+          <AppStoreBadge />
         </section>
       </main>
 
