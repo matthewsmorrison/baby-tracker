@@ -43,7 +43,7 @@ professional can be connected read-only.
 Next.js (App Router) + TypeScript + Tailwind · Supabase (Postgres, Auth,
 Storage, **RLS for all authorization**) · Anthropic API (server-side only) ·
 recharts · web-push. Deployed on Vercel; scheduled work runs via GitHub
-Actions. Original product spec in [`spec.md`](./spec.md).
+Actions. Original product spec in [`docs/spec.md`](./docs/spec.md).
 
 ## Setup
 
