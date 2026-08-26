@@ -366,11 +366,44 @@ struct ExpandableEntryRow: View {
                 }
                 EntryRowContent(entry: entry, hasPhoto: entry.photoPath != nil)
                 Spacer(minLength: 4)
+                // Visible controls, like the web's rows — the long-press
+                // context menu alone was undiscoverable.
+                if store.canEdit {
+                    Button {
+                        Haptics.tap()
+                        editing = entry
+                    } label: {
+                        Image(systemName: "pencil")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(Color.muted)
+                            .frame(width: 30, height: 30)
+                            .background(Color.surfaceAlt, in: .circle)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Edit this entry")
+                    Button {
+                        Haptics.tap()
+                        confirmDelete = true
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(Color.muted)
+                            .frame(width: 30, height: 30)
+                            .background(Color.surfaceAlt, in: .circle)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Delete this entry")
+                }
                 if expandable {
                     Image(systemName: "chevron.right")
                         .font(.caption2.weight(.bold))
                         .foregroundStyle(Color.faint)
                         .rotationEffect(.degrees(expanded ? 90 : 0))
+                }
+            }
+            .confirmationDialog("Delete this entry?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                Button("Delete", role: .destructive) {
+                    Task { try? await store.delete(entry) }
                 }
             }
             .padding(.vertical, 10)

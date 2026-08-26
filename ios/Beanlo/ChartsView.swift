@@ -86,6 +86,7 @@ struct ChartsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
+                if store.trackedTypes.contains(.feed) {
                 Card {
                     VStack(alignment: .leading, spacing: 12) {
                         CardTitle("Feeds per day")
@@ -107,7 +108,9 @@ struct ChartsView: View {
                             .font(.caption2).foregroundStyle(Color.faint)
                     }
                 }
+                }
 
+                if store.trackedTypes.contains(.nappy) {
                 Card {
                     VStack(alignment: .leading, spacing: 12) {
                         CardTitle("Nappies per day")
@@ -134,6 +137,7 @@ struct ChartsView: View {
                         }
                         .font(.caption2)
                     }
+                }
                 }
 
                 if store.trackedTypes.contains(.feed) {
@@ -258,7 +262,7 @@ struct ChartsView: View {
                     }
                 }
 
-                if weights.count >= 2 {
+                if store.trackedTypes.contains(.weight), weights.count >= 2 {
                     Card {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {

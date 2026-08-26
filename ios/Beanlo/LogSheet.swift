@@ -47,7 +47,7 @@ struct LogSheet: View {
     @State private var sleepLocation: String?
     @State private var settleMethod: String?
     // Measurements
-    @State private var weightKgText = ""
+    @State private var weightGText = ""
     @State private var lengthCmText = ""
     @State private var headCmText = ""
     // Pump
@@ -319,10 +319,15 @@ struct LogSheet: View {
                 VStack(alignment: .leading, spacing: 14) {
                     CardTitle("Weight")
                     HStack {
-                        TextField("4.20", text: $weightKgText)
+                        TextField("4880", text: $weightGText)
                             .keyboardType(.decimalPad)
                             .font(.stat(34))
-                        Text("kg").font(.system(.title3, design: .rounded)).foregroundStyle(Color.muted)
+                        Text("g").font(.system(.title3, design: .rounded)).foregroundStyle(Color.muted)
+                    }
+                    if let g = parsedWeightG {
+                        Text(String(format: "= %.2f kg", Double(g) / 1000))
+                            .font(.caption)
+                            .foregroundStyle(Color.muted)
                     }
                     Divider()
                     CardTitle("Length (optional)")
@@ -597,13 +602,20 @@ struct LogSheet: View {
 
     // MARK: - Save
 
+    /// Weight is entered in grams like the web ("4880"). A value under 100
+    /// can only be kilograms typed from habit ("4.88"), so convert it.
+    private var parsedWeightG: Int? {
+        guard let raw = Double(weightGText.replacingOccurrences(of: ",", with: ".")), raw > 0 else { return nil }
+        return Int((raw < 100 ? raw * 1000 : raw).rounded())
+    }
+
     private var valid: Bool {
         switch type {
         case .feed:
             if editing != nil { return leftMin + rightMin + expressedMl + formulaMl > 0 }
             return store.feedTimer.isActive || expressedMl + formulaMl > 0
         case .weight:
-            return [weightKgText, lengthCmText, headCmText]
+            return [weightGText, lengthCmText, headCmText]
                 .contains { Double($0.replacingOccurrences(of: ",", with: ".")) != nil }
         case .pump: return pumpMl > 0
         case .temperature: return Double(tempText.replacingOccurrences(of: ",", with: ".")) != nil
@@ -651,7 +663,7 @@ struct LogSheet: View {
             reminderTimes = (e.reminderTimes ?? []).compactMap { formatter.date(from: $0) }
             if let end = e.endedAt { courseEnded = true; courseEndDate = end }
         }
-        if let g = e.weightG { weightKgText = String(format: "%.2f", Double(g) / 1000) }
+        if let g = e.weightG { weightGText = String(g) }
         pumpMl = e.expressedMl ?? 0
         if let t = e.tempC { tempText = String(format: "%.1f", t) }
         medName = e.medName ?? ""
@@ -712,8 +724,8 @@ struct LogSheet: View {
                 new.settleMethod = settleMethod
             }
         case .weight:
-            if let kg = Double(weightKgText.replacingOccurrences(of: ",", with: ".")) {
-                new.weightG = Int(kg * 1000)
+            if let g = parsedWeightG {
+                new.weightG = g
             }
             if let cm = Double(lengthCmText.replacingOccurrences(of: ",", with: ".")) {
                 new.lengthMm = Int(cm * 10)
