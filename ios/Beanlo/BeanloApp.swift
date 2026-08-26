@@ -23,7 +23,13 @@ struct BeanloApp: App {
         WindowGroup {
             Group {
                 if store.session == nil {
-                    AuthView()
+                    if store.authResolved {
+                        AuthView()
+                    } else {
+                        // Session restore is in flight — hold the launch
+                        // backdrop instead of flashing the sign-in screen.
+                        SkyBackground()
+                    }
                 } else if store.memberships.isEmpty && !store.loading && store.baby == nil {
                     OnboardingView()
                 } else {

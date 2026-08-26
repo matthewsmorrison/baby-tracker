@@ -294,12 +294,18 @@ final class Store: ObservableObject {
     }
     #endif
 
+    /// False until the stored session has been checked on launch. Rendering
+    /// AuthView before then flashes the sign-in screen (and its auto-focused
+    /// keyboard) at already-signed-in users.
+    @Published var authResolved = false
+
     /// Follow Supabase auth state for the app's lifetime (initial session,
     /// sign-in, sign-out, token refresh).
     func listenToAuth() async {
         for await state in supabase.auth.authStateChanges {
             if [.initialSession, .signedIn, .signedOut, .tokenRefreshed].contains(state.event) {
                 session = state.session
+                authResolved = true
                 if state.session != nil, baby == nil {
                     await refresh()
                 }
