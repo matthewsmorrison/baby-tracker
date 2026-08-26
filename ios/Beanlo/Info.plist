@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>beanlo</string>
+	<string>Beanlo</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -34,7 +34,7 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSCameraUsageDescription</key>
-	<string>beanlo uses the camera to photograph a nappy so its contents and colour are kept with the entry for your records.</string>
+	<string>Beanlo uses the camera to photograph a nappy so its contents and colour are kept with the entry for your records.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>UILaunchScreen</key>

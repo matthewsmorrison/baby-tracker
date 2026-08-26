@@ -67,7 +67,7 @@ export async function sendApnsToUsers(
     aps: {
       alert: { title: payload.title, body: payload.body },
       sound: "default",
-      "thread-id": payload.tag ?? "beanlo",
+      "thread-id": payload.tag ?? "Beanlo",
     },
     url: payload.url ?? "/today",
   });

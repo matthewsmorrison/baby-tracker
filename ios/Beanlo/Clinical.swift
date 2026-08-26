@@ -1,7 +1,7 @@
 import Foundation
 
 // NHS/NCT-anchored guidance, ported from the web app's lib/clinical.ts.
-// beanlo is a tracking aid, not medical advice.
+// Beanlo is a tracking aid, not medical advice.
 
 enum Clinical {
     static let expectedFeedsLabel = "8–12"

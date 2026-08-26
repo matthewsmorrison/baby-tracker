@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   const wave = body.kind === "wave";
   const sent = await sendToUsers([recipientId], {
     title: wave ? `${name} waved at you 👋` : `${name} messaged you`,
-    body: wave ? "They're up too. Wave back?" : "Open beanlo to read it.",
+    body: wave ? "They're up too. Wave back?" : "Open Beanlo to read it.",
     url: `/friends/${auth.userId}`,
     tag: `dm-${auth.userId}`,
   });

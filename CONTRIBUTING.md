@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest! beanlo is a small, opinionated app; contributions
+Thanks for your interest! Beanlo is a small, opinionated app; contributions
 are welcome, especially bug fixes, accessibility improvements, and
 translations of the clinical copy against authoritative sources.
 

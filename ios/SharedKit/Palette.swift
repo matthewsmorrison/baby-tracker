@@ -1,6 +1,6 @@
 import SwiftUI
 
-// beanlo's warm sand palette (ported from the web app's globals.css) —
+// Beanlo's warm sand palette (ported from the web app's globals.css) —
 // shared by the app and the widget extension.
 extension Color {
     static let sand = Color(light: 0xEDE9E1, dark: 0x16140F)

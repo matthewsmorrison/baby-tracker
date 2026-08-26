@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     .maybeSingle();
   if (!target) {
     return NextResponse.json(
-      { error: "No beanlo account with that email — they need to sign up first." },
+      { error: "No Beanlo account with that email — they need to sign up first." },
       { status: 404 }
     );
   }

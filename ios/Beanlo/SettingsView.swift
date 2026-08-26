@@ -199,7 +199,7 @@ private struct InvitesSection: View {
         } header: {
             Text("Invite someone")
         } footer: {
-            Text("Share the invite link yourself — beanlo doesn't email it. The invited person accepts it on beanlo.com.")
+            Text("Share the invite link yourself — Beanlo doesn't email it. The invited person accepts it on beanlo.com.")
         }
         .listRowBackground(Color.surface)
         .task { await load() }
@@ -412,7 +412,7 @@ private struct CSVDoc: Identifiable {
     var id: Int { text.hashValue }
 
     func fileURL() -> URL {
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("beanlo-export.csv")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("Beanlo-export.csv")
         try? text.data(using: .utf8)?.write(to: url)
         return url
     }

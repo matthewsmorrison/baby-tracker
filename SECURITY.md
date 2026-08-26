@@ -1,6 +1,6 @@
 # Security policy
 
-beanlo stores sensitive family data (a baby's feeding, health and growth log,
+Beanlo stores sensitive family data (a baby's feeding, health and growth log,
 plus photos). Security reports are taken seriously and appreciated.
 
 ## Reporting a vulnerability

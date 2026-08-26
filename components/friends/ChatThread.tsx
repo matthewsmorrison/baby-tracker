@@ -554,7 +554,7 @@ export function ChatThread({
       ) : (
         <p className="border-t border-line pt-3 text-center text-xs text-muted">
           You’ll be able to message {name.split(" ")[0]} once they’ve opened
-          beanlo.
+          Beanlo.
         </p>
       )}
     </div>

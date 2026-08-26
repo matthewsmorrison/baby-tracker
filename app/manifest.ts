@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "beanlo — newborn tracker",
-    short_name: "beanlo",
+    name: "Beanlo — newborn tracker",
+    short_name: "Beanlo",
     description:
       "Track nappies, feeds and weight in the first days and weeks. A tracking aid, not medical advice.",
     start_url: "/today",

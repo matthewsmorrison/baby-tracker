@@ -2,7 +2,7 @@
 // page and legal documents. FILL THESE IN before going live — see the notes
 // in each legal page. These drafts are not legal advice; have them reviewed
 // by a solicitor, especially as the service handles health data about infants.
-export const APP_NAME = "beanlo";
+export const APP_NAME = "Beanlo";
 
 /**
  * The name of the AI assistant, shown as "Ask {ASSISTANT_NAME}". Set to a
@@ -13,10 +13,10 @@ export const ASSISTANT_NAME = "Bea";
 /**
  * The service is run by an individual (sole trader). NOTE: for a legally
  * precise policy the data controller should be the operator's own name — swap
- * OPERATOR to your legal name (e.g. "Matthew Morrison, trading as beanlo")
+ * OPERATOR to your legal name (e.g. "Matthew Morrison, trading as Beanlo")
  * when ready; the documents already read fine either way.
  */
-export const OPERATOR = "beanlo";
+export const OPERATOR = "Beanlo";
 export const OPERATOR_STATUS = "an individual (sole trader)";
 export const OPERATOR_LOCATION = "England, United Kingdom";
 

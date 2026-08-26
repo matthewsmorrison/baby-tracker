@@ -137,7 +137,7 @@ export function PushToggle() {
           <CardTitle>Notifications</CardTitle>
           {state === "needs-install" ? (
             <p className="mt-1 text-sm text-muted">
-              To get alerts on your iPhone, add beanlo to your Home Screen
+              To get alerts on your iPhone, add Beanlo to your Home Screen
               first: the Share button → “Add to Home Screen”, then open it from
               there and turn notifications on.
             </p>
@@ -148,7 +148,7 @@ export function PushToggle() {
             </p>
           ) : state === "denied" ? (
             <p className="mt-1 text-sm text-muted">
-              Notifications are blocked. Enable them for beanlo in your device
+              Notifications are blocked. Enable them for Beanlo in your device
               settings, then reload.
             </p>
           ) : (

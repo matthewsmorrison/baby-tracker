@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     .order("created_at", { ascending: true });
 
   const today = dayOfLife(baby.birth_at, new Date());
-  const framing = `You are Bea, the assistant inside "beanlo", a newborn tracking app. Write a ONE-PAGE handover summary of ${baby.name}'s tracked data for the family's healthcare professional (midwife, health visitor, lactation consultant or GP), in Markdown.
+  const framing = `You are Bea, the assistant inside "Beanlo", a newborn tracking app. Write a ONE-PAGE handover summary of ${baby.name}'s tracked data for the family's healthcare professional (midwife, health visitor, lactation consultant or GP), in Markdown.
 
 Facts: born ${fmt(baby.birth_at, tz, { weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}, birth weight ${formatKg(baby.birth_weight_g)}, sex ${baby.sex ?? "not recorded"}; today is day ${today} of life.
 

@@ -23,7 +23,7 @@ function subscribeAppearOffline(onChange: () => void) {
 }
 
 /**
- * Invisible presence broadcaster, mounted in the app layout. Having beanlo
+ * Invisible presence broadcaster, mounted in the app layout. Having Beanlo
  * open (tab visible) publishes "online"; a running feed timer upgrades that
  * to "feeding". Nothing to press — backgrounding the app stops the
  * heartbeat and friends see the status decay to offline via the TTL.

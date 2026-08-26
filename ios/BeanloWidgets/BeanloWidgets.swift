@@ -53,7 +53,7 @@ struct FeedTimerLiveActivity: Widget {
                         .padding(.trailing, 4)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text("Feeding \(context.attributes.babyName) — open beanlo to switch sides or save")
+                    Text("Feeding \(context.attributes.babyName) — open Beanlo to switch sides or save")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -105,7 +105,7 @@ struct TodayEntry: TimelineEntry {
 struct TodayProvider: TimelineProvider {
     func placeholder(in context: Context) -> TodayEntry {
         TodayEntry(date: .now, snapshot: TodaySnapshot(
-            babyName: "beanlo", dayOfLife: 12, lastFeedAt: .now.addingTimeInterval(-4980),
+            babyName: "Beanlo", dayOfLife: 12, lastFeedAt: .now.addingTimeInterval(-4980),
             feedIntervalMin: 180, nappyCount: 5, nappyTarget: 8, updatedAt: .now
         ), canQuickLog: true)
     }
@@ -135,7 +135,7 @@ struct TodayWidget: Widget {
         StaticConfiguration(kind: "TodayWidget", provider: TodayProvider()) { entry in
             TodayWidgetView(entry: entry)
         }
-        .configurationDisplayName("beanlo")
+        .configurationDisplayName("Beanlo")
         .description("Time since the last feed and today's nappy count.")
         .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular, .accessoryCircular])
     }
@@ -208,7 +208,7 @@ struct TodayWidgetView: View {
                     .foregroundStyle(snap.showsFeeds ? .secondary : .primary)
                 }
             } else {
-                Text("Open beanlo to start")
+                Text("Open Beanlo to start")
                     .font(.system(.caption, design: .rounded))
             }
         }
@@ -260,7 +260,7 @@ struct TodayWidgetView: View {
                             .foregroundStyle(Color.muted)
                     }
                 } else {
-                    Text("Open beanlo to start")
+                    Text("Open Beanlo to start")
                         .font(.system(.caption, design: .rounded))
                         .foregroundStyle(Color.muted)
                 }
@@ -343,7 +343,7 @@ struct TodayWidgetView: View {
                 Image(systemName: "flame")
                     .font(.title2)
                     .foregroundStyle(Color.accent)
-                Text("Open beanlo to start")
+                Text("Open Beanlo to start")
                     .font(.system(.caption, design: .rounded))
                     .foregroundStyle(Color.muted)
             }

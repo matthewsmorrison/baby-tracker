@@ -172,7 +172,7 @@ struct StartFeedTimerIntent: AppIntent {
             return .result(dialog: "Timing the \(side.rawValue) side.")
         }
         let mins = Int(timer.grandTotal / 60)
-        return .result(dialog: "Feed timer paused at \(mins) minute\(mins == 1 ? "" : "s") — open beanlo to save the feed.")
+        return .result(dialog: "Feed timer paused at \(mins) minute\(mins == 1 ? "" : "s") — open Beanlo to save the feed.")
     }
 }
 
@@ -191,18 +191,18 @@ struct LogNappyIntent: AppIntent {
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
         guard let creds = QuickCreds.load() else {
-            return .result(dialog: "Open beanlo and sign in first.")
+            return .result(dialog: "Open Beanlo and sign in first.")
         }
         guard creds.trackedNappy else {
-            return .result(dialog: "Nappy tracking is switched off in beanlo's settings.")
+            return .result(dialog: "Nappy tracking is switched off in Beanlo's settings.")
         }
         switch await QuickLogger.logNappy(dirty: kind == .mixed) {
         case .logged:
             return .result(dialog: "\(kind == .mixed ? "Mixed" : "Wet") nappy logged.")
         case .queued:
-            return .result(dialog: "\(kind == .mixed ? "Mixed" : "Wet") nappy saved — it'll sync next time beanlo opens.")
+            return .result(dialog: "\(kind == .mixed ? "Mixed" : "Wet") nappy saved — it'll sync next time Beanlo opens.")
         case .notSetUp:
-            return .result(dialog: "Open beanlo and sign in first.")
+            return .result(dialog: "Open Beanlo and sign in first.")
         }
     }
 }

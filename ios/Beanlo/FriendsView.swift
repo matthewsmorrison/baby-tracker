@@ -178,7 +178,7 @@ struct FriendsView: View {
                     .font(.caption.weight(.semibold))
                     .disabled(busy || !addEmail.contains("@"))
                 }
-                Text(addMessage ?? "They need a beanlo account — they'll get a request to accept here.")
+                Text(addMessage ?? "They need a Beanlo account — they'll get a request to accept here.")
                     .font(.caption2)
                     .foregroundStyle(addMessage == "Request sent." ? Color.positive : Color.muted)
             }
@@ -429,7 +429,7 @@ struct FriendThreadView: View {
     private func send(text: String, isWave: Bool) async {
         sendError = nil
         guard friend.publicKey != nil else {
-            sendError = "You'll be able to message \(friend.displayName) once they've opened beanlo."
+            sendError = "You'll be able to message \(friend.displayName) once they've opened Beanlo."
             return
         }
         Haptics.tap()

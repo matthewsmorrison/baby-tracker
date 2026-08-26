@@ -17,7 +17,7 @@ export async function POST() {
   }
 
   const sent = await sendToUsers([user.id], {
-    title: "beanlo",
+    title: "Beanlo",
     body: "Notifications are on — you’ll get gentle nudges here.",
     url: "/today",
     tag: "beanlo-test",

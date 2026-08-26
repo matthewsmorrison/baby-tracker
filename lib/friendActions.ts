@@ -16,7 +16,7 @@ export interface ActionResult {
   error?: string;
 }
 
-/** Send a friend request to an existing beanlo user by email. */
+/** Send a friend request to an existing Beanlo user by email. */
 export async function sendFriendRequest(
   formData: FormData
 ): Promise<ActionResult> {
@@ -43,7 +43,7 @@ export async function sendFriendRequest(
   if (lookupError) return { error: lookupError.message };
   if (!target) {
     return {
-      error: "No beanlo account uses that email — ask them to sign up first.",
+      error: "No Beanlo account uses that email — ask them to sign up first.",
     };
   }
 
@@ -115,7 +115,7 @@ export async function sendDirectMessage(
         title:
           kind === "wave" ? `${name} waved at you 👋` : `${name} messaged you`,
         body:
-          kind === "wave" ? "They're up too. Wave back?" : "Open beanlo to read it.",
+          kind === "wave" ? "They're up too. Wave back?" : "Open Beanlo to read it.",
         url: `/friends/${senderId}`,
         tag: `dm-${senderId}`,
       });

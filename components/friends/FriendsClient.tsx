@@ -24,7 +24,7 @@ import { Check, Hand, MessageCircle, UserPlus } from "lucide-react";
 const PRESENCE_POLL_MS = 30_000;
 
 function displayName(p: Profile) {
-  return p.full_name ?? p.email ?? "A beanlo user";
+  return p.full_name ?? p.email ?? "A Beanlo user";
 }
 
 /** MSN-style status line, saved straight to your own profile row. */
@@ -161,7 +161,7 @@ export function FriendsClient({
       <div>
         <h1 className="text-xl font-bold tracking-tight">Friends</h1>
         <p className="mt-1 text-sm text-muted">
-          Green when they have beanlo open — and{" "}
+          Green when they have Beanlo open — and{" "}
           <span className="font-medium text-positive">feeding now</span> while
           a feed timer runs. Company for the night shift.
         </p>
@@ -216,7 +216,7 @@ export function FriendsClient({
         {data.friends.length === 0 ? (
           <p className="text-sm text-muted">
             No friends yet — add one below. You’ll see a green dot whenever
-            they have beanlo open.
+            they have Beanlo open.
           </p>
         ) : (
           <ul className="divide-y divide-line">
@@ -280,7 +280,7 @@ export function FriendsClient({
       <Card className="p-5">
         <CardTitle className="mb-1">Add a friend</CardTitle>
         <p className="mb-3 text-xs text-muted">
-          They need a beanlo account — they’ll get a request to accept here.
+          They need a Beanlo account — they’ll get a request to accept here.
         </p>
         <form
           action={async (fd) => {

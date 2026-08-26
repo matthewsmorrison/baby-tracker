@@ -126,7 +126,7 @@ struct ReportSheet: View {
 
     @MainActor
     private func renderPDF() -> URL {
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("beanlo-report.pdf")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("Beanlo-report.pdf")
         let renderer = ImageRenderer(content: report.frame(width: 560).padding(24).background(Color.white).environmentObject(store))
         renderer.render { size, render in
             var box = CGRect(origin: .zero, size: size)
@@ -274,7 +274,7 @@ struct ImportSheet: View {
                                         .font(.system(.subheadline, design: .rounded))
                                 }
                                 if !plan.skipped.isEmpty {
-                                    Text("No beanlo equivalent (skipped): \(plan.skipped.map { "\($0.key) ×\($0.value)" }.joined(separator: ", "))")
+                                    Text("No Beanlo equivalent (skipped): \(plan.skipped.map { "\($0.key) ×\($0.value)" }.joined(separator: ", "))")
                                         .font(.caption2)
                                         .foregroundStyle(Color.faint)
                                 }

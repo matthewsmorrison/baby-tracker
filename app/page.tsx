@@ -13,7 +13,7 @@ import { Footer } from "@/components/marketing/Footer";
 import { APP_NAME } from "@/lib/legal";
 
 export const metadata = {
-  title: "beanlo — the newborn tracker that's up with you at 3am",
+  title: "Beanlo — the newborn tracker that's up with you at 3am",
   description:
     "The iPhone app for the fourth trimester: nappies, feeds, weight and sleep against real newborn guidance — plus friends who can see when you're up feeding at 3am. UK-WHO red book centiles built in. A tracking aid, not medical advice.",
 };
@@ -56,9 +56,9 @@ const FEATURES = [
 ];
 
 const SCREENS = [
-  { src: "/screens/history.png", alt: "Calendar history of feeds, nappies and weights in the beanlo app" },
-  { src: "/screens/today.png", alt: "beanlo's Today screen: next feed due, nap window and nappy count" },
-  { src: "/screens/charts.png", alt: "Feeding and nappy charts in the beanlo app" },
+  { src: "/screens/history.png", alt: "Calendar history of feeds, nappies and weights in the Beanlo app" },
+  { src: "/screens/today.png", alt: "Beanlo's Today screen: next feed due, nap window and nappy count" },
+  { src: "/screens/charts.png", alt: "Feeding and nappy charts in the Beanlo app" },
 ];
 
 /** The classic black App Store badge, drawn inline so it needs no assets. */
@@ -77,7 +77,7 @@ function AppStoreBadge() {
     </span>
   );
   return APP_STORE_URL ? (
-    <a href={APP_STORE_URL} aria-label="Download beanlo on the App Store">
+    <a href={APP_STORE_URL} aria-label="Download Beanlo on the App Store">
       {badge}
     </a>
   ) : (

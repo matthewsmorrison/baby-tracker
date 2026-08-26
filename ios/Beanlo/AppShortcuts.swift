@@ -1,7 +1,7 @@
 import AppIntents
 
 /// Registers the quick-log intent with Siri, Spotlight, the Shortcuts app
-/// and the Action Button. "Hey Siri, log a wet nappy in beanlo."
+/// and the Action Button. "Hey Siri, log a wet nappy in Beanlo."
 struct BeanloShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(

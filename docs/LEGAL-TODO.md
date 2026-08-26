@@ -1,6 +1,6 @@
 # Legal & compliance — before going live
 
-These pages are **drafts, not legal advice**. Because beanlo handles special
+These pages are **drafts, not legal advice**. Because Beanlo handles special
 category (health) data about infants, get them reviewed by a solicitor before
 you rely on them publicly.
 
@@ -9,10 +9,10 @@ All operator/legal details live in one file: **`lib/legal.ts`**. Set so far:
 - `CONTACT_EMAIL` = `privacy@beanlo.com` — **set this inbox up** so mail is received.
 - `WEBSITE` = `beanlo.com` — **register the domain** and point the deploy at it.
 - `GOVERNING_LAW` = England and Wales. `LAST_UPDATED` = 11 July 2026 (bump on edits).
-- ⚠️ `OPERATOR` = `"beanlo"`. For a sole trader the data controller is legally
+- ⚠️ `OPERATOR` = `"Beanlo"`. For a sole trader the data controller is legally
   **you as an individual**, so the documents currently say "run by an individual
   (sole trader)" without a name. Before launch, set `OPERATOR` to your legal
-  name (e.g. `"Matthew Morrison, trading as beanlo"`) — the solicitor should
+  name (e.g. `"Matthew Morrison, trading as Beanlo"`) — the solicitor should
   confirm the exact wording.
 
 ## 2. Register with the ICO (likely required)
@@ -28,7 +28,7 @@ would ring-fence liability — worth discussing with an accountant/solicitor
 given this is health-adjacent.
 
 ## 4. Medical device / MHRA
-beanlo is positioned as a **tracking aid, not a medical device** — it doesn't
+Beanlo is positioned as a **tracking aid, not a medical device** — it doesn't
 diagnose, and the AI is a labeller that never gives an all-clear. Keep it that
 way. If you ever add diagnostic claims or clinical decision support, it could
 fall under UK Medical Device Regulations (MHRA) and need registration. Get

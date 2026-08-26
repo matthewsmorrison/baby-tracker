@@ -517,7 +517,7 @@ final class Store: ObservableObject {
 
     // MARK: - Bea API (bearer-authenticated calls to the web backend)
 
-    /// POST JSON to a beanlo API route with the user's access token.
+    /// POST JSON to a Beanlo API route with the user's access token.
     func apiRequest(_ path: String, body: [String: Any]) async throws -> URLRequest {
         guard let token = session?.accessToken else { throw URLError(.userAuthenticationRequired) }
         var request = URLRequest(url: Store.webBase.appendingPathComponent(path))

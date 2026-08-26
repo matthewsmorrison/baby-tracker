@@ -59,7 +59,7 @@ export function PresenceToggle({
     <Card className="p-5">
       <CardTitle>Presence</CardTitle>
       <p className="mt-1 text-sm text-muted">
-        Friends normally see a green dot while you have beanlo open (and a
+        Friends normally see a green dot while you have Beanlo open (and a
         pulse during a feed). Appear offline hides it — you can still see
         theirs and message as usual.
       </p>

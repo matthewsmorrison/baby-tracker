@@ -1,4 +1,4 @@
-# beanlo — newborn tracker
+# Beanlo — newborn tracker
 
 A mobile-first tracker for the first days and weeks of life. Parents log
 nappies, feeds, sleep, weight and more; the app shows day-by-day expectations
@@ -7,7 +7,7 @@ sex-specific WHO centiles) and red flags to watch — all grounded in NHS, NCT
 and WHO guidance. Multiple caregivers share one log, and a healthcare
 professional can be connected read-only.
 
-**beanlo is a tracking aid, not medical advice or diagnosis.**
+**Beanlo is a tracking aid, not medical advice or diagnosis.**
 
 ## Features
 
@@ -28,7 +28,7 @@ professional can be connected read-only.
   3am"); an evening digest push notification; drafted answers to saved
   questions; and a one-page AI handover report for midwife/health-visitor
   appointments. All server-side, gated to the `advanced` membership tier.
-- **Friends** — add other beanlo parents by email, see an MSN-style presence
+- **Friends** — add other Beanlo parents by email, see an MSN-style presence
   dot (green whenever they have the app open, pulsing while a feed timer
   runs — company for the 3am shift), and message them. Messages are
   end-to-end encrypted in the browser (ECDH + AES-GCM); the database only
@@ -133,4 +133,4 @@ clinical content.
 
 [AGPL-3.0](./LICENSE). You're welcome to self-host and modify; if you run a
 modified version as a service, you must share your changes under the same
-license. "beanlo" is the name of the maintainer's hosted instance.
+license. "Beanlo" is the name of the maintainer's hosted instance.

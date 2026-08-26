@@ -17,7 +17,7 @@ struct OnboardingView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Welcome to beanlo")
+                        Text("Welcome to Beanlo")
                             .font(.stat(30))
                             .foregroundStyle(Color.ink)
                         Text("Tell us about your baby — everything can be changed later in Settings.")

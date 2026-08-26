@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     "Track nappies, feeds and weight in the first days and weeks. A tracking aid, not medical advice.",
   appleWebApp: {
     capable: true,
-    title: "beanlo",
+    title: "Beanlo",
     statusBarStyle: "default",
     startupImage,
   },

@@ -23,7 +23,7 @@ struct AuthView: View {
                         .foregroundStyle(Color.accent)
                         .padding(22)
                         .glassEffect(.regular.interactive(), in: .circle)
-                    Text("beanlo")
+                    Text("Beanlo")
                         .font(.stat(40))
                         .foregroundStyle(Color.ink)
                     Text("the calm newborn tracker")
@@ -83,7 +83,7 @@ struct AuthView: View {
                             Text("Check your email on this phone")
                                 .font(.system(.headline, design: .rounded))
                                 .foregroundStyle(Color.ink)
-                            Text("We sent a sign-in link to \(email).\nTapping it opens beanlo, signed in.")
+                            Text("We sent a sign-in link to \(email).\nTapping it opens Beanlo, signed in.")
                                 .font(.subheadline)
                                 .foregroundStyle(Color.muted)
                                 .multilineTextAlignment(.center)
@@ -143,7 +143,7 @@ struct AuthView: View {
             linkSent = true
             Haptics.success()
         } catch {
-            self.error = "Couldn't send the link — check the email address (it must already have a beanlo account)."
+            self.error = "Couldn't send the link — check the email address (it must already have a Beanlo account)."
         }
         busy = false
     }
