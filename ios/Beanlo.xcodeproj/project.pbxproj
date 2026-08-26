@@ -418,7 +418,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = BeanloWidgets/BeanloWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_TEAM = DZ9VAB947K;
 				INFOPLIST_FILE = BeanloWidgets/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -443,7 +443,7 @@
 				CODE_SIGN_ENTITLEMENTS = Beanlo/Beanlo.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_TEAM = DZ9VAB947K;
 				INFOPLIST_FILE = Beanlo/Info.plist;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -468,7 +468,7 @@
 				CODE_SIGN_ENTITLEMENTS = Beanlo/Beanlo.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_TEAM = DZ9VAB947K;
 				INFOPLIST_FILE = Beanlo/Info.plist;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -546,7 +546,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = BeanloWidgets/BeanloWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_TEAM = DZ9VAB947K;
 				INFOPLIST_FILE = BeanloWidgets/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
