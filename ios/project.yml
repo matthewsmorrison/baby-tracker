@@ -40,10 +40,9 @@ targets:
     entitlements:
       path: Beanlo/Beanlo.entitlements
       properties:
-        # Push needs the paid Apple Developer Program (personal teams can't
-        # sign it). After enrolling, uncomment and rerun xcodegen — it flips
-        # to production automatically when archiving for TestFlight:
-        # aps-environment: development
+        # Signed by the paid Developer Program team; Xcode flips this to
+        # production automatically when archiving for TestFlight.
+        aps-environment: development
         com.apple.security.application-groups:
           - group.io.beanlo
     settings:
@@ -57,9 +56,8 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
-        # Set your Apple Developer team once in Xcode (Signing & Capabilities)
-        # or fill it in here; everything else is automatic signing.
         CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: DZ9VAB947K
     info:
       path: Beanlo/Info.plist
       properties:
@@ -94,6 +92,7 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         SKIP_INSTALL: YES
         CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: DZ9VAB947K
     info:
       path: BeanloWidgets/Info.plist
       properties:
