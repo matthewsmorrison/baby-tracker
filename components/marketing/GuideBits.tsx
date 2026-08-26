@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AlertTriangle, ArrowRight } from "lucide-react";
-import { APP_NAME, WEBSITE } from "@/lib/legal";
+import { APP_NAME, APP_STORE_URL, WEBSITE } from "@/lib/legal";
 import { GUIDES } from "@/lib/guides";
 
 /** Article structured data for richer search results. */
@@ -46,12 +46,23 @@ export function GuideCta() {
         normal for each day — free, and shareable with your partner or health
         visitor.
       </p>
-      <Link
-        href="/login"
-        className="mt-4 inline-flex items-center gap-2 rounded-full bg-ink px-6 py-3 text-sm font-semibold text-on-ink hover:opacity-90"
-      >
-        Start tracking free <ArrowRight className="h-4 w-4" />
-      </Link>
+      {/* Straight to the App Store once the link exists; home (which carries
+          the store badge) until then. */}
+      {APP_STORE_URL ? (
+        <a
+          href={APP_STORE_URL}
+          className="mt-4 inline-flex items-center gap-2 rounded-full bg-ink px-6 py-3 text-sm font-semibold text-on-ink hover:opacity-90"
+        >
+          Start tracking free <ArrowRight className="h-4 w-4" />
+        </a>
+      ) : (
+        <Link
+          href="/"
+          className="mt-4 inline-flex items-center gap-2 rounded-full bg-ink px-6 py-3 text-sm font-semibold text-on-ink hover:opacity-90"
+        >
+          Start tracking free <ArrowRight className="h-4 w-4" />
+        </Link>
+      )}
     </div>
   );
 }

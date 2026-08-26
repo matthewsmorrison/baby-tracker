@@ -10,17 +10,13 @@ import {
   Users,
 } from "lucide-react";
 import { Footer } from "@/components/marketing/Footer";
-import { APP_NAME } from "@/lib/legal";
+import { APP_NAME, APP_STORE_URL } from "@/lib/legal";
 
 export const metadata = {
   title: "Beanlo — the newborn tracker that's up with you at 3am",
   description:
     "The iPhone app for the fourth trimester: nappies, feeds, weight and sleep against real newborn guidance — plus friends who can see when you're up feeding at 3am. UK-WHO red book centiles built in. A tracking aid, not medical advice.",
 };
-
-// TestFlight public link (App Store Connect → TestFlight → External Testing
-// → public link). Swap for the App Store URL once the app is released.
-const APP_STORE_URL: string | null = null;
 
 const FEATURES = [
   {

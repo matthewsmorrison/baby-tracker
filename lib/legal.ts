@@ -11,6 +11,14 @@ export const APP_NAME = "Beanlo";
 export const ASSISTANT_NAME = "Bea";
 
 /**
+ * Where "download the app" CTAs point: the TestFlight public link for now
+ * (App Store Connect → TestFlight → External Testing → public link), then
+ * the App Store URL once released. While null, CTAs fall back gracefully
+ * (the homepage badge reads "Coming soon"; guide CTAs link home).
+ */
+export const APP_STORE_URL: string | null = null;
+
+/**
  * The service is run by an individual (sole trader). NOTE: for a legally
  * precise policy the data controller should be the operator's own name — swap
  * OPERATOR to your legal name (e.g. "Matthew Morrison, trading as Beanlo")
