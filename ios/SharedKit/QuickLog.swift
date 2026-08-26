@@ -134,6 +134,48 @@ enum NappyKind: String, AppEnum {
     ]
 }
 
+enum FeedSideChoice: String, AppEnum {
+    case left
+    case right
+
+    static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Side")
+    static let caseDisplayRepresentations: [FeedSideChoice: DisplayRepresentation] = [
+        .left: "left",
+        .right: "right",
+    ]
+
+    var side: FeedSide { self == .left ? .left : .right }
+}
+
+/// Start/pause the breast-feed timer from the widget or Siri. The timer
+/// state lives in the app group; the app adopts it (and raises the Live
+/// Activity) next time it comes to the foreground.
+struct StartFeedTimerIntent: AppIntent {
+    static let title: LocalizedStringResource = "Start feed timer"
+    static let description = IntentDescription("Starts (or pauses) the breast-feed timer for one side.")
+    static let openAppWhenRun = false
+
+    @Parameter(title: "Side", default: .left)
+    var side: FeedSideChoice
+
+    init() {}
+    init(side: FeedSideChoice) {
+        self.side = side
+    }
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        var timer = FeedTimerState.loadShared()
+        timer.toggle(side.side)
+        timer.saveShared()
+        WidgetCenter.shared.reloadAllTimelines()
+        if timer.isRunning {
+            return .result(dialog: "Timing the \(side.rawValue) side.")
+        }
+        let mins = Int(timer.grandTotal / 60)
+        return .result(dialog: "Feed timer paused at \(mins) minute\(mins == 1 ? "" : "s") — open beanlo to save the feed.")
+    }
+}
+
 struct LogNappyIntent: AppIntent {
     static let title: LocalizedStringResource = "Log a nappy"
     static let description = IntentDescription("Logs a wet or mixed nappy for right now — no need to open the app.")

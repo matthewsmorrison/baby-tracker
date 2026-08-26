@@ -5,33 +5,6 @@ import WidgetKit
 import UserNotifications
 import UIKit
 
-enum FeedSide: String, Codable {
-    case left, right
-    var label: String { self == .left ? "Left" : "Right" }
-}
-
-/// App-global breast-feed timer: survives closing the log sheet, drives the
-/// floating pill and the Live Activity, persists across launches.
-struct FeedTimerState: Codable, Equatable {
-    var side: FeedSide?
-    var segmentStart: Date?
-    var accLeft: TimeInterval = 0
-    var accRight: TimeInterval = 0
-
-    var isRunning: Bool { side != nil && segmentStart != nil }
-    var isActive: Bool { isRunning || accLeft + accRight > 0 }
-
-    func total(_ s: FeedSide, at now: Date = .now) -> TimeInterval {
-        let base = s == .left ? accLeft : accRight
-        if side == s, let start = segmentStart {
-            return base + max(0, now.timeIntervalSince(start))
-        }
-        return base
-    }
-
-    var grandTotal: TimeInterval { total(.left) + total(.right) }
-}
-
 // One shared observable store: session, baby context, entries and day tags.
 // All reads/writes go through the user's own RLS-scoped Supabase client —
 // exactly the same authorization model as the web app.
@@ -63,9 +36,7 @@ final class Store: ObservableObject {
     @Published var errorMessage: String?
     @Published private(set) var feedTimer = FeedTimerState() {
         didSet {
-            if let data = try? JSONEncoder().encode(feedTimer) {
-                UserDefaults.standard.set(data, forKey: "feed-timer")
-            }
+            feedTimer.saveShared()
             syncLiveActivity()
         }
     }
@@ -83,10 +54,20 @@ final class Store: ObservableObject {
     }
 
     private init() {
-        if let data = UserDefaults.standard.data(forKey: "feed-timer"),
-           let saved = try? JSONDecoder().decode(FeedTimerState.self, from: data) {
-            feedTimer = saved
+        // One-time migration: the timer used to live in the app's own
+        // defaults before the widget needed to see it.
+        if let legacy = UserDefaults.standard.data(forKey: FeedTimerState.key),
+           UserDefaults(suiteName: AppGroup.id)?.data(forKey: FeedTimerState.key) == nil {
+            UserDefaults(suiteName: AppGroup.id)?.set(legacy, forKey: FeedTimerState.key)
+            UserDefaults.standard.removeObject(forKey: FeedTimerState.key)
         }
+        feedTimer = FeedTimerState.loadShared()
+    }
+
+    /// Pick up timer changes the widget made while the app was backgrounded.
+    func adoptSharedFeedTimer() {
+        let shared = FeedTimerState.loadShared()
+        if shared != feedTimer { feedTimer = shared }
     }
 
     // MARK: - Feed timer
@@ -94,19 +75,7 @@ final class Store: ObservableObject {
     /// Tap a side: start it (banking any other running side), or pause it.
     func toggleFeedTimer(_ side: FeedSide) {
         var t = feedTimer
-        let now = Date()
-        if let running = t.side, let start = t.segmentStart {
-            let elapsed = max(0, now.timeIntervalSince(start))
-            if running == .left { t.accLeft += elapsed } else { t.accRight += elapsed }
-            t.side = nil
-            t.segmentStart = nil
-            if running == side {
-                feedTimer = t
-                return
-            }
-        }
-        t.side = side
-        t.segmentStart = now
+        t.toggle(side)
         feedTimer = t
     }
 
@@ -401,6 +370,7 @@ final class Store: ObservableObject {
         guard session != nil else { return }
         loading = entries.isEmpty
         defer { loading = false }
+        adoptSharedFeedTimer()
         await flushQuickQueue()
         do {
             if baby == nil {

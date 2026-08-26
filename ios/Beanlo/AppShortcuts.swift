@@ -14,5 +14,15 @@ struct BeanloShortcuts: AppShortcutsProvider {
             shortTitle: "Log nappy",
             systemImageName: "drop.fill"
         )
+        AppShortcut(
+            intent: StartFeedTimerIntent(),
+            phrases: [
+                "Start the \(\.$side) feed timer in \(.applicationName)",
+                "Start a feed in \(.applicationName)",
+                "\(.applicationName) feed timer",
+            ],
+            shortTitle: "Feed timer",
+            systemImageName: "waterbottle.fill"
+        )
     }
 }

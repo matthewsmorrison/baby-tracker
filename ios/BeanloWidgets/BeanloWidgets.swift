@@ -99,6 +99,7 @@ struct TodayEntry: TimelineEntry {
     // One-tap logging only appears when the app has mirrored a session and
     // nappy tracking is on in Settings.
     var canQuickLog = false
+    var feedTimer = FeedTimerState()
 }
 
 struct TodayProvider: TimelineProvider {
@@ -113,7 +114,8 @@ struct TodayProvider: TimelineProvider {
         completion(TodayEntry(
             date: .now,
             snapshot: TodaySnapshot.load() ?? placeholder(in: context).snapshot,
-            canQuickLog: QuickCreds.load()?.trackedNappy ?? false
+            canQuickLog: QuickCreds.load()?.trackedNappy ?? false,
+            feedTimer: FeedTimerState.loadShared()
         ))
     }
 
@@ -121,7 +123,8 @@ struct TodayProvider: TimelineProvider {
         let entry = TodayEntry(
             date: .now,
             snapshot: TodaySnapshot.load(),
-            canQuickLog: QuickCreds.load()?.trackedNappy ?? false
+            canQuickLog: QuickCreds.load()?.trackedNappy ?? false,
+            feedTimer: FeedTimerState.loadShared()
         )
         completion(Timeline(entries: [entry], policy: .after(.now.addingTimeInterval(15 * 60))))
     }
@@ -228,7 +231,9 @@ struct TodayWidgetView: View {
                             .foregroundStyle(Color.accent)
                     }
                     Spacer()
-                    if snap.showsFeeds {
+                    if snap.showsFeeds, entry.feedTimer.isActive {
+                        timerStat(size: 24)
+                    } else if snap.showsFeeds {
                         Text("Last feed")
                             .font(.caption2)
                             .foregroundStyle(Color.muted)
@@ -261,10 +266,18 @@ struct TodayWidgetView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            if entry.canQuickLog {
-                VStack(spacing: 8) {
-                    quickButton(kind: .wet, label: "Wet", tint: Color.chartBlue)
-                    quickButton(kind: .mixed, label: "Mixed", tint: Color.chartBrown)
+            if entry.canQuickLog || (entry.snapshot?.showsFeeds ?? false) {
+                VStack(spacing: 7) {
+                    if entry.snapshot?.showsFeeds ?? false {
+                        HStack(spacing: 6) {
+                            feedButton(.left, compact: false)
+                            feedButton(.right, compact: false)
+                        }
+                    }
+                    if entry.canQuickLog {
+                        quickButton(kind: .wet, label: "Wet", tint: Color.chartBlue)
+                        quickButton(kind: .mixed, label: "Mixed", tint: Color.chartBrown)
+                    }
                 }
                 .frame(width: 96)
             }
@@ -287,7 +300,9 @@ struct TodayWidgetView: View {
                         .foregroundStyle(Color.accent)
                 }
                 Spacer()
-                if snap.showsFeeds, let last = snap.lastFeedAt {
+                if snap.showsFeeds, entry.feedTimer.isActive {
+                    timerStat(size: 22)
+                } else if snap.showsFeeds, let last = snap.lastFeedAt {
                     Text("Last feed")
                         .font(.caption2)
                         .foregroundStyle(Color.muted)
@@ -314,10 +329,14 @@ struct TodayWidgetView: View {
                         }
                     }
                 }
-                if entry.canQuickLog {
-                    HStack(spacing: 6) {
+                HStack(spacing: 5) {
+                    if snap.showsFeeds {
+                        feedButton(.left, compact: true)
+                        feedButton(.right, compact: true)
+                    }
+                    if entry.canQuickLog {
                         quickButton(kind: .wet, label: "Wet", tint: Color.chartBlue)
-                        quickButton(kind: .mixed, label: "Mixed", tint: Color.chartBrown)
+                        quickButton(kind: .mixed, label: "Mix", tint: Color.chartBrown)
                     }
                 }
             } else {
@@ -328,6 +347,52 @@ struct TodayWidgetView: View {
                     .font(.system(.caption, design: .rounded))
                     .foregroundStyle(Color.muted)
             }
+        }
+    }
+
+    /// Start/pause the feed timer for one side without opening the app.
+    /// The running side pulses solid; the app raises the Live Activity when
+    /// it next comes to the foreground.
+    private func feedButton(_ side: FeedSideChoice, compact: Bool) -> some View {
+        let running = entry.feedTimer.isRunning && entry.feedTimer.side == side.side
+        return Button(intent: StartFeedTimerIntent(side: side)) {
+            HStack(spacing: 4) {
+                Image(systemName: running ? "pause.fill" : "waterbottle.fill")
+                    .font(.system(size: 9))
+                Text(compact ? (side == .left ? "L" : "R") : side.side.label)
+            }
+            .font(.system(.caption2, design: .rounded, weight: .bold))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+            .background(running ? Color.accent : Color.accent.opacity(0.18), in: .capsule)
+            .foregroundStyle(running ? Color.onInk : Color.accent)
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// The hero stat while a feed is being timed: self-ticking when running,
+    /// frozen total when paused.
+    @ViewBuilder
+    private func timerStat(size: CGFloat) -> some View {
+        let t = entry.feedTimer
+        Text(t.isRunning ? "Feeding — \(t.side?.label ?? "")" : "Feed paused")
+            .font(.caption2)
+            .foregroundStyle(t.isRunning ? Color.accent : Color.muted)
+        if t.isRunning {
+            let elapsed = t.total(.left, at: entry.date) + t.total(.right, at: entry.date)
+            let reference = entry.date.addingTimeInterval(-elapsed)
+            Text(timerInterval: reference...reference.addingTimeInterval(12 * 3600), countsDown: false)
+                .font(.stat(size))
+                .monospacedDigit()
+                .foregroundStyle(Color.ink)
+                .minimumScaleFactor(0.6)
+                .lineLimit(1)
+        } else {
+            let secs = Int(t.grandTotal)
+            Text(String(format: "%d:%02d", secs / 60, secs % 60))
+                .font(.stat(size))
+                .monospacedDigit()
+                .foregroundStyle(Color.ink)
         }
     }
 
