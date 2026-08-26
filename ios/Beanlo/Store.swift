@@ -184,7 +184,33 @@ final class Store: ObservableObject {
             nappyTarget: Clinical.expectedNappies(day: day).total,
             updatedAt: now
         ).save()
+        writeQuickCreds()
         WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    /// Mirror the session + baby context into the app group so widget
+    /// buttons and Siri can log a nappy without launching the app.
+    private func writeQuickCreds() {
+        guard let session, let baby else { return }
+        QuickCreds(
+            accessToken: session.accessToken,
+            userId: session.user.id,
+            babyId: baby.id,
+            trackedNappy: trackedTypes.contains(.nappy)
+        ).save()
+    }
+
+    /// Insert nappies the widget/Siri queued while the token was stale or
+    /// the network was down.
+    private func flushQuickQueue() async {
+        let pending = QuickQueue.load()
+        guard !pending.isEmpty else { return }
+        for item in pending {
+            var new = NewEntry(babyId: item.babyId, type: .nappy, occurredAt: item.occurredAt, createdBy: item.userId)
+            new.dirty = item.dirty
+            _ = try? await supabase.from("entries").insert(new).execute()
+        }
+        QuickQueue.clear()
     }
 
     // MARK: - Push notifications (APNs)
@@ -306,6 +332,8 @@ final class Store: ObservableObject {
             if [.initialSession, .signedIn, .signedOut, .tokenRefreshed].contains(state.event) {
                 session = state.session
                 authResolved = true
+                // Keep the widget/Siri token fresh across refreshes.
+                if state.event == .tokenRefreshed { writeQuickCreds() }
                 if state.session != nil, baby == nil {
                     await refresh()
                 }
@@ -360,6 +388,7 @@ final class Store: ObservableObject {
     }
 
     func signOut() async {
+        QuickCreds.clear()
         try? await supabase.auth.signOut()
     }
 
@@ -370,6 +399,7 @@ final class Store: ObservableObject {
         guard session != nil else { return }
         loading = entries.isEmpty
         defer { loading = false }
+        await flushQuickQueue()
         do {
             if baby == nil {
                 let fetched: [Membership] = try await supabase

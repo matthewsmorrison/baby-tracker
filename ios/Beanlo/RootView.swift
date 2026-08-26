@@ -6,6 +6,8 @@ struct RootView: View {
     @State private var editing: Entry?
     @State private var selectedTab = 0
     @State private var showSettings = false
+    @State private var quickLogged: Entry?
+    @State private var quickToastDismiss: Task<Void, Never>?
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -41,21 +43,59 @@ struct RootView: View {
         }
         // Floating glass log button, docked above the tab bar — hidden while
         // a friend chat is open so it doesn't cover the message input.
+        // Tap opens the log sheet; long-press offers one-tap nappy logging
+        // (only for types switched on in Settings).
         .overlay(alignment: .bottomTrailing) {
             if !store.chatThreadOpen {
-                Button {
-                    Haptics.tap()
-                    logSheet = store.trackedTypes.first ?? .nappy
+                Menu {
+                    if store.canEdit, store.trackedTypes.contains(.nappy) {
+                        Button {
+                            quickLogNappy(dirty: false)
+                        } label: {
+                            Label("Wet nappy — log now", systemImage: "drop.fill")
+                        }
+                        Button {
+                            quickLogNappy(dirty: true)
+                        } label: {
+                            Label("Mixed nappy — log now", systemImage: "drop.circle.fill")
+                        }
+                    }
                 } label: {
                     Image(systemName: "plus")
                         .font(.system(size: 22, weight: .semibold))
                         .foregroundStyle(Color.ink)
                         .frame(width: 58, height: 58)
+                } primaryAction: {
+                    Haptics.tap()
+                    logSheet = store.trackedTypes.first ?? .nappy
                 }
                 .glassEffect(.regular.tint(Color.accent.opacity(0.5)).interactive(), in: .circle)
                 .padding(.trailing, 20)
                 .padding(.bottom, 84)
                 .accessibilityLabel("Log an entry")
+            }
+        }
+        // Undo toast for one-tap logs.
+        .overlay(alignment: .bottom) {
+            if let logged = quickLogged {
+                HStack(spacing: 10) {
+                    Text("\(logged.dirty == true ? "Mixed" : "Wet") nappy logged")
+                        .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                    Button("Undo") {
+                        Haptics.tap()
+                        let entry = logged
+                        quickLogged = nil
+                        Task { try? await store.delete(entry) }
+                    }
+                    .font(.system(.subheadline, design: .rounded, weight: .bold))
+                    .foregroundStyle(Color.accent)
+                }
+                .foregroundStyle(Color.ink)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 12)
+                .glassEffect(.regular, in: .capsule)
+                .padding(.bottom, 152)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .sheet(item: $logSheet) { initial in
@@ -87,12 +127,35 @@ struct RootView: View {
             if let side = UserDefaults.standard.string(forKey: "DevStartTimer") {
                 store.toggleFeedTimer(side == "right" ? .right : .left)
             }
+            // Exercises the widget/Siri quick-log path (REST + app-group
+            // creds) without needing a tap on the widget.
+            if UserDefaults.standard.bool(forKey: "DevQuickNappy") {
+                Task { print("DevQuickNappy:", await QuickLogger.logNappy(dirty: false)) }
+            }
         }
         #endif
         .sheet(item: $editing) { entry in
             LogSheet(initialType: entry.type, editing: entry)
         }
         .refreshable { await store.refresh() }
+    }
+
+    private func quickLogNappy(dirty: Bool) {
+        guard let baby = store.baby, let userId = store.userId else { return }
+        Haptics.tap()
+        var new = NewEntry(babyId: baby.id, type: .nappy, occurredAt: .now, createdBy: userId)
+        new.dirty = dirty
+        Task {
+            guard let saved = try? await store.save(new) else { return }
+            withAnimation(.snappy) { quickLogged = saved }
+            quickToastDismiss?.cancel()
+            quickToastDismiss = Task {
+                try? await Task.sleep(for: .seconds(5))
+                if !Task.isCancelled {
+                    withAnimation(.snappy) { quickLogged = nil }
+                }
+            }
+        }
     }
 }
 

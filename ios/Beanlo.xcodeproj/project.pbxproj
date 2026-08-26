@@ -19,10 +19,12 @@
 		36BE6331B697036A064D5148 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 311D92C95AFA5F91EF74AEB3 /* AuthView.swift */; };
 		3B86B7042823E48F169CC923 /* HuckleberryImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F8256CA51DFE72B187EC922 /* HuckleberryImport.swift */; };
 		3B9F20E77760A62A63CC6BEE /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC640DB3B9D7F5D263832128 /* Components.swift */; };
+		3D99FDC0B94D0E297584F017 /* QuickLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE7007BB06DE65C07949AAEE /* QuickLog.swift */; };
 		427717ADE7C97C633EA58B6F /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6F719C239BF8DEEC582702C /* TodayView.swift */; };
 		49B1747BDFB952154E027F7A /* NotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E829E72F306BE1D40E10044 /* NotesView.swift */; };
 		503E381D82766400118E556F /* Clinical.swift in Sources */ = {isa = PBXBuildFile; fileRef = 982D4A9BF820014229C3BDFE /* Clinical.swift */; };
 		517E8A1244BDD791D7EFB007 /* Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0E9A68D9843B3FE63CD44C8 /* Store.swift */; };
+		56EAD4D39CB9DA85B1E3210E /* QuickLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE7007BB06DE65C07949AAEE /* QuickLog.swift */; };
 		5F455A88E39FA8A030D28D73 /* WHOWeight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DFC0AB3E65AE8406CF9D882 /* WHOWeight.swift */; };
 		66C17CF5462A34D9C9072771 /* LogSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F2D01B2267930A87A15E7B2 /* LogSheet.swift */; };
 		6DFE2E3CB24AC3739AFD022F /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26004E2E18EE59EC8CACC0CF /* HistoryView.swift */; };
@@ -33,6 +35,7 @@
 		898DD98D8C7C6A198D0C201E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DC78D18552A0B2B5FDC3897 /* Theme.swift */; };
 		8B1E3A53A5E0A015B581C39A /* BeanloApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC930610A13DB8711432F7D6 /* BeanloApp.swift */; };
 		8F9DCE0B906ACB8F843CED52 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = D1C74A9AC6F23FCBBD71C850 /* Supabase */; };
+		92F220BE4D4BBA949A146BF6 /* AppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 848C94314D20B3377C201259 /* AppShortcuts.swift */; };
 		A78C85828F7258F520E23C91 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BBF4FD00A2108FBE262AF37 /* ChatView.swift */; };
 		B180C086A5097E8505CB21D3 /* SharedTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0C85F705BE073C0AAA7D86D /* SharedTypes.swift */; };
 		C778B71D269AF16180687169 /* WHOGrowth.swift in Sources */ = {isa = PBXBuildFile; fileRef = C159604E7F661E8A04349551 /* WHOGrowth.swift */; };
@@ -89,6 +92,7 @@
 		7B8BCA8DD9C7F316A7BEE0B2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7E829E72F306BE1D40E10044 /* NotesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesView.swift; sourceTree = "<group>"; };
 		83EED4A7B1C07E4C87090031 /* ChartsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartsView.swift; sourceTree = "<group>"; };
+		848C94314D20B3377C201259 /* AppShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppShortcuts.swift; sourceTree = "<group>"; };
 		8AA1A2EA983D9E41C9726199 /* BeanloWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeanloWidgets.swift; sourceTree = "<group>"; };
 		982D4A9BF820014229C3BDFE /* Clinical.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clinical.swift; sourceTree = "<group>"; };
 		A0E9A68D9843B3FE63CD44C8 /* Store.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Store.swift; sourceTree = "<group>"; };
@@ -102,6 +106,7 @@
 		D0C85F705BE073C0AAA7D86D /* SharedTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedTypes.swift; sourceTree = "<group>"; };
 		EC640DB3B9D7F5D263832128 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		FCB613FA3024E5BC2BB95DEB /* FriendsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsStore.swift; sourceTree = "<group>"; };
+		FE7007BB06DE65C07949AAEE /* QuickLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickLog.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -129,6 +134,7 @@
 		6108710FFB5ECB398B306FF3 /* Beanlo */ = {
 			isa = PBXGroup;
 			children = (
+				848C94314D20B3377C201259 /* AppShortcuts.swift */,
 				7B8BCA8DD9C7F316A7BEE0B2 /* Assets.xcassets */,
 				311D92C95AFA5F91EF74AEB3 /* AuthView.swift */,
 				6A662D22FABF629622E427C6 /* Beanlo.entitlements */,
@@ -172,6 +178,7 @@
 			isa = PBXGroup;
 			children = (
 				B4A96FC94268C38C906EF458 /* Palette.swift */,
+				FE7007BB06DE65C07949AAEE /* QuickLog.swift */,
 				D0C85F705BE073C0AAA7D86D /* SharedTypes.swift */,
 				C159604E7F661E8A04349551 /* WHOGrowth.swift */,
 				1DFC0AB3E65AE8406CF9D882 /* WHOWeight.swift */,
@@ -288,6 +295,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				92F220BE4D4BBA949A146BF6 /* AppShortcuts.swift in Sources */,
 				36BE6331B697036A064D5148 /* AuthView.swift in Sources */,
 				8B1E3A53A5E0A015B581C39A /* BeanloApp.swift in Sources */,
 				D75E582CC6A918B91C6DCD10 /* ChartsView.swift in Sources */,
@@ -306,6 +314,7 @@
 				2F15876CD86C16FE12C3E107 /* OnboardingView.swift in Sources */,
 				1CDFE0E926C36EA96E32EFA7 /* Palette.swift in Sources */,
 				7801A97AD53FF3861D9A0DFC /* Predict.swift in Sources */,
+				56EAD4D39CB9DA85B1E3210E /* QuickLog.swift in Sources */,
 				82B33F2324546EDDB826E1D0 /* RootView.swift in Sources */,
 				CACA8B5A03441981CC75C6DC /* SettingsView.swift in Sources */,
 				B180C086A5097E8505CB21D3 /* SharedTypes.swift in Sources */,
@@ -323,6 +332,7 @@
 			files = (
 				CA04239F2047BDD2561031A3 /* BeanloWidgets.swift in Sources */,
 				305CC1A354E1C962CF1C5BC4 /* Palette.swift in Sources */,
+				3D99FDC0B94D0E297584F017 /* QuickLog.swift in Sources */,
 				2BB72D657D059019188DF11E /* SharedTypes.swift in Sources */,
 				70338F2D4DDB4947A870DD19 /* WHOGrowth.swift in Sources */,
 				5F455A88E39FA8A030D28D73 /* WHOWeight.swift in Sources */,
@@ -408,7 +418,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = BeanloWidgets/BeanloWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DZ9VAB947K;
 				INFOPLIST_FILE = BeanloWidgets/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -433,7 +443,7 @@
 				CODE_SIGN_ENTITLEMENTS = Beanlo/Beanlo.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DZ9VAB947K;
 				INFOPLIST_FILE = Beanlo/Info.plist;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -458,7 +468,7 @@
 				CODE_SIGN_ENTITLEMENTS = Beanlo/Beanlo.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DZ9VAB947K;
 				INFOPLIST_FILE = Beanlo/Info.plist;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -536,7 +546,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = BeanloWidgets/BeanloWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DZ9VAB947K;
 				INFOPLIST_FILE = BeanloWidgets/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

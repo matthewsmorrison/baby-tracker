@@ -96,6 +96,9 @@ struct FeedTimerLiveActivity: Widget {
 struct TodayEntry: TimelineEntry {
     let date: Date
     let snapshot: TodaySnapshot?
+    // One-tap logging only appears when the app has mirrored a session and
+    // nappy tracking is on in Settings.
+    var canQuickLog = false
 }
 
 struct TodayProvider: TimelineProvider {
@@ -103,15 +106,23 @@ struct TodayProvider: TimelineProvider {
         TodayEntry(date: .now, snapshot: TodaySnapshot(
             babyName: "beanlo", dayOfLife: 12, lastFeedAt: .now.addingTimeInterval(-4980),
             feedIntervalMin: 180, nappyCount: 5, nappyTarget: 8, updatedAt: .now
-        ))
+        ), canQuickLog: true)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (TodayEntry) -> Void) {
-        completion(TodayEntry(date: .now, snapshot: TodaySnapshot.load() ?? placeholder(in: context).snapshot))
+        completion(TodayEntry(
+            date: .now,
+            snapshot: TodaySnapshot.load() ?? placeholder(in: context).snapshot,
+            canQuickLog: QuickCreds.load()?.trackedNappy ?? false
+        ))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<TodayEntry>) -> Void) {
-        let entry = TodayEntry(date: .now, snapshot: TodaySnapshot.load())
+        let entry = TodayEntry(
+            date: .now,
+            snapshot: TodaySnapshot.load(),
+            canQuickLog: QuickCreds.load()?.trackedNappy ?? false
+        )
         completion(Timeline(entries: [entry], policy: .after(.now.addingTimeInterval(15 * 60))))
     }
 }
@@ -216,6 +227,12 @@ struct TodayWidgetView: View {
                             .frame(height: 5)
                     }
                 }
+                if entry.canQuickLog {
+                    HStack(spacing: 6) {
+                        quickButton(kind: .wet, label: "Wet", tint: Color.chartBlue)
+                        quickButton(kind: .mixed, label: "Mixed", tint: Color.chartBrown)
+                    }
+                }
             } else {
                 Image(systemName: "flame")
                     .font(.title2)
@@ -225,6 +242,22 @@ struct TodayWidgetView: View {
                     .foregroundStyle(Color.muted)
             }
         }
+    }
+
+    /// One-tap logging straight from the home screen — no app launch.
+    private func quickButton(kind: NappyKind, label: String, tint: Color) -> some View {
+        Button(intent: LogNappyIntent(kind: kind)) {
+            HStack(spacing: 4) {
+                Image(systemName: "drop.fill").font(.system(size: 9))
+                Text(label)
+            }
+            .font(.system(.caption2, design: .rounded, weight: .bold))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+            .background(tint.opacity(0.18), in: .capsule)
+            .foregroundStyle(tint)
+        }
+        .buttonStyle(.plain)
     }
 
     private var intervalProgress: Double {
