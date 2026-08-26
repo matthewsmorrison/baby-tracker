@@ -180,18 +180,29 @@ private struct CalendarSection: View {
                         }
                     }
 
-                    let cols = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
-                    LazyVGrid(columns: cols, spacing: 4) {
-                        ForEach(["M", "T", "W", "T", "F", "S", "S"].indices, id: \.self) { i in
-                            Text(["M", "T", "W", "T", "F", "S", "S"][i])
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(Color.faint)
+                    // A non-lazy Grid: LazyVGrid re-measures rows on the way
+                    // back up a scroll, letting busy cells paint over the
+                    // legend below. A month is ~42 cells — laziness buys nothing.
+                    let monthCells = cells(cal: cal)
+                    let weekdays = ["M", "T", "W", "T", "F", "S", "S"]
+                    Grid(horizontalSpacing: 4, verticalSpacing: 4) {
+                        GridRow {
+                            ForEach(weekdays.indices, id: \.self) { i in
+                                Text(weekdays[i])
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(Color.faint)
+                                    .frame(maxWidth: .infinity)
+                            }
                         }
-                        ForEach(cells(cal: cal), id: \.self) { cell in
-                            if let date = cell.date {
-                                dayCell(date: date, entries: byDay[date.dayKey] ?? [], todayKey: todayKey)
-                            } else {
-                                Color.clear.frame(height: 52)
+                        ForEach(Array(stride(from: 0, to: monthCells.count, by: 7)), id: \.self) { start in
+                            GridRow {
+                                ForEach(monthCells[start..<min(start + 7, monthCells.count)], id: \.self) { cell in
+                                    if let date = cell.date {
+                                        dayCell(date: date, entries: byDay[date.dayKey] ?? [], todayKey: todayKey)
+                                    } else {
+                                        Color.clear.frame(height: 52)
+                                    }
+                                }
                             }
                         }
                     }

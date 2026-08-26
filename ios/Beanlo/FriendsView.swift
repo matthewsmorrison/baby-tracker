@@ -377,6 +377,7 @@ struct FriendThreadView: View {
             }
         }
         .task {
+            store.chatThreadOpen = true
             await loadMessages()
             poll = Task {
                 while !Task.isCancelled {
@@ -385,7 +386,10 @@ struct FriendThreadView: View {
                 }
             }
         }
-        .onDisappear { poll?.cancel() }
+        .onDisappear {
+            poll?.cancel()
+            store.chatThreadOpen = false
+        }
     }
 
     @ViewBuilder

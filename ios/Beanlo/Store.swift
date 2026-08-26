@@ -430,6 +430,10 @@ final class Store: ObservableObject {
         }
     }
 
+    /// A friend chat is open — hide the floating log button so it doesn't
+    /// sit on top of the message input.
+    @Published var chatThreadOpen = false
+
     /// Unread DMs badge on the Friends tab — mirrors the web's UnreadBadge.
     @Published var unreadDMs = 0
     func refreshUnreadDMs() async {

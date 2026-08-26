@@ -39,21 +39,24 @@ struct RootView: View {
                 .padding(.bottom, 96)
             }
         }
-        // Floating glass log button, docked above the tab bar.
+        // Floating glass log button, docked above the tab bar — hidden while
+        // a friend chat is open so it doesn't cover the message input.
         .overlay(alignment: .bottomTrailing) {
-            Button {
-                Haptics.tap()
-                logSheet = store.trackedTypes.first ?? .nappy
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(Color.ink)
-                    .frame(width: 58, height: 58)
+            if !store.chatThreadOpen {
+                Button {
+                    Haptics.tap()
+                    logSheet = store.trackedTypes.first ?? .nappy
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(Color.ink)
+                        .frame(width: 58, height: 58)
+                }
+                .glassEffect(.regular.tint(Color.accent.opacity(0.5)).interactive(), in: .circle)
+                .padding(.trailing, 20)
+                .padding(.bottom, 84)
+                .accessibilityLabel("Log an entry")
             }
-            .glassEffect(.regular.tint(Color.accent.opacity(0.5)).interactive(), in: .circle)
-            .padding(.trailing, 20)
-            .padding(.bottom, 84)
-            .accessibilityLabel("Log an entry")
         }
         .sheet(item: $logSheet) { initial in
             LogSheet(initialType: initial)

@@ -102,6 +102,7 @@ struct ChartsView: View {
                         }
                         .frame(height: 180)
                         .chartYAxis { AxisMarks(position: .leading) }
+                        .compactDayAxis()
                         Text("Dashed line = the 8–12 feeds/24h norm")
                             .font(.caption2).foregroundStyle(Color.faint)
                     }
@@ -126,6 +127,7 @@ struct ChartsView: View {
                         }
                         .frame(height: 180)
                         .chartYAxis { AxisMarks(position: .leading) }
+                        .compactDayAxis()
                         HStack(spacing: 14) {
                             Label("wet", systemImage: "circle.fill").foregroundStyle(Color.chartBlue)
                             Label("mixed", systemImage: "circle.fill").foregroundStyle(Color.chartBrown)
@@ -150,6 +152,7 @@ struct ChartsView: View {
                             }
                             .frame(height: 160)
                             .chartYAxis { AxisMarks(position: .leading) }
+                            .compactDayAxis()
                             Text("Shaded band = every 2–3h (the 8–12 feeds/day norm)")
                                 .font(.caption2).foregroundStyle(Color.faint)
                         }
@@ -169,6 +172,7 @@ struct ChartsView: View {
                                 }
                                 .frame(height: 160)
                                 .chartYAxis { AxisMarks(position: .leading) }
+                                .compactDayAxis()
                                 HStack(spacing: 14) {
                                     Label("expressed", systemImage: "circle.fill")
                                         .foregroundStyle(Color(light: 0x1BAF7A, dark: 0x4FC79A))
@@ -193,6 +197,7 @@ struct ChartsView: View {
                                 }
                                 .frame(height: 150)
                                 .chartYAxis { AxisMarks(position: .leading) }
+                                .compactDayAxis()
                             }
                         }
                     }
@@ -211,6 +216,7 @@ struct ChartsView: View {
                             }
                             .frame(height: 160)
                             .chartYAxis { AxisMarks(position: .leading) }
+                            .compactDayAxis()
                             Text("Newborn sleep varies hugely — the band is the often-quoted 14–17h.")
                                 .font(.caption2).foregroundStyle(Color.faint)
                         }
@@ -245,6 +251,7 @@ struct ChartsView: View {
                             }
                             .frame(height: 140)
                             .chartYAxis { AxisMarks(position: .leading) }
+                            .compactDayAxis()
                             Text("Look after yourselves too.")
                                 .font(.caption2).foregroundStyle(Color.faint)
                         }
@@ -315,6 +322,22 @@ struct ChartsView: View {
     }
 }
 
+/// Categorical day labels ("D12") get ellipsised to "D…" at the default
+/// axis font once 14 bars share the width — a smaller face keeps them whole.
+private extension View {
+    func compactDayAxis() -> some View {
+        chartXAxis {
+            AxisMarks { value in
+                AxisValueLabel {
+                    if let label = value.as(String.self) {
+                        Text(label).font(.system(size: 8, design: .rounded))
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// Full-screen UK-WHO (red book) weight-for-age chart: the nine printed
 /// centile curves for the baby's sex, with every logged weight plotted.
 struct WHOChartView: View {
@@ -322,6 +345,7 @@ struct WHOChartView: View {
     @Environment(\.dismiss) private var dismiss
     let weights: [(date: Date, kg: Double)]
     @State private var measure: Measure = .weight
+    @State private var selectedWeeks: Double?
 
     enum Measure: String, CaseIterable, Identifiable {
         case weight = "Weight"
@@ -341,6 +365,7 @@ struct WHOChartView: View {
                         .pickerStyle(.segmented)
                         .padding(.horizontal, 16)
                         .padding(.top, 6)
+                        .onChange(of: measure) { selectedWeeks = nil }
                         chart(baby: baby, isBoy: sex == "boy")
                     }
                 } else {
@@ -441,7 +466,45 @@ struct WHOChartView: View {
                         .foregroundStyle(Color.ink)
                         .symbolSize(46)
                     }
+                    // Tap (or drag) picks the nearest logged point and shows
+                    // its value + centile, like tapping a dot on the web chart.
+                    if let sel = selectedWeeks,
+                       let p = points.min(by: { abs($0.age / 7 - sel) < abs($1.age / 7 - sel) }) {
+                        RuleMark(x: .value("Age", p.age / 7))
+                            .foregroundStyle(Color.faint.opacity(0.6))
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                        PointMark(
+                            x: .value("Age", p.age / 7),
+                            y: .value(unit, p.value)
+                        )
+                        .foregroundStyle(Color.accent)
+                        .symbolSize(110)
+                        .annotation(
+                            position: .top,
+                            spacing: 8,
+                            overflowResolution: .init(x: .fit(to: .chart), y: .fit(to: .chart))
+                        ) {
+                            let days = Int(p.age.rounded())
+                            VStack(spacing: 2) {
+                                Text(unit == "kg"
+                                     ? String(format: "%.2f kg", p.value)
+                                     : String(format: "%.1f cm", p.value))
+                                    .font(.system(.subheadline, design: .rounded, weight: .bold))
+                                Text(centileLabel(centileOf((age: p.age, value: p.value))))
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(Color.accent)
+                                Text(days < 7 ? "day \(days)" : "\(days / 7)w \(days % 7)d")
+                                    .font(.caption2)
+                                    .foregroundStyle(Color.muted)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color.surface, in: .rect(cornerRadius: 12))
+                            .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
+                        }
+                    }
                 }
+                .chartXSelection(value: $selectedWeeks)
                 .chartXAxisLabel("age in weeks")
                 .chartYAxisLabel(unit)
                 .chartYAxis { AxisMarks(position: .leading) }
