@@ -213,10 +213,11 @@ final class E2EETests: XCTestCase {
         let ourKey = try E2EE.sharedKey(theirPublicJWK: friendJWK)
 
         let ourJWKData = Data(E2EE.publicJWK().utf8)
-        let ourJWK = try JSONSerialization.jsonObject(with: ourJWKData) as! [String: String]
+        // The JWK carries non-string fields too (ext: true, key_ops: []).
+        let ourJWK = try XCTUnwrap(JSONSerialization.jsonObject(with: ourJWKData) as? [String: Any])
         var x963 = Data([0x04])
-        x963.append(Self.b64url(ourJWK["x"]!))
-        x963.append(Self.b64url(ourJWK["y"]!))
+        x963.append(Self.b64url(try XCTUnwrap(ourJWK["x"] as? String)))
+        x963.append(Self.b64url(try XCTUnwrap(ourJWK["y"] as? String)))
         let ourPublic = try P256.KeyAgreement.PublicKey(x963Representation: x963)
         let secret = try friend.sharedSecretFromKeyAgreement(with: ourPublic)
         let friendKey = secret.withUnsafeBytes { SymmetricKey(data: Data($0)) }

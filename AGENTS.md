@@ -4,7 +4,31 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
-# Web ↔ iOS: TypeScript is the source of truth
+# Testing — TDD for every bug fix
+
+The iOS app has real test suites (`ios/BeanloTests` unit, `ios/BeanloUITests`
+UI flows). Rules:
+
+- **Fixing a bug? Write the failing test FIRST.** Reproduce the reported
+  behaviour in a test, watch it fail, then fix the code until it passes.
+  The test stays forever so the bug can't return. No bug fix ships without
+  its regression test.
+- Run tests with `./scripts/test-ios.sh` (or `… unit` for the fast
+  logic-only suite). UI tests need a booted iPhone simulator.
+- **Every TestFlight build goes through `./scripts/ship-ios.sh`**, which
+  runs the tests first and aborts on failure. Never archive/upload manually
+  around it.
+- New logic (predictions, clinical rules, parsers, crypto) gets unit tests
+  in the same change. New screens/flows get a UI test when they stabilise.
+
+# Web ↔ iOS: the web client is being retired
+
+The iOS app is the product; don't build new web-client features. The
+Next.js deployment still matters — the iOS app depends on its API routes
+(chat/handover/notes-draft/friends/account-delete/cron-notify + APNs
+sending), the invite-acceptance page, and the marketing homepage.
+
+# TypeScript ↔ Swift ports (historical)
 
 The iOS app (`ios/`) mirrors logic that lives in `lib/`. **If you change a
 file in the left column, make the matching change in the right column** (or
