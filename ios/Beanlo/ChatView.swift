@@ -358,7 +358,11 @@ final class ChatStore: ObservableObject {
                 ]
                 let request = try await store.apiRequest("/api/chat", body: body)
                 let (bytes, response) = try await URLSession.shared.bytes(for: request)
-                guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+                let http = response as? HTTPURLResponse
+                // A redirect to the login page returns 200 with HTML —
+                // never stream that into the chat.
+                guard http?.statusCode == 200,
+                      http?.value(forHTTPHeaderField: "Content-Type")?.contains("text/html") != true else {
                     throw URLError(.badServerResponse)
                 }
                 messages.append(ChatMessage(role: "assistant", content: ""))

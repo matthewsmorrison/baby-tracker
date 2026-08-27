@@ -30,6 +30,15 @@ export async function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.delete("x-user-id");
 
+  // The iOS app authenticates API calls with a Bearer token, which each
+  // route verifies itself (getRouteAuth). Redirecting an API request to the
+  // login page hands HTML to a JSON/stream client — never do that: pass
+  // Bearer requests through, and 401 any other unauthenticated API call.
+  const isApi = pathname.startsWith("/api/");
+  if (isApi && request.headers.get("authorization")?.startsWith("Bearer ")) {
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
+
   const hasAuthCookie = request.cookies
     .getAll()
     .some((c) => c.name.startsWith("sb-"));
@@ -41,6 +50,9 @@ export async function proxy(request: NextRequest) {
   }
   // No session cookie on a private path: straight to login, zero round trips.
   if (!isPublic && !hasAuthCookie) {
+    if (isApi) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
@@ -80,6 +92,9 @@ export async function proxy(request: NextRequest) {
   const userId = data?.claims?.sub ?? null;
 
   if (!userId && !isPublic) {
+    if (isApi) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);

@@ -144,7 +144,7 @@ final class Store: ObservableObject {
         let nappies = entries.filter {
             $0.type == .nappy && now.timeIntervalSince($0.occurredAt) <= 86_400 && $0.occurredAt <= now
         }
-        TodaySnapshot(
+        var snapshot = TodaySnapshot(
             babyName: baby.name,
             dayOfLife: day,
             lastFeedAt: entries.first { $0.type == .feed }?.occurredAt,
@@ -154,9 +154,17 @@ final class Store: ObservableObject {
             updatedAt: now,
             trackedFeed: trackedTypes.contains(.feed),
             trackedNappy: trackedTypes.contains(.nappy)
-        ).save()
+        )
         writeQuickCreds()
-        WidgetCenter.shared.reloadAllTimelines()
+        // iOS rations widget reloads — reloading on every refresh burns the
+        // budget and the system starts deferring the reloads that matter,
+        // which showed up as stale nappy counts. Only reload on real change.
+        var previous = TodaySnapshot.load()
+        previous?.updatedAt = snapshot.updatedAt
+        snapshot.save()
+        if previous != snapshot {
+            WidgetCenter.shared.reloadAllTimelines()
+        }
     }
 
     /// Mirror the session + baby context into the app group so widget

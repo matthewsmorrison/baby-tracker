@@ -330,12 +330,17 @@ final class NotesStore: ObservableObject {
     func load() async {
         guard let store, let baby = store.baby else { return }
         loading = items.isEmpty
-        items = (try? await store.supabase
+        // Keep what we have if the fetch fails — pull-to-refresh cancels the
+        // request when the spinner collapses, and an empty fallback here
+        // would blank the whole screen.
+        if let fetched: [BabyNote] = try? await store.supabase
             .from("baby_notes")
             .select()
             .eq("baby_id", value: baby.id)
             .order("created_at", ascending: false)
-            .execute().value) ?? []
+            .execute().value {
+            items = fetched
+        }
         loading = false
     }
 
@@ -380,17 +385,33 @@ final class NotesStore: ObservableObject {
 
     func setAnswer(_ note: BabyNote, answer: String?) async {
         guard let store else { return }
+        // Swift's synthesized Encodable OMITS nil keys, so reopening a note
+        // (answer → nil) used to send an empty patch that changed nothing.
+        // Encode explicit JSON nulls instead.
         struct A: Encodable {
             let answer: String?
-            let answered_at: String?
-            let answered_by: UUID?
+            let answeredAt: String?
+            let answeredBy: UUID?
+
+            enum CodingKeys: String, CodingKey {
+                case answer
+                case answeredAt = "answered_at"
+                case answeredBy = "answered_by"
+            }
+
+            func encode(to encoder: Encoder) throws {
+                var c = encoder.container(keyedBy: CodingKeys.self)
+                if let answer { try c.encode(answer, forKey: .answer) } else { try c.encodeNil(forKey: .answer) }
+                if let answeredAt { try c.encode(answeredAt, forKey: .answeredAt) } else { try c.encodeNil(forKey: .answeredAt) }
+                if let answeredBy { try c.encode(answeredBy, forKey: .answeredBy) } else { try c.encodeNil(forKey: .answeredBy) }
+            }
         }
         let trimmed = answer?.trimmingCharacters(in: .whitespacesAndNewlines)
         _ = try? await store.supabase.from("baby_notes")
             .update(A(
                 answer: trimmed?.isEmpty == false ? trimmed : nil,
-                answered_at: trimmed?.isEmpty == false ? Date().ISO8601Format() : nil,
-                answered_by: trimmed?.isEmpty == false ? store.userId : nil
+                answeredAt: trimmed?.isEmpty == false ? Date().ISO8601Format() : nil,
+                answeredBy: trimmed?.isEmpty == false ? store.userId : nil
             ))
             .eq("id", value: note.id)
             .execute()

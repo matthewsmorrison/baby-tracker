@@ -13,7 +13,7 @@ enum AppGroup {
 
 /// What the lock-screen/home widgets show — written by the app whenever its
 /// data changes, read by the widget timeline.
-struct TodaySnapshot: Codable {
+struct TodaySnapshot: Codable, Equatable {
     var babyName: String
     var dayOfLife: Int
     var lastFeedAt: Date?

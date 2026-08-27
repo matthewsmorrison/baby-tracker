@@ -5,6 +5,11 @@ import Supabase
 struct SettingsView: View {
     @EnvironmentObject private var store: Store
     @AppStorage("appearance") private var appearance = "system"
+    // Sheets live up here, not on the Section: modifiers inside a lazy List
+    // are torn down when the list re-renders, which dismissed the sheet the
+    // moment it opened.
+    @State private var editingCourse: Entry?
+    @State private var showNewCourse = false
 
     var body: some View {
         List {
@@ -29,7 +34,7 @@ struct SettingsView: View {
                 if store.isOwner {
                     InvitesSection()
                 }
-                MedCoursesSection()
+                MedCoursesSection(editingCourse: $editingCourse, showNewCourse: $showNewCourse)
             }
 
             Section {
@@ -57,6 +62,12 @@ struct SettingsView: View {
         .background(Color.sand)
         .navigationTitle("Settings")
         .task { await store.loadCarers() }
+        .sheet(item: $editingCourse) { course in
+            LogSheet(initialType: .medication, editing: course)
+        }
+        .sheet(isPresented: $showNewCourse) {
+            LogSheet(initialType: .medication, startAsCourse: true)
+        }
     }
 }
 
@@ -64,8 +75,8 @@ struct SettingsView: View {
 
 private struct MedCoursesSection: View {
     @EnvironmentObject private var store: Store
-    @State private var editingCourse: Entry?
-    @State private var showNewCourse = false
+    @Binding var editingCourse: Entry?
+    @Binding var showNewCourse: Bool
 
     var body: some View {
         Section {
@@ -134,12 +145,6 @@ private struct MedCoursesSection: View {
             Text("Ongoing medicines (baby's or mother's). Some medication passes into breastmilk and can shift stool colour.")
         }
         .listRowBackground(Color.surface)
-        .sheet(item: $editingCourse) { course in
-            LogSheet(initialType: .medication, editing: course)
-        }
-        .sheet(isPresented: $showNewCourse) {
-            LogSheet(initialType: .medication, startAsCourse: true)
-        }
     }
 }
 
