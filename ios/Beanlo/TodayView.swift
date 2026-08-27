@@ -60,6 +60,10 @@ struct TodayView: View {
         .toolbarVisibility(.hidden, for: .navigationBar)
         .refreshable { await store.refresh() }
         .onReceive(tick) { now = $0 }
+        // A just-saved entry can carry occurredAt AFTER the last tick's `now`,
+        // and every card filters on occurredAt <= now — bump the clock the
+        // moment the data changes so new entries show immediately.
+        .onChange(of: store.entries) { now = Date() }
         .overlay {
             if store.loading && store.entries.isEmpty {
                 ProgressView().controlSize(.large)

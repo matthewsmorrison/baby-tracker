@@ -68,6 +68,29 @@ final class CoreFlowsUITests: XCTestCase {
         undo.tap()
     }
 
+    /// Regression: Today filtered entries with occurredAt <= a `now` that
+    /// only ticked every 30s — a freshly logged dose stayed invisible.
+    func testFreshlyLoggedDoseAppearsOnTodayImmediately() throws {
+        XCTAssertTrue(app.staticTexts["Juno"].waitForExistence(timeout: 20))
+
+        app.buttons["Log an entry"].press(forDuration: 1.2)
+        let logMeds = app.buttons["Log meds…"]
+        XCTAssertTrue(logMeds.waitForExistence(timeout: 5))
+        logMeds.tap()
+
+        let nameField = app.textFields["Medicine (e.g. Calpol)"]
+        XCTAssertTrue(nameField.waitForExistence(timeout: 10))
+        nameField.tap()
+        nameField.typeText("Calpol")
+        app.buttons["Save"].tap()
+
+        // The dose must appear on Today at once, not after the next tick.
+        XCTAssertTrue(
+            app.staticTexts["Calpol"].firstMatch.waitForExistence(timeout: 6),
+            "A just-logged dose should appear in Today's medicine card immediately"
+        )
+    }
+
     func testSettingsOpensFromGearAndDismisses() throws {
         XCTAssertTrue(app.staticTexts["Juno"].waitForExistence(timeout: 20))
 
