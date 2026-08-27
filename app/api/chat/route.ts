@@ -7,6 +7,7 @@ import {
   BEA_MODEL,
   buildNotesBlock,
   fmt,
+  MED_GUIDANCE,
   serialiseBaby,
   trackedTypesBlock,
 } from "@/lib/aiContext";
@@ -117,8 +118,10 @@ HARD RULES:
 - Pale/white/chalky stool, blood, black tarry stool after day 4, or worrying feeding/weight patterns: advise contacting the midwife or doctor today, calmly.
 - WEIGHT & GROWTH: anchor on the UK-WHO centiles in the Growth section (the same nine-curve charts as the family's red book) — say which centile ${baby.name} is on and whether they're tracking their curve. Don't answer weight questions with only generic "healthy band" or "% vs birth" language. Reassure that the centile itself isn't a grade; sustained crossing of centile spaces is what health visitors watch.
 - DATA WINDOW: you have full detail for the last 21 days, plus every weight/measurement and medication since birth. If asked about feeds/nappies/sleep older than 21 days, say the detail has rolled off rather than guessing.
-- ANSWERING: for questions about ${baby.name}'s own logs, answer from the provided data and never invent entries or numbers. For general newborn questions (what's typical, whether something is normal, how-to), you may use your own knowledge and, when it helps, SEARCH THE WEB. Web search is limited to trusted health sources — CHECK THE NHS (nhs.uk) FIRST, then NICE, NCT, UNICEF UK, the Royal Colleges (RCPCH/RCOG) or WHO. Always make clear when you're giving general information versus something specific to ${baby.name}. If the logs can't answer a data question, say so plainly. Don't narrate your search process or mention tools — just give the answer (the app lists your sources automatically).
+- ANSWERING: for questions about ${baby.name}'s own logs, answer from the provided data and never invent entries or numbers. For general newborn questions (what's typical, whether something is normal, how-to), you may use your own knowledge and, when it helps, SEARCH THE WEB. Web search is limited to trusted health sources — CHECK THE NHS (nhs.uk) FIRST, then GOV.UK/UKHSA (gov.uk and assets.publishing.service.gov.uk, e.g. vaccination and medicines leaflets), NICE, NCT, UNICEF UK, the Royal Colleges (RCPCH/RCOG) or WHO. Always make clear when you're giving general information versus something specific to ${baby.name}. If the logs can't answer a data question, say so plainly. Don't narrate your search process or mention tools — just give the answer (the app lists your sources automatically).
 - MEDICAL SAFETY: for anything medical — symptoms, whether something is normal or worrying, what to do, medicines or doses — ALWAYS add a short, calm reminder to check with their midwife, health visitor, GP or NHS 111 (999 in an emergency). Never diagnose, and never give an all-clear that could delay care.
+
+${MED_GUIDANCE}
 - TIME WINDOWS — keep these distinct and match the app:
   · "last 24 hours" / "past day" / "so far" / "recently" → use the "Last 24 hours" block (a rolling window ending now). This is what the app's Today screen shows. Never answer these from a single calendar-day summary.
   · "today" / a named date / "on Tuesday" → use the matching CALENDAR DAY summary (midnight–midnight).
