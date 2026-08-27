@@ -44,9 +44,12 @@ struct ChatView: View {
                 .presentationBackground(Color.sand)
         }
         .task {
+            // The floating + and timer pill would sit on the message input.
+            store.chatThreadOpen = true
             chat.configure(store: store)
             await chat.loadConversations()
         }
+        .onDisappear { store.chatThreadOpen = false }
     }
 
     private var paywall: some View {

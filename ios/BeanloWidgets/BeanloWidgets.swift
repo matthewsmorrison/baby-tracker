@@ -94,12 +94,15 @@ struct FeedTimerLiveActivity: Widget {
 // MARK: - Today widget (home + lock screen)
 
 struct TodayEntry: TimelineEntry {
-    let date: Date
-    let snapshot: TodaySnapshot?
+    var date: Date
+    var snapshot: TodaySnapshot?
     // One-tap logging only appears when the app has mirrored a session and
     // nappy tracking is on in Settings.
     var canQuickLog = false
     var feedTimer = FeedTimerState()
+    // "✓ Wet nappy logged" for ~45s after a widget tap (no haptics in
+    // widget processes — this is the feedback).
+    var confirmText: String?
 }
 
 struct TodayProvider: TimelineProvider {
@@ -120,13 +123,23 @@ struct TodayProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<TodayEntry>) -> Void) {
-        let entry = TodayEntry(
+        let confirm = QuickConfirm.load()
+        var entry = TodayEntry(
             date: .now,
             snapshot: TodaySnapshot.load(),
             canQuickLog: QuickCreds.load()?.trackedNappy ?? false,
             feedTimer: FeedTimerState.loadShared()
         )
-        completion(Timeline(entries: [entry], policy: .after(.now.addingTimeInterval(15 * 60))))
+        entry.confirmText = confirm?.text
+        var entries = [entry]
+        if let confirm {
+            // A second entry clears the confirmation once its time is up.
+            var cleared = entry
+            cleared.confirmText = nil
+            cleared.date = confirm.at.addingTimeInterval(QuickConfirm.showFor)
+            entries.append(cleared)
+        }
+        completion(Timeline(entries: entries, policy: .after(.now.addingTimeInterval(15 * 60))))
     }
 }
 
@@ -268,13 +281,16 @@ struct TodayWidgetView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             if entry.canQuickLog || (entry.snapshot?.showsFeeds ?? false) {
                 VStack(spacing: 7) {
+                    if let confirm = entry.confirmText {
+                        confirmRow(confirm)
+                    }
                     if entry.snapshot?.showsFeeds ?? false {
                         HStack(spacing: 6) {
                             feedButton(.left, compact: false)
                             feedButton(.right, compact: false)
                         }
                     }
-                    if entry.canQuickLog {
+                    if entry.canQuickLog, entry.confirmText == nil {
                         quickButton(kind: .wet, label: "Wet", tint: Color.chartBlue)
                         quickButton(kind: .mixed, label: "Mixed", tint: Color.chartBrown)
                     }
@@ -282,6 +298,22 @@ struct TodayWidgetView: View {
                 .frame(width: 96)
             }
         }
+    }
+
+    /// Unmistakable post-tap feedback where the buttons were.
+    private func confirmRow(_ text: String) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: "checkmark.circle.fill").font(.system(size: 10))
+            Text(text)
+                .lineLimit(2)
+                .minimumScaleFactor(0.7)
+        }
+        .font(.system(.caption2, design: .rounded, weight: .bold))
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 6)
+        .padding(.horizontal, 4)
+        .background(Color.positive.opacity(0.18), in: .rect(cornerRadius: 10))
+        .foregroundStyle(Color.positive)
     }
 
     private var small: some View {
@@ -329,14 +361,18 @@ struct TodayWidgetView: View {
                         }
                     }
                 }
-                HStack(spacing: 5) {
-                    if snap.showsFeeds {
-                        feedButton(.left, compact: true)
-                        feedButton(.right, compact: true)
-                    }
-                    if entry.canQuickLog {
-                        quickButton(kind: .wet, label: "Wet", tint: Color.chartBlue)
-                        quickButton(kind: .mixed, label: "Mix", tint: Color.chartBrown)
+                if let confirm = entry.confirmText {
+                    confirmRow(confirm)
+                } else {
+                    HStack(spacing: 5) {
+                        if snap.showsFeeds {
+                            feedButton(.left, compact: true)
+                            feedButton(.right, compact: true)
+                        }
+                        if entry.canQuickLog {
+                            quickButton(kind: .wet, label: "Wet", tint: Color.chartBlue)
+                            quickButton(kind: .mixed, label: "Mix", tint: Color.chartBrown)
+                        }
                     }
                 }
             } else {

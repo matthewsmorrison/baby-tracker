@@ -641,6 +641,27 @@ final class Store: ObservableObject {
         }
     }
 
+    /// Set or CLEAR a sleep's end time. Clearing needs an explicit JSON null
+    /// — synthesized Encodable omits nil keys, which would silently no-op.
+    func setSleepEnd(_ entry: Entry, to end: Date?) async {
+        struct P: Encodable {
+            let endedAt: Date?
+            enum CodingKeys: String, CodingKey { case endedAt = "ended_at" }
+            func encode(to encoder: Encoder) throws {
+                var c = encoder.container(keyedBy: CodingKeys.self)
+                if let endedAt { try c.encode(endedAt, forKey: .endedAt) } else { try c.encodeNil(forKey: .endedAt) }
+            }
+        }
+        _ = try? await supabase.from("entries")
+            .update(P(endedAt: end))
+            .eq("id", value: entry.id)
+            .execute()
+        if let i = entries.firstIndex(where: { $0.id == entry.id }) {
+            entries[i].endedAt = end
+        }
+        writeWidgetSnapshot()
+    }
+
     func update(_ entry: Entry) async throws {
         let updated: Entry = try await supabase
             .from("entries")

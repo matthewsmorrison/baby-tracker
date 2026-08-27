@@ -73,6 +73,28 @@ enum QuickLogResult {
     case notSetUp
 }
 
+/// Transient "✓ logged" confirmation the widget shows after a tap — widgets
+/// can't fire haptics, so this is the feedback.
+struct QuickConfirm: Codable {
+    var text: String
+    var at: Date
+
+    static let key = "quick-confirm"
+    static let showFor: TimeInterval = 45
+
+    static func load() -> QuickConfirm? {
+        guard let data = UserDefaults(suiteName: AppGroup.id)?.data(forKey: key),
+              let c = try? JSONDecoder().decode(QuickConfirm.self, from: data),
+              Date().timeIntervalSince(c.at) < showFor else { return nil }
+        return c
+    }
+
+    func save() {
+        guard let data = try? JSONEncoder().encode(self) else { return }
+        UserDefaults(suiteName: AppGroup.id)?.set(data, forKey: Self.key)
+    }
+}
+
 enum QuickLogger {
     private static let restURL = URL(string: "https://qwxadzogxtrkpjufmogb.supabase.co/rest/v1/entries")!
     private static let anonKey = "sb_publishable_9u5eC19VgR-l1ZllHTI3lA_5ItUrZtJ"
@@ -116,6 +138,12 @@ enum QuickLogger {
             snap.nappyCount += 1
             snap.save()
         }
+        QuickConfirm(
+            text: outcome == .queued
+                ? "\(dirty ? "Mixed" : "Wet") saved — syncs on open"
+                : "\(dirty ? "Mixed" : "Wet") nappy logged",
+            at: now
+        ).save()
         WidgetCenter.shared.reloadAllTimelines()
         return outcome
     }
