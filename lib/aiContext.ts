@@ -4,9 +4,11 @@ import {
   estimatedUrineMl,
   expectedNappies,
   expectedWeightBand,
+  STOOL_COLOURS,
   summariseFeeds,
   weightStatus,
 } from "./clinical";
+import type { StoolColourKey } from "./types";
 import { feedAmounts, feedGaps, formatGap } from "./entryDisplay";
 import { whoCentile } from "./whoWeight";
 import { whoMeasureCentile } from "./whoGrowth";
@@ -38,6 +40,197 @@ const SETTLE_LABEL: Record<string, string> = {
   dummy: "dummy",
   other: "other",
 };
+
+/**
+ * The 7-day picture: per-category statistics pre-computed so Bea never has
+ * to aggregate raw rows herself (models miscount; midwives don't). Only
+ * categories with data appear, keeping the prompt lean.
+ */
+export function weeklyBlock(baby: Baby, entries: Entry[], tz: string): string {
+  const nowMs = Date.now();
+  const weekStart = nowMs - 7 * 86_400_000;
+  const week = entries.filter((e) => {
+    const at = new Date(e.occurred_at).getTime();
+    return at > weekStart && at <= nowMs;
+  });
+  if (week.length === 0) return "";
+  const daysCovered = Math.max(
+    1,
+    Math.min(7, Math.ceil((nowMs - new Date(entries[0].occurred_at).getTime()) / 86_400_000))
+  );
+  const perDay = (n: number) => (n / daysCovered).toFixed(1);
+  const hourIn = (iso: string) =>
+    Number(new Date(iso).toLocaleString("en-GB", { timeZone: tz, hour: "numeric", hour12: false }));
+  const isNight = (iso: string) => {
+    const h = hourIn(iso);
+    return h >= 22 || h < 7;
+  };
+  const sections: string[] = [];
+
+  // --- Feeding ---
+  const feeds = week.filter((e) => e.type === "feed");
+  if (feeds.length) {
+    const f = summariseFeeds(week);
+    const gaps = feedGaps(week.filter((e) => e.type === "feed"));
+    const dayGaps = gaps.filter((g) => !isNight(g.at.toISOString())).map((g) => g.gapMs);
+    const nightGaps = gaps.filter((g) => isNight(g.at.toISOString())).map((g) => g.gapMs);
+    const avg = (a: number[]) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+    const longestNight = nightGaps.length ? Math.max(...nightGaps) : 0;
+    const leftMin = feeds.reduce((s, e) => s + (e.left_min ?? 0), 0);
+    const rightMin = feeds.reduce((s, e) => s + (e.right_min ?? 0), 0);
+    const sideBits =
+      leftMin + rightMin > 0
+        ? `; side balance L ${Math.round((leftMin / (leftMin + rightMin)) * 100)}% / R ${Math.round((rightMin / (leftMin + rightMin)) * 100)}%`
+        : "";
+    sections.push(
+      `Feeding: ${perDay(f.sessions)} feeds/day (mix=${f.mix}); ${perDay(f.breastMin)}min nursing, ${perDay(f.expressedMl)}ml EBM, ${perDay(f.formulaMl)}ml formula per day${dayGaps.length ? `; typical gap ${formatGap(avg(dayGaps))} by day${nightGaps.length ? `, ${formatGap(avg(nightGaps))} at night` : ""}` : ""}${longestNight ? `; longest night stretch ${formatGap(longestNight)}` : ""}${sideBits}`
+    );
+  }
+
+  // --- Nappies ---
+  const nappies = week.filter((e) => e.type === "nappy");
+  if (nappies.length) {
+    const wet = nappies.filter((e) => e.wet).length;
+    const dirty = nappies.filter((e) => e.dirty).length;
+    const day = dayOfLife(baby.birth_at, new Date());
+    const exp = expectedNappies(day);
+    const colours = new Map<string, number>();
+    for (const e of nappies) {
+      if (e.dirty && e.stool_colour) {
+        colours.set(e.stool_colour, (colours.get(e.stool_colour) ?? 0) + 1);
+      }
+    }
+    const colourBits = [...colours.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([k, n]) => `${STOOL_COLOURS[k as StoolColourKey]?.label ?? k} ×${n}`)
+      .join(", ");
+    const lastDirty = [...entries].reverse().find((e) => e.type === "nappy" && e.dirty);
+    const hoursSinceDirty = lastDirty
+      ? Math.round((nowMs - new Date(lastDirty.occurred_at).getTime()) / 3_600_000)
+      : null;
+    const urine = nappies
+      .map((e) => estimatedUrineMl(e, baby.nappy_base_weight_g))
+      .filter((v): v is number => v !== null);
+    sections.push(
+      `Nappies: ${perDay(wet)} wet + ${perDay(dirty)} dirty per day (guide for day ${day}: ~${exp.total} total, ≥${exp.minDirty} dirty)${hoursSinceDirty !== null ? `; last dirty nappy ${hoursSinceDirty}h ago` : ""}${colourBits ? `; stool colours this week: ${colourBits}` : ""}${urine.length ? `; est. urine ${Math.round(urine.reduce((a, b) => a + b, 0) / daysCovered)}ml/day from weighed nappies` : ""}`
+    );
+  }
+
+  // --- Baby sleep ---
+  const sleeps = week.filter((e) => e.type === "sleep" && e.ended_at);
+  if (sleeps.length) {
+    const durs = sleeps.map(
+      (e) => new Date(e.ended_at!).getTime() - new Date(e.occurred_at).getTime()
+    );
+    const total = durs.reduce((a, b) => a + b, 0);
+    const nightMs = sleeps
+      .filter((e) => isNight(e.occurred_at))
+      .reduce((s, e) => s + new Date(e.ended_at!).getTime() - new Date(e.occurred_at).getTime(), 0);
+    const settle = new Map<string, number>();
+    for (const e of sleeps) {
+      if (e.settle_method) settle.set(e.settle_method, (settle.get(e.settle_method) ?? 0) + 1);
+    }
+    const settleBits = [...settle.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 2)
+      .map(([k, n]) => `${k} ×${n}`)
+      .join(", ");
+    sections.push(
+      `Baby sleep: ${(total / daysCovered / 3_600_000).toFixed(1)}h/day over ${perDay(sleeps.length)} sessions; longest stretch ${formatGap(Math.max(...durs))}; ${Math.round((nightMs / Math.max(1, total)) * 100)}% starts at night (22:00–07:00)${settleBits ? `; settled by: ${settleBits}` : ""}`
+    );
+  }
+
+  // --- Growth rate (centiles live in the Growth section) ---
+  const weighIns = entries
+    .filter((e) => e.type === "weight" && e.weight_g)
+    .sort((a, b) => new Date(a.occurred_at).getTime() - new Date(b.occurred_at).getTime());
+  if (weighIns.length >= 2) {
+    const a = weighIns[weighIns.length - 2];
+    const b = weighIns[weighIns.length - 1];
+    const days = (new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime()) / 86_400_000;
+    if (days >= 2) {
+      const rate = Math.round(((b.weight_g! - a.weight_g!) / days) * 7);
+      sections.push(
+        `Growth rate: ${rate >= 0 ? "+" : ""}${rate}g/week between the last two weigh-ins (typical after regain: ~175g/week; day-to-day wobble is normal).`
+      );
+    }
+  }
+
+  // --- Pumping ---
+  const pumps = week.filter((e) => e.type === "pump" && (e.expressed_ml ?? 0) > 0);
+  if (pumps.length) {
+    const total = pumps.reduce((s, e) => s + (e.expressed_ml ?? 0), 0);
+    const byHour = new Map<number, { ml: number; n: number }>();
+    for (const e of pumps) {
+      const h = hourIn(e.occurred_at);
+      const cur = byHour.get(h) ?? { ml: 0, n: 0 };
+      byHour.set(h, { ml: cur.ml + (e.expressed_ml ?? 0), n: cur.n + 1 });
+    }
+    const best = [...byHour.entries()].sort((a, b) => b[1].ml / b[1].n - a[1].ml / a[1].n)[0];
+    sections.push(
+      `Pumping: ${perDay(pumps.length)} sessions/day, ${Math.round(total / pumps.length)}ml/session avg, ${Math.round(total / daysCovered)}ml/day; best output around ${String(best[0]).padStart(2, "0")}:00`
+    );
+  }
+
+  // --- Carer sleep ---
+  const carer = week.filter((e) => e.type === "carer_sleep" && e.ended_at);
+  if (carer.length) {
+    const total = carer.reduce(
+      (s, e) => s + new Date(e.ended_at!).getTime() - new Date(e.occurred_at).getTime(),
+      0
+    );
+    sections.push(
+      `Carer sleep: ${(total / daysCovered / 3_600_000).toFixed(1)}h/day logged — if this is low, gently acknowledge how hard that is.`
+    );
+  }
+
+  // --- Temperature ---
+  const temps = week.filter((e) => e.type === "temperature" && e.temp_c !== null);
+  if (temps.length) {
+    const latest = temps[temps.length - 1];
+    const high = temps.filter((e) => e.temp_c! >= 38);
+    sections.push(
+      `Temperature: latest ${latest.temp_c}°C (${fmt(latest.occurred_at, tz, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })})${high.length ? `; ${high.length} reading(s) ≥38°C this week — 38°C+ in a young baby needs same-day medical advice` : ""}`
+    );
+  }
+
+  // --- Watch items: pre-computed, so nothing worrying hides in raw rows ---
+  const watch: string[] = [];
+  const day = dayOfLife(baby.birth_at, new Date());
+  const warnColours = nappies.filter(
+    (e) => e.stool_colour && STOOL_COLOURS[e.stool_colour as StoolColourKey]?.warn
+  );
+  if (warnColours.length) {
+    watch.push(
+      `stool colour flagged this week (${warnColours.map((e) => e.stool_colour).join(", ")}) — pale/chalky or blood needs a doctor promptly`
+    );
+  }
+  const lastWeight = weighIns[weighIns.length - 1];
+  if (lastWeight && weightStatus(lastWeight.weight_g!, baby.birth_weight_g).pct < -10) {
+    watch.push(
+      `latest weight is ${weightStatus(lastWeight.weight_g!, baby.birth_weight_g).pct.toFixed(1)}% vs birth — more than 10% below birth weight warrants midwife review`
+    );
+  }
+  const lastDirtyE = [...entries].reverse().find((e) => e.type === "nappy" && e.dirty);
+  if (
+    day >= 4 &&
+    nappies.length > 0 &&
+    lastDirtyE &&
+    nowMs - new Date(lastDirtyE.occurred_at).getTime() > 48 * 3_600_000
+  ) {
+    watch.push(
+      `no dirty nappy logged in ${Math.round((nowMs - new Date(lastDirtyE.occurred_at).getTime()) / 3_600_000)}h — in the early weeks that's worth mentioning to the midwife (longer gaps become normal in older breastfed babies)`
+    );
+  }
+  if (watch.length) {
+    sections.push(
+      `WATCH ITEMS (raise these gently and factually if relevant to the question — never as a diagnosis): ${watch.join("; ")}`
+    );
+  }
+
+  if (!sections.length) return "";
+  return `\n\n## The last 7 days at a glance (pre-computed statistics — TRUST THESE over recounting raw entries)\n- ${sections.join("\n- ")}`;
+}
 
 /** "63rd" etc. — matches the app's centile phrasing. */
 function ordinal(pct: number): string {
@@ -331,7 +524,7 @@ export function serialiseBaby(baby: Baby, entries: Entry[], tz: string): string 
 - Nappies: ${nappies24.length} total — ${wet24} wet, ${dirty24} dirty${urine24 > 0 ? `; est. urine ${urine24}ml` : ""}. NCT guide for day ${day24}: about ${exp.total} nappies in 24h, at least ${exp.minDirty} with poo.
 - Sleep: ${Math.round((sleepMs24 / 3_600_000) * 10) / 10}h`;
 
-  return `${rolling}${growthBlock(baby, asc, tz)}
+  return `${rolling}${weeklyBlock(baby, asc, tz)}${growthBlock(baby, asc, tz)}
 
 ## Daily summaries (pre-computed, per CALENDAR DAY — midnight to midnight in the family's timezone. Use these for a specific date or day of life, and for day-to-day comparisons. Do NOT use one of these as "the last 24 hours".)
 ${dayLines.join("\n")}
