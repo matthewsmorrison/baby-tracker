@@ -7,10 +7,10 @@ import {
   BEA_MODEL,
   buildNotesBlock,
   fmt,
-  MED_GUIDANCE,
   serialiseBaby,
   trackedTypesBlock,
 } from "@/lib/aiContext";
+import { GUIDANCE_TOOL, guidanceSources, lookupGuidance } from "@/lib/guidance";
 import { ACTIVE_BABY_COOKIE } from "@/lib/data";
 import { RATE_LIMITED, rateLimit } from "@/lib/rateLimit";
 import type { Baby, Entry } from "@/lib/types";
@@ -26,12 +26,14 @@ const MAX_MSG_CHARS = 4000;
 // UK/international authorities. Bea won't pull from the open web.
 const TRUSTED_DOMAINS = [
   "nhs.uk",
+  "gov.uk", // UKHSA guidance + leaflets (incl. assets.publishing.service.gov.uk)
   "nice.org.uk",
   "nct.org.uk",
   "unicef.org.uk",
   "rcpch.ac.uk",
   "rcog.org.uk",
   "who.int",
+  "lullabytrust.org.uk",
 ];
 
 
@@ -120,8 +122,7 @@ HARD RULES:
 - DATA WINDOW: you have full detail for the last 21 days, plus every weight/measurement and medication since birth. If asked about feeds/nappies/sleep older than 21 days, say the detail has rolled off rather than guessing.
 - ANSWERING: for questions about ${baby.name}'s own logs, answer from the provided data and never invent entries or numbers. For general newborn questions (what's typical, whether something is normal, how-to), you may use your own knowledge and, when it helps, SEARCH THE WEB. Web search is limited to trusted health sources — CHECK THE NHS (nhs.uk) FIRST, then GOV.UK/UKHSA (gov.uk and assets.publishing.service.gov.uk, e.g. vaccination and medicines leaflets), NICE, NCT, UNICEF UK, the Royal Colleges (RCPCH/RCOG) or WHO. Always make clear when you're giving general information versus something specific to ${baby.name}. If the logs can't answer a data question, say so plainly. Don't narrate your search process or mention tools — just give the answer (the app lists your sources automatically).
 - MEDICAL SAFETY: for anything medical — symptoms, whether something is normal or worrying, what to do, medicines or doses — ALWAYS add a short, calm reminder to check with their midwife, health visitor, GP or NHS 111 (999 in an emergency). Never diagnose, and never give an all-clear that could delay care.
-
-${MED_GUIDANCE}
+- OFFICIAL GUIDANCE: before answering anything about medicines/doses, vaccinations, safe sleep, formula preparation, or illness, CALL the lookup_uk_guidance tool first. Verified leaflet text it returns is authoritative over your own recall (some official protocols deliberately differ from medicine-pack instructions — e.g. paracetamol after MenB jabs). For pointers it returns without full text, follow up with web_search before answering. Cite what you used.
 - TIME WINDOWS — keep these distinct and match the app:
   · "last 24 hours" / "past day" / "so far" / "recently" → use the "Last 24 hours" block (a rolling window ending now). This is what the app's Today screen shows. Never answer these from a single calendar-day summary.
   · "today" / a named date / "on Tuesday" → use the matching CALENDAR DAY summary (midnight–midnight).
@@ -136,33 +137,32 @@ ${MED_GUIDANCE}
 - ${DISCLAIMER}`;
 
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const stream = anthropic.messages.stream({
-    model: BEA_MODEL,
-    max_tokens: 2000,
-    system: [
-      { type: "text", text: framing },
-      {
-        type: "text",
-        text: serialiseBaby(baby, (entries ?? []) as Entry[], tz) + notesBlock,
-        cache_control: { type: "ephemeral" },
-      },
-    ],
-    // Server-side web search, restricted to trusted health sources, so Bea
-    // can answer general questions from current authoritative guidance.
-    tools: [
-      {
-        type: "web_search_20260209",
-        name: "web_search",
-        max_uses: 5,
-        allowed_domains: TRUSTED_DOMAINS,
-      },
-    ],
-    messages: history,
-  });
+  const system = [
+    { type: "text" as const, text: framing },
+    {
+      type: "text" as const,
+      text: serialiseBaby(baby, (entries ?? []) as Entry[], tz) + notesBlock,
+      cache_control: { type: "ephemeral" as const },
+    },
+  ];
+  const tools = [
+    // Server-side web search, restricted to trusted health sources.
+    {
+      type: "web_search_20260209" as const,
+      name: "web_search" as const,
+      max_uses: 5,
+      allowed_domains: TRUSTED_DOMAINS,
+    },
+    // Curated official-guidance retrieval — executed below in the loop.
+    GUIDANCE_TOOL,
+  ];
 
   const encoder = new TextEncoder();
+  let currentStream: ReturnType<typeof anthropic.messages.stream> | null = null;
+  let aborted = false;
+
   const readable = new ReadableStream<Uint8Array>({
-    start(controller) {
+    async start(controller) {
       let closed = false;
       const close = () => {
         if (!closed) {
@@ -170,31 +170,37 @@ ${MED_GUIDANCE}
           controller.close();
         }
       };
-      stream.on("text", (t) => controller.enqueue(encoder.encode(t)));
-      stream.on("error", (e) => {
-        console.error("chat stream error:", e instanceof Error ? e.message : e);
-        controller.enqueue(
-          encoder.encode("\n\nSorry — something went wrong answering that. Please try again.")
-        );
-        close();
-      });
-      stream.on("end", async () => {
-        // Append a Sources list from any web-search citations, deduped by URL.
+      const seen = new Set<string>();
+      const sources: Array<{ url: string; title: string }> = [];
+      const addSource = (url?: string, title?: string) => {
+        if (!url || seen.has(url)) return;
+        seen.add(url);
+        let host = url;
         try {
+          host = new URL(url).hostname;
+        } catch {
+          /* keep raw */
+        }
+        sources.push({ url, title: title || host });
+      };
+
+      try {
+        // Tool loop: web_search runs server-side at Anthropic, but
+        // lookup_uk_guidance is ours — execute it and continue the turn,
+        // streaming each round's text as it arrives.
+        let msgs: Anthropic.MessageParam[] = [...history];
+        for (let round = 0; round < 4; round++) {
+          const stream = anthropic.messages.stream({
+            model: BEA_MODEL,
+            max_tokens: 2000,
+            system,
+            tools,
+            messages: msgs,
+          });
+          currentStream = stream;
+          stream.on("text", (t) => controller.enqueue(encoder.encode(t)));
           const final = await stream.finalMessage();
-          const seen = new Set<string>();
-          const sources: Array<{ url: string; title: string }> = [];
-          const add = (url?: string, title?: string) => {
-            if (!url || seen.has(url)) return;
-            seen.add(url);
-            let host = url;
-            try {
-              host = new URL(url).hostname;
-            } catch {
-              /* keep raw */
-            }
-            sources.push({ url, title: title || host });
-          };
+
           for (const block of final.content) {
             // Sources the search actually returned (trusted-domain results).
             if (block.type === "web_search_tool_result") {
@@ -205,13 +211,13 @@ ${MED_GUIDANCE}
                   url?: string;
                   title?: string;
                 }>) {
-                  if (r?.type === "web_search_result") add(r.url, r.title);
+                  if (r?.type === "web_search_result") addSource(r.url, r.title);
                 }
               }
             } else if (block.type === "text" && block.citations) {
               for (const c of block.citations) {
                 if ("url" in c) {
-                  add(
+                  addSource(
                     c.url as string,
                     "title" in c ? (c.title as string) : undefined
                   );
@@ -219,21 +225,52 @@ ${MED_GUIDANCE}
               }
             }
           }
-          const top = sources.slice(0, 5);
-          if (top.length) {
-            const md =
-              "\n\n**Sources**\n" +
-              top.map((s) => `- [${s.title}](${s.url})`).join("\n");
-            controller.enqueue(encoder.encode(md));
-          }
-        } catch {
-          /* citations are best-effort */
+
+          if (final.stop_reason !== "tool_use" || aborted) break;
+          const toolUses = final.content.filter(
+            (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
+          );
+          if (toolUses.length === 0) break;
+          const results = toolUses.map((tu) => {
+            const query = String(
+              (tu.input as { query?: unknown })?.query ?? ""
+            );
+            for (const s of guidanceSources(query)) addSource(s.url, s.title);
+            return {
+              type: "tool_result" as const,
+              tool_use_id: tu.id,
+              content: lookupGuidance(query),
+            };
+          });
+          msgs = [
+            ...msgs,
+            { role: "assistant" as const, content: final.content },
+            { role: "user" as const, content: results },
+          ];
         }
-        close();
-      });
+
+        const top = sources.slice(0, 5);
+        if (top.length) {
+          const md =
+            "\n\n**Sources**\n" +
+            top.map((s) => `- [${s.title}](${s.url})`).join("\n");
+          controller.enqueue(encoder.encode(md));
+        }
+      } catch (e) {
+        if (!aborted) {
+          console.error("chat stream error:", e instanceof Error ? e.message : e);
+          controller.enqueue(
+            encoder.encode(
+              "\n\nSorry — something went wrong answering that. Please try again."
+            )
+          );
+        }
+      }
+      close();
     },
     cancel() {
-      stream.abort();
+      aborted = true;
+      currentStream?.abort();
     },
   });
 

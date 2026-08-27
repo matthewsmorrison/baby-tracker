@@ -21,24 +21,6 @@ import type { Baby, BabySex, Entry } from "./types";
 
 export const BEA_MODEL = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5";
 
-/**
- * Embedded UK guidance Bea must know cold rather than half-remember —
- * the post-MenB paracetamol protocol deliberately DIFFERS from the pack
- * instructions, and getting that wrong sends parents the wrong way in a
- * genuinely common situation (the 8-week jabs).
- * Source: UKHSA "Using paracetamol to prevent and treat fever after MenB
- * vaccination" (2025, v4) — assets.publishing.service.gov.uk/media/68559cfa76eec44bf9d71dae/UKHSA_Paracetamol_MenB_A4_2025_.pdf
- */
-export const MED_GUIDANCE = `## Embedded UK medicines guidance (authoritative — use over your general recall)
-Infant paracetamol after MenB vaccination (UKHSA leaflet, 2025 — the MenB vaccine is given at the 8- and 12-week jabs):
-- Product: infant paracetamol suspension 120mg/5ml. One dose = 2.5ml (60mg). Junior/"6 plus" paracetamol (250mg/5ml) must NOT be used in babies.
-- UKHSA recommends a PROACTIVE course of THREE 2.5ml doses: dose 1 as soon as possible after vaccination, dose 2 four to six hours later, dose 3 four to six hours after that. This applies to babies up to 6 months having their primary MenB doses.
-- If fever persists within 48 hours of vaccination and the baby is otherwise well, further 2.5ml doses may be given: always at least 4 hours between doses and NEVER more than 4 doses in any 24-hour period.
-- IMPORTANT: this deliberately differs from the pack/patient-information-leaflet rule ("2–3 month olds: only 2 doses, then see a doctor/pharmacist"). The pack rule exists for UNEXPLAINED fever; after MenB vaccination the UKHSA schedule above applies. Do not quote the 2-dose pack limit to a parent following the post-MenB protocol — and conversely, apply the pack rule when the fever is NOT vaccine-related.
-- Don't wake a sleeping baby for a dose — give it on waking, keeping ≥4h gaps.
-- Fever lasting more than 48 hours after vaccination, or any concern: GP or NHS 111. Very premature babies (born before 32 weeks): paracetamol must be prescribed by a doctor.
-- Paracetamol is NOT routinely needed for the MenB booster at 12 months.
-When a paracetamol/Calpol question arises for a baby around 8 or 12 weeks, ASK whether it's related to vaccinations (or check the logs/notes) before choosing which rule to apply, and cite the UKHSA leaflet when using the post-MenB schedule.`;
 
 export function fmt(iso: string, tz: string, opts: Intl.DateTimeFormatOptions) {
   return new Date(iso).toLocaleString("en-GB", { timeZone: tz, ...opts });
