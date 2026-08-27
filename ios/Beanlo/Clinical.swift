@@ -28,6 +28,17 @@ enum Clinical {
     }
 
     /// Day of life: day 1 is the birth day.
+    /// Notification copy for a one-off "next dose is now allowed" reminder.
+    /// Deliberately says "OK now", never "give it now" — a ceiling, not an
+    /// instruction.
+    static func nextDoseCopy(medName: String?, subject: String?, babyName: String) -> (title: String, body: String) {
+        let who = subject == "mother" ? "Mum" : babyName
+        return (
+            title: "\(who) — next \(medName ?? "medicine") dose OK now",
+            body: "The gap since the last dose is up. Only give it if it's needed — and stick to the pack/prescription limits."
+        )
+    }
+
     static func dayOfLife(birthAt: Date, at date: Date = .now) -> Int {
         max(1, Int(date.timeIntervalSince(birthAt) / 86_400) + 1)
     }

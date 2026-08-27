@@ -1,6 +1,7 @@
 import SwiftUI
 import PhotosUI
 import ImageIO
+import UserNotifications
 
 /// Log or edit any entry type. Presented as a sheet from the floating + or
 /// from a History row.
@@ -58,6 +59,8 @@ struct LogSheet: View {
     @State private var medName = ""
     @State private var medDose = ""
     @State private var medForMother = false
+    /// Hours until the next dose may be given (0 = no reminder).
+    @State private var nextDoseHours = 0
     @State private var medIsCourse = false
     @State private var reminderTimes: [Date] = []
     @State private var courseEnded = false
@@ -394,6 +397,24 @@ struct LogSheet: View {
                     }
                 }
             }
+            if !medIsCourse {
+                Card {
+                    VStack(alignment: .leading, spacing: 12) {
+                        CardTitle("Next dose due (optional)")
+                        HStack(spacing: 8) {
+                            Chip(label: "None", active: nextDoseHours == 0) { nextDoseHours = 0 }
+                            ForEach([2, 4, 6, 8, 12], id: \.self) { h in
+                                Chip(label: "\(h)h", active: nextDoseHours == h) { nextDoseHours = h }
+                            }
+                        }
+                        if nextDoseHours > 0 {
+                            Text("You'll get a notification at \(occurredAt.addingTimeInterval(Double(nextDoseHours) * 3600).timeLabel) saying the next dose is OK — other carers get it too.")
+                                .font(.caption2)
+                                .foregroundStyle(Color.muted)
+                        }
+                    }
+                }
+            }
             if medIsCourse {
                 Card {
                     VStack(alignment: .leading, spacing: 12) {
@@ -657,6 +678,9 @@ struct LogSheet: View {
         noteExpressed = e.feedNotes?.expressed ?? ""
         noteFormula = e.feedNotes?.formula ?? ""
         medIsCourse = e.type == .medication && e.medKind != "dose"
+        if let due = e.nextDoseAt {
+            nextDoseHours = Int((due.timeIntervalSince(e.occurredAt) / 3600).rounded())
+        }
         if medIsCourse {
             let formatter = DateFormatter()
             formatter.dateFormat = "HH:mm"
@@ -751,6 +775,8 @@ struct LogSheet: View {
                     if let userId = store.userId { new.reminderUserIds = [userId] }
                 }
                 new.endedAt = courseEnded ? courseEndDate : nil
+            } else if nextDoseHours > 0 {
+                new.nextDoseAt = occurredAt.addingTimeInterval(Double(nextDoseHours) * 3600)
             }
         case .milestone:
             new.milestoneLabel = milestoneText.trimmingCharacters(in: .whitespaces)
@@ -794,6 +820,10 @@ struct LogSheet: View {
                     existing.reminderUserIds = new.reminderUserIds ?? existing.reminderUserIds
                     existing.endedAt = courseEnded ? courseEndDate : nil
                 }
+                if type == .medication, !medIsCourse {
+                    existing.nextDoseAt = new.nextDoseAt
+                    await syncNextDoseNotification(for: existing.id, at: new.nextDoseAt)
+                }
                 if type == .milestone {
                     existing.milestoneLabel = milestoneText.trimmingCharacters(in: .whitespaces)
                 }
@@ -805,12 +835,42 @@ struct LogSheet: View {
                     let path = try await store.uploadNappyPhoto(data, entryId: inserted.id)
                     await store.setPhotoPath(path, entryId: inserted.id)
                 }
+                if let due = new.nextDoseAt {
+                    await syncNextDoseNotification(for: inserted.id, at: due)
+                }
             }
             dismiss()
         } catch {
             self.error = error.localizedDescription
         }
         busy = false
+    }
+
+    /// Exact-time local reminder on THIS device ("next dose OK now"); the
+    /// server nudges the other carers. Passing nil cancels a pending one.
+    private func syncNextDoseNotification(for entryId: UUID, at date: Date?) async {
+        let center = UNUserNotificationCenter.current()
+        let id = "next-dose-\(entryId.uuidString)"
+        center.removePendingNotificationRequests(withIdentifiers: [id])
+        guard let date, date > .now else { return }
+        // Make sure notifications are allowed — first use asks the system.
+        if !store.pushEnabled {
+            _ = await store.enablePush()
+        }
+        let copy = Clinical.nextDoseCopy(
+            medName: medName.trimmingCharacters(in: .whitespaces),
+            subject: medForMother ? "mother" : "baby",
+            babyName: store.baby?.name ?? "Baby"
+        )
+        let content = UNMutableNotificationContent()
+        content.title = copy.title
+        content.body = copy.body
+        content.sound = .default
+        let trigger = UNCalendarNotificationTrigger(
+            dateMatching: Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date),
+            repeats: false
+        )
+        try? await center.add(UNNotificationRequest(identifier: id, content: content, trigger: trigger))
     }
 }
 

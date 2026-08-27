@@ -681,6 +681,9 @@ final class Store: ObservableObject {
     func delete(_ entry: Entry) async throws {
         try await supabase.from("entries").delete().eq("id", value: entry.id).execute()
         entries.removeAll { $0.id == entry.id }
+        // A deleted dose shouldn't still fire its "next dose OK" reminder.
+        UNUserNotificationCenter.current()
+            .removePendingNotificationRequests(withIdentifiers: ["next-dose-\(entry.id.uuidString)"])
         writeWidgetSnapshot()
     }
 

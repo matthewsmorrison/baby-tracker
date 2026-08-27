@@ -88,6 +88,17 @@ final class ClinicalTests: XCTestCase {
         XCTAssertEqual(day28.mid, birthG + 175)
     }
 
+    func testNextDoseCopyNamesTheRightPerson() {
+        let baby = Clinical.nextDoseCopy(medName: "Calpol", subject: "baby", babyName: "Sunny")
+        XCTAssertEqual(baby.title, "Sunny — next Calpol dose OK now")
+        let mum = Clinical.nextDoseCopy(medName: "Ibuprofen", subject: "mother", babyName: "Sunny")
+        XCTAssertEqual(mum.title, "Mum — next Ibuprofen dose OK now")
+        // Copy must stay permissive, never directive: a ceiling, not an order.
+        XCTAssertTrue(baby.body.contains("Only give it if it's needed"))
+        let unnamed = Clinical.nextDoseCopy(medName: nil, subject: nil, babyName: "Sunny")
+        XCTAssertEqual(unnamed.title, "Sunny — next medicine dose OK now")
+    }
+
     func testNappyOutputSubtractsDryWeight() {
         XCTAssertEqual(Clinical.nappyOutputG(nappyWeightG: 60, baseWeightG: 22), 38)
         XCTAssertNil(Clinical.nappyOutputG(nappyWeightG: nil, baseWeightG: 22))

@@ -172,6 +172,36 @@ export async function POST(request: Request) {
       }
     }
 
+    // --- One-off "next dose due" (set when logging a dose in the app) ------
+    // The logging device schedules an exact local notification for itself;
+    // this push covers the OTHER carers, so skip the person who logged it.
+    {
+      const dueDoses = entries.filter(
+        (e) =>
+          e.type === "medication" &&
+          e.med_kind === "dose" &&
+          e.next_dose_at &&
+          now >= new Date(e.next_dose_at).getTime() &&
+          now - new Date(e.next_dose_at).getTime() <= FEED_DUE_WINDOW_MS
+      );
+      for (const dose of dueDoses) {
+        const targets = recipients.filter((u) => u !== dose.created_by);
+        if (targets.length === 0) continue;
+        if (await alreadySent(baby.id, "next_dose", dose.id)) continue;
+        const who = dose.med_subject === "mother" ? "Mum" : baby.name;
+        const n = await sendToUsers(targets, {
+          title: `${who} — next ${dose.med_name ?? "medicine"} dose OK now`,
+          body: `The gap since the last dose is up. Only give it if it's needed — and stick to the pack/prescription limits.`,
+          url: "/today",
+          tag: `next-dose-${dose.id}`,
+        });
+        if (n > 0) {
+          await markSent(baby.id, "next_dose", dose.id);
+          results.medReminders += 1;
+        }
+      }
+    }
+
     // --- Medication reminders (managed in Profile; always checked) ---------
     {
       const { data: meds } = await svc

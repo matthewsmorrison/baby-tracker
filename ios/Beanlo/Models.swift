@@ -64,6 +64,7 @@ struct Entry: Codable, Identifiable, Hashable {
     var medKind: String?
     var medSubject: String?
     var reminderTimes: [String]?
+    var nextDoseAt: Date?
     var reminderTz: String?
     var reminderUserIds: [UUID]?
     var milestoneLabel: String?
@@ -101,6 +102,7 @@ struct Entry: Codable, Identifiable, Hashable {
         case medKind = "med_kind"
         case medSubject = "med_subject"
         case reminderTimes = "reminder_times"
+        case nextDoseAt = "next_dose_at"
         case reminderTz = "reminder_tz"
         case reminderUserIds = "reminder_user_ids"
         case milestoneLabel = "milestone_label"
@@ -149,6 +151,7 @@ struct NewEntry: Codable {
     var medKind: String?
     var medSubject: String?
     var reminderTimes: [String]?
+    var nextDoseAt: Date?
     var reminderTz: String?
     var reminderUserIds: [UUID]?
     var sleepLocation: String?
@@ -183,6 +186,7 @@ struct NewEntry: Codable {
         case medKind = "med_kind"
         case medSubject = "med_subject"
         case reminderTimes = "reminder_times"
+        case nextDoseAt = "next_dose_at"
         case reminderTz = "reminder_tz"
         case reminderUserIds = "reminder_user_ids"
         case sleepLocation = "sleep_location"

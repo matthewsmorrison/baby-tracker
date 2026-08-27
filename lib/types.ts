@@ -179,6 +179,7 @@ export interface Entry {
   reminder_times: string[] | null; // local "HH:MM" times to be reminded
   reminder_tz: string | null; // IANA tz the reminder times are in
   reminder_user_ids: string[] | null; // carers who get the reminder push
+  next_dose_at: string | null; // dose entries: when the next dose may be given
 
   sleep_location: SleepLocation | null; // where the baby slept
   settle_method: SettleMethod | null; // how the baby settled
