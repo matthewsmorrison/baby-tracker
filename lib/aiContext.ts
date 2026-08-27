@@ -8,7 +8,9 @@ import {
   weightStatus,
 } from "./clinical";
 import { feedAmounts, feedGaps, formatGap } from "./entryDisplay";
-import type { Baby, Entry } from "./types";
+import { whoCentile } from "./whoWeight";
+import { whoMeasureCentile } from "./whoGrowth";
+import type { Baby, BabySex, Entry } from "./types";
 
 // The baby's data serialised for Claude — shared by the Ask chat, the daily
 // digest, the handover report and note drafting, so they all see the same
@@ -36,6 +38,73 @@ const SETTLE_LABEL: Record<string, string> = {
   dummy: "dummy",
   other: "other",
 };
+
+/** "63rd" etc. — matches the app's centile phrasing. */
+function ordinal(pct: number): string {
+  if (pct < 0.4) return "below the 0.4th";
+  if (pct > 99.6) return "above the 99.6th";
+  const r = Math.round(pct);
+  const suffix =
+    r % 100 >= 11 && r % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][r % 10] ?? "th";
+  return `${r}${suffix}`;
+}
+
+function ageDays(baby: Baby, at: string): number {
+  return Math.max(
+    0,
+    (new Date(at).getTime() - new Date(baby.birth_at).getTime()) / 86_400_000
+  );
+}
+
+/**
+ * UK-WHO growth summary: every weigh-in with its centile, plus the latest
+ * length/head centiles. This is the red-book framing Bea should use for any
+ * weight/growth question — centiles and curve-tracking, not just "% vs birth".
+ */
+export function growthBlock(baby: Baby, entries: Entry[], tz: string): string {
+  const sex = baby.sex as BabySex | null;
+  const measurements = entries
+    .filter((e) => e.type === "weight")
+    .sort((a, b) => new Date(a.occurred_at).getTime() - new Date(b.occurred_at).getTime());
+  if (!sex) {
+    return `\n\n## Growth (UK-WHO centiles)\nSex isn't set for ${baby.name}, so centiles can't be computed — suggest setting it in Settings if the parent asks about centiles. Fall back to weight vs birth and the expected regain-by-day-14–21 pattern.`;
+  }
+
+  const weightLines = measurements
+    .filter((e) => e.weight_g)
+    .map((e) => {
+      const day = dayOfLife(baby.birth_at, e.occurred_at);
+      const c = whoCentile(sex, ageDays(baby, e.occurred_at), e.weight_g!);
+      const when = fmt(e.occurred_at, tz, { day: "numeric", month: "short" });
+      return { day, line: `Day ${day} (${when}): ${e.weight_g}g — ${ordinal(c)} centile`, c };
+    });
+
+  const latest = measurements[measurements.length - 1];
+  const extra: string[] = [];
+  if (latest?.length_mm) {
+    const c = whoMeasureCentile("length", sex, ageDays(baby, latest.occurred_at), latest.length_mm / 10);
+    extra.push(`Latest length ${(latest.length_mm / 10).toFixed(1)}cm — ${ordinal(c)} centile`);
+  }
+  if (latest?.head_circ_mm) {
+    const c = whoMeasureCentile("head", sex, ageDays(baby, latest.occurred_at), latest.head_circ_mm / 10);
+    extra.push(`Latest head circumference ${(latest.head_circ_mm / 10).toFixed(1)}cm — ${ordinal(c)} centile`);
+  }
+
+  let trend = "";
+  if (weightLines.length >= 2) {
+    const prev = weightLines[weightLines.length - 2];
+    const last = weightLines[weightLines.length - 1];
+    const drift = last.c - prev.c;
+    trend =
+      Math.abs(drift) < 10
+        ? `\nTrend: tracking along their curve (previous weigh-in ${ordinal(prev.c)}, latest ${ordinal(last.c)}).`
+        : `\nTrend: centile has ${drift > 0 ? "risen" : "fallen"} from the ${ordinal(prev.c)} to the ${ordinal(last.c)} between the last two weigh-ins${drift < 0 ? " — a sustained drop across centile spaces is worth mentioning to the health visitor at the next weigh-in" : ""}.`;
+  }
+
+  return `\n\n## Growth (UK-WHO red-book centiles for a ${sex})
+When weight or growth comes up, USE THESE CENTILES — the same nine-curve UK-WHO charts as the family's red book — rather than generic "healthy band" language. Babies are expected to roughly track their own centile curve; the absolute centile mattering less than sustained crossing of centile spaces.
+${weightLines.map((w) => w.line).join("\n") || "No weights logged yet."}${extra.length ? "\n" + extra.join("\n") : ""}${trend}`;
+}
 
 /** Context tags on a sleep line, e.g. " [cot, self-settled]". */
 function sleepContext(e: Entry): string {
@@ -177,7 +246,10 @@ export function serialiseBaby(baby: Baby, entries: Entry[], tz: string): string 
         return `d${day} ${t} MEASUREMENTS ${extra.join(", ")}${e.note ? ` note:"${e.note}"` : ""}`;
       }
       const band = expectedWeightBand(day, baby.birth_weight_g);
-      return `d${day} ${t} WEIGHT ${e.weight_g}g (${weightStatus(e.weight_g, baby.birth_weight_g).pct.toFixed(1)}% vs birth; expected ${band.low}–${band.high}g)${extra.length ? `; ${extra.join(", ")}` : ""}${e.note ? ` note:"${e.note}"` : ""}`;
+      const centile = baby.sex
+        ? `; ${ordinal(whoCentile(baby.sex as BabySex, ageDays(baby, e.occurred_at), e.weight_g))} centile`
+        : "";
+      return `d${day} ${t} WEIGHT ${e.weight_g}g (${weightStatus(e.weight_g, baby.birth_weight_g).pct.toFixed(1)}% vs birth; expected ${band.low}–${band.high}g${centile})${extra.length ? `; ${extra.join(", ")}` : ""}${e.note ? ` note:"${e.note}"` : ""}`;
     }
     return "";
   }).filter(Boolean);
@@ -259,7 +331,7 @@ export function serialiseBaby(baby: Baby, entries: Entry[], tz: string): string 
 - Nappies: ${nappies24.length} total — ${wet24} wet, ${dirty24} dirty${urine24 > 0 ? `; est. urine ${urine24}ml` : ""}. NCT guide for day ${day24}: about ${exp.total} nappies in 24h, at least ${exp.minDirty} with poo.
 - Sleep: ${Math.round((sleepMs24 / 3_600_000) * 10) / 10}h`;
 
-  return `${rolling}
+  return `${rolling}${growthBlock(baby, asc, tz)}
 
 ## Daily summaries (pre-computed, per CALENDAR DAY — midnight to midnight in the family's timezone. Use these for a specific date or day of life, and for day-to-day comparisons. Do NOT use one of these as "the last 24 hours".)
 ${dayLines.join("\n")}

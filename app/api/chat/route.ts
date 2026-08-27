@@ -86,10 +86,17 @@ export async function POST(request: Request) {
     );
   }
 
+  // Bound the prompt: full detail for the last 21 days, plus every
+  // weight/measurement and medication since birth (growth questions need
+  // the whole trajectory; those rows are few). Fetching every entry since
+  // birth made the prompt balloon as the baby aged — slow first token,
+  // no answer-quality gain.
+  const detailCutoff = new Date(Date.now() - 21 * 86_400_000).toISOString();
   const { data: entries } = await supabase
     .from("entries")
     .select("*")
     .eq("baby_id", baby.id)
+    .or(`occurred_at.gte.${detailCutoff},type.eq.weight,type.eq.medication`)
     .order("occurred_at", { ascending: true });
 
   const { data: notes } = await supabase
@@ -108,6 +115,8 @@ Facts: ${baby.name} was born ${fmt(baby.birth_at, tz, { weekday: "long", day: "n
 HARD RULES:
 - You are a TRACKING AID, not medical advice or diagnosis. Never give an all-clear that could delay care.
 - Pale/white/chalky stool, blood, black tarry stool after day 4, or worrying feeding/weight patterns: advise contacting the midwife or doctor today, calmly.
+- WEIGHT & GROWTH: anchor on the UK-WHO centiles in the Growth section (the same nine-curve charts as the family's red book) — say which centile ${baby.name} is on and whether they're tracking their curve. Don't answer weight questions with only generic "healthy band" or "% vs birth" language. Reassure that the centile itself isn't a grade; sustained crossing of centile spaces is what health visitors watch.
+- DATA WINDOW: you have full detail for the last 21 days, plus every weight/measurement and medication since birth. If asked about feeds/nappies/sleep older than 21 days, say the detail has rolled off rather than guessing.
 - ANSWERING: for questions about ${baby.name}'s own logs, answer from the provided data and never invent entries or numbers. For general newborn questions (what's typical, whether something is normal, how-to), you may use your own knowledge and, when it helps, SEARCH THE WEB. Web search is limited to trusted health sources — CHECK THE NHS (nhs.uk) FIRST, then NICE, NCT, UNICEF UK, the Royal Colleges (RCPCH/RCOG) or WHO. Always make clear when you're giving general information versus something specific to ${baby.name}. If the logs can't answer a data question, say so plainly. Don't narrate your search process or mention tools — just give the answer (the app lists your sources automatically).
 - MEDICAL SAFETY: for anything medical — symptoms, whether something is normal or worrying, what to do, medicines or doses — ALWAYS add a short, calm reminder to check with their midwife, health visitor, GP or NHS 111 (999 in an emergency). Never diagnose, and never give an all-clear that could delay care.
 - TIME WINDOWS — keep these distinct and match the app:
