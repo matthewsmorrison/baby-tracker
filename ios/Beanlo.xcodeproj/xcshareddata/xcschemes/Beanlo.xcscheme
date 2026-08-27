@@ -21,6 +21,34 @@
                ReferencedContainer = "container:Beanlo.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "10A7FF6BC6D0CC5B0CA0DB94"
+               BuildableName = "BeanloTests.xctest"
+               BlueprintName = "BeanloTests"
+               ReferencedContainer = "container:Beanlo.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "EE57069221430B84F391A8EC"
+               BuildableName = "BeanloUITests.xctest"
+               BlueprintName = "BeanloUITests"
+               ReferencedContainer = "container:Beanlo.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
@@ -39,7 +67,31 @@
          </BuildableReference>
       </MacroExpansion>
       <Testables>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "10A7FF6BC6D0CC5B0CA0DB94"
+               BuildableName = "BeanloTests.xctest"
+               BlueprintName = "BeanloTests"
+               ReferencedContainer = "container:Beanlo.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "EE57069221430B84F391A8EC"
+               BuildableName = "BeanloUITests.xctest"
+               BlueprintName = "BeanloUITests"
+               ReferencedContainer = "container:Beanlo.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
+      <CommandLineArguments>
+      </CommandLineArguments>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"

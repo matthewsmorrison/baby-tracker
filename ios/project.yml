@@ -20,8 +20,15 @@ schemes:
     build:
       targets:
         Beanlo: all
+        BeanloTests: [test]
+        BeanloUITests: [test]
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - BeanloTests
+        - BeanloUITests
     archive:
       config: Release
 
@@ -71,6 +78,41 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLName: io.beanlo
             CFBundleURLSchemes: [beanlo]
+
+  # Unit tests run inside the app process (@testable import Beanlo) so the
+  # clinical/prediction/E2EE logic is tested exactly as shipped.
+  BeanloTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - BeanloTests
+    dependencies:
+      - target: Beanlo
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.beanlo.tests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.0"
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Beanlo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Beanlo
+        BUNDLE_LOADER: $(TEST_HOST)
+        DEVELOPMENT_TEAM: DZ9VAB947K
+
+  # UI tests drive the real app in the simulator (XCUITest can tap, unlike
+  # simctl) against a seeded throwaway world — see scripts/test-ios.sh.
+  BeanloUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - BeanloUITests
+    dependencies:
+      - target: Beanlo
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.beanlo.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.0"
+        TEST_TARGET_NAME: Beanlo
+        DEVELOPMENT_TEAM: DZ9VAB947K
 
   BeanloWidgets:
     type: app-extension

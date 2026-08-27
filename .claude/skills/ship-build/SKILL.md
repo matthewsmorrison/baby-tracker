@@ -20,6 +20,10 @@ internal groups get it automatically once Apple finishes processing (~10–30 mi
 
 Run everything from `ios/`. Use a scratch directory for build products.
 
+0. **Run the tests first**: `./scripts/test-ios.sh unit` from the repo root
+   (full `./scripts/test-ios.sh` if app flows changed — see the test-ios
+   skill). Don't ship a build with failing tests.
+
 1. **Bump the build number.** In `ios/project.yml`, increment
    `CURRENT_PROJECT_VERSION` in **both** targets (Beanlo and BeanloWidgets —
    they must match or App Store validation fails). Bump `MARKETING_VERSION`
