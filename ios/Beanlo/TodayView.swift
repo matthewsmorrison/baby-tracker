@@ -24,6 +24,9 @@ struct TodayView: View {
                     if store.trackedTypes.contains(.sleep) {
                         napWindowCard(baby: baby)
                     }
+                    // Medicines above nappies: an active course or a pending
+                    // next-dose window is more time-critical than the quota.
+                    medicineCards(baby: baby)
                     if store.trackedTypes.contains(.nappy) {
                         nappyQuota(day: day, last24: last24)
                     }
@@ -40,7 +43,6 @@ struct TodayView: View {
                     if store.trackedTypes.contains(.weight) {
                         weightVsBirth(baby: baby)
                     }
-                    medicineCards(baby: baby)
                     redFlagsCard
                 }
 
