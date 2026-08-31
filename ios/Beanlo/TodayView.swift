@@ -532,7 +532,7 @@ struct TodayView: View {
                 HStack(spacing: 14) {
                     Label("\(wet) wet", systemImage: "circle.fill")
                         .foregroundStyle(Color.chartBlue)
-                    Label("\(dirty) mixed (aim \(exp.minDirty)+)", systemImage: "circle.fill")
+                    Label(exp.minDirty > 0 ? "\(dirty) mixed (aim \(exp.minDirty)+)" : "\(dirty) mixed", systemImage: "circle.fill")
                         .foregroundStyle(Color.chartBrown)
                     Spacer()
                     Text("\(nappies.count) of \(exp.total) for day \(day)")

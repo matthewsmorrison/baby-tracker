@@ -63,6 +63,17 @@ export function expectedNappies(day: number): NappyExpectation {
       dirtyLabel: "2+ soft yellow (≥ £2 coin)",
       note: "No more meconium — soft yellow poos, at least £2-coin sized.",
     };
+  if (day >= 42)
+    // NHS: from 6 weeks the steady guide is 6+ heavy wet nappies/24h, and
+    // breastfed babies can go days (even a week) between poos — soft when
+    // it comes is what matters, so no dirty minimum.
+    return {
+      total: 6,
+      minDirty: 0,
+      wetLabel: "6+ heavy",
+      dirtyLabel: "soft when it comes",
+      note: "6+ heavy wet nappies a day. Breastfed babies can now go days between poos — soft when it comes is what matters.",
+    };
   return {
     total: 8,
     minDirty: 2,

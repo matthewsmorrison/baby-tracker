@@ -50,10 +50,10 @@ final class ClinicalTests: XCTestCase {
         XCTAssertEqual(Clinical.dayOfLife(birthAt: birth, at: birth.addingTimeInterval(13.5 * 86_400)), 14)
     }
 
-    func testNappyQuotaFollowsNCTBands() {
-        // Day-by-day quota: never decreasing, dirty minimum within total.
+    func testNappyQuotaFollowsNHSBands() {
+        // Rising quota through the establishment weeks…
         var lastTotal = 0
-        for day in 1...30 {
+        for day in 1...41 {
             let q = Clinical.expectedNappies(day: day)
             XCTAssertGreaterThanOrEqual(q.total, lastTotal, "day \(day)")
             XCTAssertLessThanOrEqual(q.minDirty, q.total, "day \(day)")
@@ -63,6 +63,12 @@ final class ClinicalTests: XCTestCase {
         XCTAssertEqual(Clinical.expectedNappies(day: 1).total, 3)
         XCTAssertEqual(Clinical.expectedNappies(day: 6).total, 7)
         XCTAssertEqual(Clinical.expectedNappies(day: 7).total, 8)
+        // …then from 6 weeks the NHS guide is 6+ heavy wet nappies, and
+        // breastfed babies can go days between poos — no dirty minimum.
+        let sixWeeks = Clinical.expectedNappies(day: 42)
+        XCTAssertEqual(sixWeeks.total, 6)
+        XCTAssertEqual(sixWeeks.minDirty, 0)
+        XCTAssertEqual(Clinical.expectedNappies(day: 60).total, 6, "2 months should follow NHS 6+, not 8")
     }
 
     func testExpectedStoolColourGrid() {

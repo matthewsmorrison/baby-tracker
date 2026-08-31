@@ -161,7 +161,7 @@ export async function POST(request: Request) {
       if (!(await alreadySent(baby.id, "low_nappies", key))) {
         const n = await sendToUsers(recipients, {
           title: `${baby.name} — keep an eye on nappies`,
-          body: `${total24} nappies so far today (${dirty24} mixed). Day ${day} usually sees about ${exp.total}, at least ${exp.minDirty} with poo. Worth watching; contact your midwife if you're concerned.`,
+          body: `${total24} nappies so far today (${dirty24} mixed). Day ${day} usually sees about ${exp.total}${exp.minDirty > 0 ? `, at least ${exp.minDirty} with poo` : ""}. Worth watching; contact your midwife if you're concerned.`,
           url: "/today",
           tag: `low-nappies-${baby.id}`,
         });

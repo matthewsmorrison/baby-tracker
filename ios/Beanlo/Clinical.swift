@@ -24,6 +24,12 @@ enum Clinical {
         if day <= 6 {
             return .init(total: 7, minDirty: 2, note: "No more meconium — soft yellow poos, at least £2-coin sized.")
         }
+        if day >= 42 {
+            // NHS: from 6 weeks the steady guide is 6+ heavy wet nappies a
+            // day, and breastfed babies can go days (even a week) between
+            // poos — soft when it comes is what matters, so no dirty minimum.
+            return .init(total: 6, minDirty: 0, note: "6+ heavy wet nappies a day. Breastfed babies can now go days between poos — soft when it comes is what matters.")
+        }
         return .init(total: 8, minDirty: 2, note: "At least two good yellow poos a day — bigger than a £2 coin, not just skid marks.")
     }
 
