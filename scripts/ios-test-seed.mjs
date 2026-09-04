@@ -102,9 +102,27 @@ const verifyRes = await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/verify`, 
 const session = await verifyRes.json();
 if (!session.access_token) throw new Error("verify failed: " + JSON.stringify(session).slice(0, 200));
 
+// Second persona: a signed-in user with NO baby, for onboarding-flow UI
+// tests. Torn down (including any baby the test created) by the teardown.
+const onboardEmail = `ios-onboard-test-${Date.now()}@example.com`;
+const { data: onboardUser, error: oErr } = await admin.auth.admin.createUser({ email: onboardEmail, email_confirm: true });
+if (oErr) throw oErr;
+const { data: oLink, error: olErr } = await admin.auth.admin.generateLink({ type: "magiclink", email: onboardEmail });
+if (olErr) throw olErr;
+const oVerify = await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/verify`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json", apikey: env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY },
+  body: JSON.stringify({ type: "magiclink", token_hash: oLink.properties.hashed_token }),
+});
+const oSession = await oVerify.json();
+if (!oSession.access_token) throw new Error("onboard verify failed: " + JSON.stringify(oSession).slice(0, 200));
+
 writeFileSync("ios/build/test-session.json", JSON.stringify({
   userId, babyId, email,
   accessToken: session.access_token,
   refreshToken: session.refresh_token,
+  onboardUserId: onboardUser.user.id,
+  onboardAccessToken: oSession.access_token,
+  onboardRefreshToken: oSession.refresh_token,
 }, null, 2));
-console.log("seeded", { userId, babyId, entries: rows.length });
+console.log("seeded", { userId, babyId, entries: rows.length, onboardUserId: onboardUser.user.id });

@@ -31,6 +31,7 @@
 		66C17CF5462A34D9C9072771 /* LogSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F2D01B2267930A87A15E7B2 /* LogSheet.swift */; };
 		6DFE2E3CB24AC3739AFD022F /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26004E2E18EE59EC8CACC0CF /* HistoryView.swift */; };
 		70338F2D4DDB4947A870DD19 /* WHOGrowth.swift in Sources */ = {isa = PBXBuildFile; fileRef = C159604E7F661E8A04349551 /* WHOGrowth.swift */; };
+		760809823274CEA01FD0FF34 /* OnboardingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF58EDAA206B8EC29B802BE /* OnboardingUITests.swift */; };
 		7801A97AD53FF3861D9A0DFC /* Predict.swift in Sources */ = {isa = PBXBuildFile; fileRef = 060DE9CE01E34B6A50DD0BD2 /* Predict.swift */; };
 		82B33F2324546EDDB826E1D0 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 177A441EF8796BC28453AF4E /* RootView.swift */; };
 		82E3F898F6861949CFF0CC76 /* E2EE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AD9E95B5F36C573BD5EB01E /* E2EE.swift */; };
@@ -115,6 +116,7 @@
 		8AA1A2EA983D9E41C9726199 /* BeanloWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeanloWidgets.swift; sourceTree = "<group>"; };
 		982D4A9BF820014229C3BDFE /* Clinical.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clinical.swift; sourceTree = "<group>"; };
 		A0E9A68D9843B3FE63CD44C8 /* Store.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Store.swift; sourceTree = "<group>"; };
+		AFF58EDAA206B8EC29B802BE /* OnboardingUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingUITests.swift; sourceTree = "<group>"; };
 		B4A96FC94268C38C906EF458 /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
 		B6F719C239BF8DEEC582702C /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
 		BA5223A7D731DDA63AEFBF7B /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -223,6 +225,7 @@
 			isa = PBXGroup;
 			children = (
 				47F4136CFDED85BF47F26775 /* CoreFlowsUITests.swift */,
+				AFF58EDAA206B8EC29B802BE /* OnboardingUITests.swift */,
 			);
 			path = BeanloUITests;
 			sourceTree = "<group>";
@@ -419,6 +422,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				ED006D8EE97543941002C4FA /* CoreFlowsUITests.swift in Sources */,
+				760809823274CEA01FD0FF34 /* OnboardingUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -552,7 +556,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = BeanloWidgets/BeanloWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 16;
 				DEVELOPMENT_TEAM = DZ9VAB947K;
 				INFOPLIST_FILE = BeanloWidgets/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -577,7 +581,7 @@
 				CODE_SIGN_ENTITLEMENTS = Beanlo/Beanlo.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 16;
 				DEVELOPMENT_TEAM = DZ9VAB947K;
 				INFOPLIST_FILE = Beanlo/Info.plist;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -640,7 +644,7 @@
 				CODE_SIGN_ENTITLEMENTS = Beanlo/Beanlo.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 16;
 				DEVELOPMENT_TEAM = DZ9VAB947K;
 				INFOPLIST_FILE = Beanlo/Info.plist;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -737,7 +741,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = BeanloWidgets/BeanloWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 16;
 				DEVELOPMENT_TEAM = DZ9VAB947K;
 				INFOPLIST_FILE = BeanloWidgets/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

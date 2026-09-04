@@ -17,5 +17,13 @@ const { error: bErr } = await admin.from("babies").delete().eq("id", session.bab
 if (bErr) throw bErr;
 const { error: uErr } = await admin.auth.admin.deleteUser(session.userId);
 if (uErr) throw uErr;
+if (session.onboardUserId) {
+  // The onboarding test may have created a baby — deleting the auth user
+  // does not cascade to it, so sweep those first.
+  const { error: obErr } = await admin.from("babies").delete().eq("created_by", session.onboardUserId);
+  if (obErr) throw obErr;
+  const { error: ouErr } = await admin.auth.admin.deleteUser(session.onboardUserId);
+  if (ouErr) throw ouErr;
+}
 rmSync("ios/build/test-session.json", { force: true });
-console.log("TEARDOWN-OK", session.userId);
+console.log("TEARDOWN-OK", session.userId, session.onboardUserId ?? "");

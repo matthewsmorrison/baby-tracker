@@ -27,7 +27,7 @@ struct OnboardingView: View {
     @State private var intervalMin = 180
 
     // Flow state
-    @State private var baby: Baby?
+    @State private var createdBabyId: UUID?
     @State private var busy = false
     @State private var error: String?
 
@@ -108,7 +108,7 @@ struct OnboardingView: View {
                     .glassEffect(.regular, in: .circle)
             }
             .opacity(step == .welcome || step == .alerts || step == .invite ? 0 : 1)
-            .disabled(step == .welcome || baby != nil)
+            .disabled(step == .welcome || createdBabyId != nil)
 
             Spacer()
 
@@ -494,6 +494,7 @@ struct OnboardingView: View {
         guard let userId = store.userId, let weightG = birthWeightG else { return }
         busy = true
         struct NewBaby: Encodable {
+            let id: UUID
             let name: String
             let birth_at: String
             let birth_weight_g: Int
@@ -502,8 +503,14 @@ struct OnboardingView: View {
             let tracked_types: [String]
             let feed_interval_min: Int
         }
+        // Client-generated id, NO `.select()` on the insert: the RETURNING
+        // row is checked against the SELECT policy before the ownership
+        // trigger's membership is visible, so asking for the row back makes
+        // a successful insert look like a failure.
+        let id = UUID()
         do {
-            let created: Baby = try await store.supabase.from("babies").insert(NewBaby(
+            try await store.supabase.from("babies").insert(NewBaby(
+                id: id,
                 name: name.trimmingCharacters(in: .whitespaces),
                 birth_at: birthAt.ISO8601Format(),
                 birth_weight_g: weightG,
@@ -511,8 +518,8 @@ struct OnboardingView: View {
                 created_by: userId,
                 tracked_types: Array(tracked),
                 feed_interval_min: intervalMin
-            )).select().single().execute().value
-            baby = created
+            )).execute()
+            createdBabyId = id
             Haptics.success()
             step = .alerts
         } catch {
@@ -522,7 +529,7 @@ struct OnboardingView: View {
     }
 
     private func createInvite() async {
-        guard let baby, let userId = store.userId else { return }
+        guard let babyId = createdBabyId, let userId = store.userId else { return }
         busy = true
         struct NewInvite: Encodable {
             let baby_id: UUID
@@ -534,7 +541,7 @@ struct OnboardingView: View {
         do {
             let created: Created = try await store.supabase.from("baby_invites")
                 .insert(NewInvite(
-                    baby_id: baby.id,
+                    baby_id: babyId,
                     email: inviteEmail.lowercased().trimmingCharacters(in: .whitespaces),
                     role: "caregiver",
                     invited_by: userId

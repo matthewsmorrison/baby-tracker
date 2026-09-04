@@ -29,10 +29,13 @@ trap cleanup EXIT
 
 AT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('ios/build/test-session.json')).accessToken)")
 RT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('ios/build/test-session.json')).refreshToken)")
+OAT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('ios/build/test-session.json')).onboardAccessToken)")
+ORT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('ios/build/test-session.json')).onboardRefreshToken)")
 
 # TEST_RUNNER_-prefixed *environment* variables reach the test process
 # (as build-setting arguments they'd be silently ignored).
 TEST_RUNNER_DEV_SESSION_AT="$AT" TEST_RUNNER_DEV_SESSION_RT="$RT" \
+TEST_RUNNER_DEV_ONBOARD_AT="$OAT" TEST_RUNNER_DEV_ONBOARD_RT="$ORT" \
   xcodebuild test -project ios/Beanlo.xcodeproj -scheme Beanlo \
   -destination "$DEST" -quiet
 
