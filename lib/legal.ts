@@ -16,7 +16,7 @@ export const ASSISTANT_NAME = "Bea";
  * the App Store URL once released. While null, CTAs fall back gracefully
  * (the homepage badge reads "Coming soon"; guide CTAs link home).
  */
-export const APP_STORE_URL: string | null = null;
+export const APP_STORE_URL: string | null = "https://testflight.apple.com/join/SnANY6gR";
 
 /**
  * The service is run by an individual (sole trader). NOTE: for a legally
