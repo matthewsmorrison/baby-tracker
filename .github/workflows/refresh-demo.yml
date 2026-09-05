@@ -1,0 +1,21 @@
+name: Refresh App Review demo account
+
+# Keeps appreview@beanlo.com review-ready: re-asserts the documented
+# password, recreates the demo baby if a reviewer deleted it (they do),
+# and tops the data up so Today never looks stale or broken.
+on:
+  schedule:
+    - cron: "0 3 * * 1,4" # Mondays and Thursdays, 03:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger refresh endpoint
+        run: |
+          code=$(curl -sS -o /tmp/out -w "%{http_code}" -X POST \
+            "${{ secrets.APP_URL }}/api/cron/refresh-demo" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+          echo "HTTP $code"; cat /tmp/out; echo
+          [ "$code" = "200" ] || { echo "::error::refresh-demo returned $code"; exit 1; }
