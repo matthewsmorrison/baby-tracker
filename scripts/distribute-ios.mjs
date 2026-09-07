@@ -70,7 +70,8 @@ for (;;) {
 }
 console.log(`build ${build.attributes.version} processed (VALID)`);
 
-// 2. Submit for beta review (409 = already submitted; that's fine).
+// 2. Submit for beta review. Already-submitted/approved builds come back
+// as 409 or 422 ("not in a valid processing state") — both mean done.
 try {
   await api("/v1/betaAppReviewSubmissions", {
     method: "POST",
@@ -80,7 +81,7 @@ try {
   });
   console.log("submitted for beta review");
 } catch (e) {
-  if (e.status === 409) console.log("beta review: already submitted");
+  if (e.status === 409 || e.status === 422) console.log("beta review: already submitted/approved");
   else throw e;
 }
 
