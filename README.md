@@ -25,7 +25,7 @@ professional can be connected read-only.
 - **Bea (AI, Anthropic API)** — a chat assistant that answers from the baby's
   logged data with web search restricted to trusted health domains (NHS
   first); natural-language quick logging ("fed 15 min left, wet nappy at
-  3am"); an evening digest push notification; drafted answers to saved
+  3am"); drafted answers to saved
   questions; and a one-page AI handover report for midwife/health-visitor
   appointments. All server-side, gated to the `advanced` membership tier.
 - **Friends** — add other Beanlo parents by email, see an MSN-style presence
@@ -36,7 +36,7 @@ professional can be connected read-only.
 - **Sharing & export** — email invites with roles (owner / caregiver /
   viewer), CSV export, printable reports.
 - **PWA** — installable, with web-push notifications (feed due, low nappy
-  count, medication reminders, evening digest).
+  count, medication reminders).
 
 ## Stack
 
@@ -88,8 +88,7 @@ URL in Supabase Auth settings.
 
 ### 5. Scheduled notifications (optional)
 
-Push notifications (feed due, low nappies, medication reminders, the evening
-Bea digest) are sent by `POST /api/cron/notify`, triggered by
+Push notifications (feed due, low nappies, medication reminders, medication next-dose reminders) are sent by `POST /api/cron/notify`, triggered by
 [`.github/workflows/notify.yml`](./.github/workflows/notify.yml) every 15
 minutes. To enable: set two GitHub Actions **repository secrets** —
 `CRON_SECRET` (same value as the env var) and `APP_URL` (your deployed URL).
