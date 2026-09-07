@@ -89,6 +89,8 @@ export interface Baby {
   birth_at: string;
   birth_weight_g: number;
   sex: BabySex | null; // for sex-specific WHO weight centiles
+  notify_feed_due: boolean; // opt-in: push when a feed becomes due
+  notify_low_nappies: boolean; // opt-in: evening push when the count runs low
   nappy_base_weight_g: number | null; // weight of a clean, dry nappy
   feed_interval_min: number | null; // expected time between feeds; gates "Next feed due"
   tracked_types: EntryType[]; // categories this family tracks

@@ -47,10 +47,36 @@ struct SettingsView: View {
                     Label("Notifications", systemImage: "bell.badge.fill")
                 }
                 .tint(.accent)
+                if store.pushEnabled, let baby = store.baby {
+                    Toggle(isOn: Binding(
+                        get: { baby.notifyFeedDue ?? false },
+                        set: { on in
+                            var changes = BabyUpdate()
+                            changes.notifyFeedDue = on
+                            Task { try? await store.updateBaby(changes) }
+                        }
+                    )) {
+                        Label("Feed-due nudge", systemImage: "waterbottle.fill")
+                    }
+                    .tint(.accent)
+                    .disabled(!store.isOwner)
+                    Toggle(isOn: Binding(
+                        get: { baby.notifyLowNappies ?? false },
+                        set: { on in
+                            var changes = BabyUpdate()
+                            changes.notifyLowNappies = on
+                            Task { try? await store.updateBaby(changes) }
+                        }
+                    )) {
+                        Label("Nappy watch (evenings)", systemImage: "drop.fill")
+                    }
+                    .tint(.accent)
+                    .disabled(!store.isOwner)
+                }
             } header: {
                 Text("Alerts")
             } footer: {
-                Text("Feed-due nudges, nappy watch and medication reminders — the same alerts as the web app, delivered natively.")
+                Text("Medicine reminders always come through when you set them. The feed-due nudge and evening nappy watch are off unless you want them — they apply to everyone caring for \(store.baby?.name ?? "your baby").")
             }
             .listRowBackground(Color.surface)
 

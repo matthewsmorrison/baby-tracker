@@ -366,6 +366,8 @@ struct Baby: Codable, Identifiable, Hashable {
     var feedIntervalMin: Int?
     var nappyBaseWeightG: Int?
     var membershipTier: String?
+    var notifyFeedDue: Bool?
+    var notifyLowNappies: Bool?
 
     enum CodingKeys: String, CodingKey {
         case id, name, sex
@@ -375,6 +377,8 @@ struct Baby: Codable, Identifiable, Hashable {
         case feedIntervalMin = "feed_interval_min"
         case nappyBaseWeightG = "nappy_base_weight_g"
         case membershipTier = "membership_tier"
+        case notifyFeedDue = "notify_feed_due"
+        case notifyLowNappies = "notify_low_nappies"
     }
 }
 
@@ -393,6 +397,8 @@ struct BabyUpdate: Codable {
     var feedIntervalMin: Int?
     var nappyBaseWeightG: Int?
     var trackedTypes: [String]?
+    var notifyFeedDue: Bool?
+    var notifyLowNappies: Bool?
 
     enum CodingKeys: String, CodingKey {
         case name, sex
@@ -401,6 +407,8 @@ struct BabyUpdate: Codable {
         case feedIntervalMin = "feed_interval_min"
         case nappyBaseWeightG = "nappy_base_weight_g"
         case trackedTypes = "tracked_types"
+        case notifyFeedDue = "notify_feed_due"
+        case notifyLowNappies = "notify_low_nappies"
     }
 }
 
