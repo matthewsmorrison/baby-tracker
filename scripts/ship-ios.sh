@@ -54,4 +54,10 @@ fi
 xcrun altool --upload-app -f "$SCRATCH/export/Beanlo.ipa" -t ios \
   --apiKey "$API_KEY_ID" --apiIssuer "$API_ISSUER" 2>&1 | grep -E "UPLOAD|Delivery|ERROR" || true
 
+# ---- 5. Distribute: wait for processing, submit for beta review, attach ----
+# to the public tester group. Without this, uploads never reach testers.
+if [ "${SKIP_DISTRIBUTE:-0}" != "1" ]; then
+  node scripts/distribute-ios.mjs "$NEXT"
+fi
+
 echo "Shipped build $NEXT — commit the version bump (ios/project.yml + project.pbxproj)."
